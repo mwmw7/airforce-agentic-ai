@@ -1,0 +1,7 @@
+[
+  { "_notice": "교육용 합성 자료 — 가상 뉴스·공지이며 실제 사건과 무관", "title": "[가상 뉴스] 동해 공해상 미식별 항공기 활동 증가", "url": "https://news.example.mil/2026/10/east-sea-activity", "published": "2026-10-29", "snippet": "최근 1주일간 동해 공해상에서 IFF 무응답 항공기 활동이 평소보다 늘었다. 대부분 ADIZ-E 외곽에서 선회 후 이탈했으나 일부는 내륙 방향 진로를 보였다." },
+  { "_notice": "교육용 합성 자료", "title": "[가상 NOTAM] 국제 항로 R-211 기상 우회 허용", "url": "https://notam.example.mil/R-211", "published": "2026-10-30", "snippet": "10월 30일 오전 R-211 구간 적란운으로 민항기의 항로 좌우 10nm 이내 우회를 허용한다. IFF 정상 응답 항적의 소폭 이탈은 기상 우회일 수 있다." },
+  { "_notice": "교육용 합성 자료", "title": "[가상 공지] 동해안 저고도 드론 비행 금지 구역 확대", "url": "https://notice.example.mil/drone-zone", "published": "2026-10-28", "snippet": "동해안 일대 저고도 무인기 비행 금지 구역이 확대되었다. 저고도 저속·반사 단면적이 작은 항적은 소형 무인기, 경항공기, 조류 가능성을 함께 검토해야 한다." },
+  { "_notice": "교육용 합성 자료", "title": "[가상 뉴스] 편대 비행 미식별기 2기, ADIZ-E 접근 사례", "url": "https://news.example.mil/2026/09/formation", "published": "2026-09-15", "snippet": "지난달 IFF 무응답 편대 2기가 약 5nm 간격으로 ADIZ-E 에 접근해 즉응기 2기가 출격했다. 후속 대기 전력 격상이 함께 이뤄졌다." },
+  { "_notice": "교육용 합성 자료", "title": "[가상 기상] ADIZ-E 상공 비행 조건 양호", "url": "https://weather.example.mil/adiz-e", "published": "2026-10-30", "snippet": "ADIZ-E 상공 시정 9km, 운저 4500ft, 북서풍 18kts. 전투기 이착륙 및 요격 비행에 제한 없음." }
+]

@@ -5,7 +5,7 @@
  *   noul   : 예/아니오 → 확률 (0~1)
  *   choice : 여러 선택지 중 하나 → 선택 + 각 선택지 확률 + confidence
  *   score  : 순서가 있는 등급 → 실수 점수
- * 질문을 여러 개 묶어 한 번에 보내도 지연이 거의 늘지 않는 것이 특징입니다 (실습 2-1 에서 확인).
+ * 질문을 여러 개 묶어 한 번에 보내도 지연이 거의 늘지 않는 것이 특징입니다 (실습 2-4 에서 확인).
  *
  * 폐쇄망 이관 포인트 ②
  *   JEV_MODE=openrouter → OpenRouter Decisions API (POST /api/alpha/decisions)
@@ -79,12 +79,11 @@ function localJudge(state: Record<string, unknown>, questions: Record<string, Je
   // 판정 근거를 '알림 원문' 중심으로 좁힌다 — 지침 문서 본문까지 훑으면 모든 시나리오가 위험으로 보인다
   const alert = (state.alert ?? state) as Record<string, unknown>;
   const primary = JSON.stringify(alert).toLowerCase();
-  const synthesis = (state.synthesis ?? {}) as { uncertainties?: string[] };
-  const findings = (state.findings ?? []) as { ok?: boolean; content?: string }[];
+  const evidence = (state.evidence ?? []) as { ok?: boolean }[];
   const everything = JSON.stringify(state).toLowerCase();
 
   const risk = riskScore(primary);
-  const uncertain = /불명|unknown|정보 부족|추가 조회/.test(primary) || (synthesis.uncertainties?.length ?? 0) > 0 || findings.some((f) => f.ok === false);
+  const uncertain = /불명|unknown|정보 부족|추가 조회/.test(primary) || evidence.some((e) => e.ok === false);
   const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previous|bypass approval/.test(everything);
 
   const answers: Record<string, JevAnswer> = {};

@@ -7,3 +7,4 @@ reports/*.json
 .hindsight/*.json
 traces/
 .DS_Store
+.idea/

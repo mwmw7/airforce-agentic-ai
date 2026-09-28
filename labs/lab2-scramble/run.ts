@@ -1,104 +1,63 @@
 /**
  * labs/lab2-scramble/run.ts — 스크램블 판단 보조 Agent 실행기
  *
- *   pnpm scramble:run --scenario 1              시나리오 1 실행, 승인 프롬프트에서 y/n 입력
- *   pnpm scramble:run --scenario 1 --exit       승인 대기 지점에서 프로세스를 그냥 끝낸다 (중단 시연)
- *   pnpm scramble:resume --thread <id>      SQLite 체크포인트에서 승인 대기 지점부터 재개
- *   pnpm scramble:run --scenario 1 --yes        승인 자동 (평가 스크립트용)
+ *   pnpm scramble:run                   시나리오 1 (명백한 위협) 실행, 승인 프롬프트에서 y/n
+ *   pnpm scramble:run --scenario 2      시나리오 2 (IFF 정상 민항기)
+ *   pnpm scramble:run --scenario 3      시나리오 3 (정보 부족)
+ *   pnpm scramble:run --yes             승인 자동 (테스트용)
  *
- * thread_id 하나 = 실행 하나. 같은 thread_id 로 다시 invoke 하면 저장된 상태에서 이어갑니다.
+ * 흐름: invoke → approve 노드의 interrupt 에서 멈춤 → 사람에게 묻기 → Command({ resume }) 로 이어가기
  */
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline/promises";
 import { Command } from "@langchain/langgraph";
-import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { buildGraph } from "./graph.js";
-import type { Alert } from "./state.js";
-import type { ApprovalRequest } from "./nodes/approve.js";
-import { trace } from "../../src/lib/trace.js";
+import type { ApprovalRequest } from "./nodes.js";
+import type { Alert, Approval } from "./state.js";
 
-export function loadAlert(scenario: number): Alert {
-  return JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "data/alerts", `scenario-${scenario}.json`), "utf8"));
-}
+const args = process.argv.slice(2);
+const get = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
+const scenario = Number(get("--scenario") ?? 1);
 
-export function makeCheckpointer(): SqliteSaver {
-  // ===== TODO 2-5c: SQLite Checkpointer =====
-  // SqliteSaver.fromConnString("checkpoints.sqlite") 를 반환하세요.
-  // 메모리 저장(MemorySaver) 과 달리 프로세스가 죽어도 상태가 남습니다.
+const alert: Alert = JSON.parse(fs.readFileSync(path.resolve("data/alerts", `scenario-${scenario}.json`), "utf8"));
+const graph = buildGraph();
+const config = { configurable: { thread_id: `${alert.alert_id}-${Date.now()}` } }; // thread_id 하나 = 실행 하나
+
+console.log(`🚨 알림 ${alert.alert_id} · ${alert.title}\n   ${alert.summary}\n`);
+
+// 1) 처음 실행 → approve 노드의 interrupt 에서 멈춘다
+await graph.invoke({ alert }, config);
+
+// 2) 멈춘 이유(interrupt 값) 를 꺼내 담당자에게 보여준다
+const state = await graph.getState(config);
+const req = state.tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as ApprovalRequest | undefined;
+
+if (req) {
+  const j = req.judgement;
+  console.log("\n┌──────────── 담당자 승인 요청 ────────────");
+  console.log(`│ 알림   : ${req.alert_id}`);
+  console.log(`│ 권고   : ${j.recommendation.toUpperCase()}  (confidence ${j.confidence})`);
+  console.log(`│ 확률   : ${Object.entries(j.probabilities).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
+  for (const e of req.evidence) for (const l of e.lines) console.log(`│ [${e.source}] ${l.slice(0, 90)}`);
+  console.log("└──────────────────────────────────────────");
+
+  let answer: Approval = { approved: true, note: "--yes 자동 승인" };
+  if (!args.includes("--yes")) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const input = (await rl.question(`권고(${j.recommendation}) 를 승인하시겠습니까? [y/N, 메모는 'y 메모내용']: `)).trim();
+    rl.close();
+    answer = { approved: /^y/i.test(input), note: input.replace(/^[yn]\S*\s*/i, "") || undefined };
+  }
+
+  // ===== TODO 2-7: Command({ resume }) 로 멈춘 그래프 이어가기 =====
+  // graph.invoke(new Command({ resume: answer }), config) 를 호출하세요.
+  // 같은 config(thread_id) 를 넘겨야 checkpointer 가 멈췄던 상태를 찾아 approve 노드부터 이어갑니다.
   // ----- SOLUTION -----
-  //! return SqliteSaver.fromConnString(":memory:"); // ← 메모리 DB: 프로세스가 죽으면 사라집니다. 파일로 바꾸세요
-  return SqliteSaver.fromConnString(path.resolve(process.cwd(), "checkpoints.sqlite"));
+  await graph.invoke(new Command({ resume: answer }), config);
   // ----- END SOLUTION -----
 }
 
-function printApproval(req: ApprovalRequest) {
-  console.log("\n┌──────────── 담당자 승인 요청 ────────────");
-  console.log(`│ 알림     : ${req.alert_id}`);
-  console.log(`│ 권고     : ${req.recommendation.toUpperCase()}  (confidence ${req.confidence})`);
-  console.log(`│ 확률     : ${Object.entries(req.probabilities).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
-  console.log(`│ 요약     : ${req.summary}`);
-  for (const f of req.facts) console.log(`│  ✓ ${f}`);
-  for (const u of req.uncertainties) console.log(`│  ? ${u}`);
-  if (req.blocked_reason) console.log(`│ ⚠ 가드레일: ${req.blocked_reason}`);
-  console.log("└──────────────────────────────────────────");
-}
-
-export async function runScenario(opts: { scenario: number; thread?: string; resume?: boolean; yes?: boolean; exitAtInterrupt?: boolean }) {
-  const threadId = opts.thread ?? `s${opts.scenario}-${Date.now().toString(36)}`;
-  const config = { configurable: { thread_id: threadId }, recursionLimit: Number(process.env.MAX_STEPS ?? 8) * 4 };
-  const graph = buildGraph({ checkpointer: makeCheckpointer() });
-
-  console.log(`▶ thread_id = ${threadId}   (trace: ${path.relative(process.cwd(), trace.file)})`);
-
-  // 1) 처음 실행 또는 재개
-  let result = opts.resume
-    ? await graph.invoke(null, config)                      // null 입력 = 저장된 상태에서 이어가기
-    : await graph.invoke({ alert: loadAlert(opts.scenario) }, config);
-
-  // 2) interrupt 로 멈췄는가?
-  const state = await graph.getState(config);
-  const pending = state.tasks.flatMap((t) => t.interrupts ?? []);
-  if (pending.length) {
-    const req = pending[0].value as ApprovalRequest;
-    printApproval(req);
-
-    if (opts.exitAtInterrupt) {
-      console.log(`\n⏸  승인 대기 상태로 종료합니다. 재개:  pnpm scramble:resume --thread ${threadId}`);
-      return { threadId, result, interrupted: true };
-    }
-
-    let approved = opts.yes ?? false, note: string | undefined;
-    if (!opts.yes) {
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      const ans = (await rl.question("승인하시겠습니까? [y/N, 메모는 'y 메모내용']: ")).trim();
-      rl.close();
-      approved = /^y/i.test(ans);
-      note = ans.replace(/^[yn]\s*/i, "") || undefined;
-    }
-
-    // ===== TODO 2-5d: Command({ resume }) 로 재개 =====
-    // graph.invoke(new Command({ resume: { approved, note } }), config) 를 호출해 approve 노드를 이어가세요.
-    // 같은 config(thread_id) 를 넘겨야 저장된 상태를 찾습니다.
-    // ----- SOLUTION -----
-    result = await graph.invoke(new Command({ resume: { approved, note } }), config);
-    // ----- END SOLUTION -----
-  }
-
-  console.log(`\n■ 종료: 권고=${result.decision?.recommendation} 승인=${result.approved ?? "-"} 보고서=${result.report_path ? path.relative(process.cwd(), result.report_path) : "없음"} steps=${result.step_count}`);
-  return { threadId, result, interrupted: false };
-}
-
-// ── CLI ──
-if (process.argv[1] && /run\.ts$/.test(process.argv[1])) {
-  const args = process.argv.slice(2);
-  const get = (k: string) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
-  runScenario({
-    scenario: Number(get("--scenario") ?? 1),
-    thread: get("--thread"),
-    resume: args.includes("--resume"),
-    yes: args.includes("--yes"),
-    exitAtInterrupt: args.includes("--exit"),
-  }).catch((e) => { console.error(e); process.exit(1); });
-}
+const final = (await graph.getState(config)).values;
+console.log(`\n■ 종료: 권고=${final.judgement?.recommendation} 승인=${final.approval?.approved ?? "-"} 보고서=${final.report_path ? path.relative(process.cwd(), final.report_path) : "없음"}`);
