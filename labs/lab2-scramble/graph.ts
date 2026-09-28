@@ -36,32 +36,11 @@ export function buildGraph(opts: { checkpointer?: SqliteSaver } = {}) {
   //   · decide 뒤는 routeAfterDecide 로 "guardrail" | "worker_retry" 분기, worker_retry 는 retryFanOut 로 다시 worker 로
   //   · approve 뒤는 routeAfterApprove 로 "report" | END 분기
   // 마지막에 graph.compile({ checkpointer: opts.checkpointer }) 를 반환하세요.
-  // ----- SOLUTION -----
-  //! // 시작 뼈대: triage 만 도는 그래프. 나머지 노드·엣지를 그림대로 이어 붙이세요.
-  //! const graph = new StateGraph(ScrambleState)
-  //!   .addNode("triage", triageNode)
-  //!   .addEdge(START, "triage")
-  //!   .addEdge("triage", END);
-  //! return graph.compile({ checkpointer: opts.checkpointer });
+  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
+  // 시작 뼈대: triage 만 도는 그래프. 나머지 노드·엣지를 그림대로 이어 붙이세요.
   const graph = new StateGraph(ScrambleState)
     .addNode("triage", triageNode)
-    .addNode("worker", workerNode)
-    .addNode("synthesize", synthesizeNode)
-    .addNode("decide", decideNode)
-    .addNode("worker_retry", async () => ({ step_count: 1 }))
-    .addNode("guardrail", guardrailNode)
-    .addNode("approve", approveNode)
-    .addNode("report", reportNode)
     .addEdge(START, "triage")
-    .addConditionalEdges("triage", fanOut, ["worker"])
-    .addEdge("worker", "synthesize")
-    .addEdge("synthesize", "decide")
-    .addConditionalEdges("decide", routeAfterDecide, ["guardrail", "worker_retry"])
-    .addConditionalEdges("worker_retry", retryFanOut, ["worker"])
-    .addEdge("guardrail", "approve")
-    .addConditionalEdges("approve", routeAfterApprove, ["report", END])
-    .addEdge("report", END);
-
+    .addEdge("triage", END);
   return graph.compile({ checkpointer: opts.checkpointer });
-  // ----- END SOLUTION -----
 }

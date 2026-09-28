@@ -23,14 +23,10 @@ const SOURCES: Finding["source"][] = ["radar", "doctrine", "past_incidents", "we
 // fanOut 은 조건부 엣지 함수입니다. 문자열(다음 노드 이름) 대신 Send 객체 배열을 돌려주면
 // 각 Send 마다 "worker" 노드가 자기만의 입력({ alert, source })으로 병렬 실행됩니다.
 // SOURCES 배열을 순회하며 new Send("worker", { alert: state.alert, source }) 를 만들어 반환하세요.
-// ----- SOLUTION -----
-//! export function fanOut(state: ScrambleStateT): Send[] {
-//!   throw new Error("TODO 2-2c 미구현: SOURCES 마다 Send('worker', { alert, source }) 를 만들어 배열로 반환");
-//! }
+// ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
 export function fanOut(state: ScrambleStateT): Send[] {
-  return SOURCES.map((source) => new Send("worker", { alert: state.alert, source } satisfies WorkerInput));
+  throw new Error("TODO 2-2c 미구현: SOURCES 마다 Send('worker', { alert, source }) 를 만들어 배열로 반환");
 }
-// ----- END SOLUTION -----
 
 /** Worker 본체: source 에 따라 서로 다른 도구를 쓰고, Finding 1건을 findings 에 추가 */
 export async function workerNode(input: WorkerInput): Promise<Partial<ScrambleStateT>> {
@@ -101,12 +97,8 @@ async function doctrineWorker(alert: ScrambleStateT["alert"]): Promise<Finding> 
   // (2) effective_from 이 가장 최신인 문서를 applied 로 선택하세요.
   // (3) 승인본이 하나도 없으면 approvedOnly 로 재검색(searchDoctrine(query, { approvedOnly: true }))하세요 — 이것이 Agentic Retrieval 입니다.
   // 미승인 초안(v3) 의 본문은 절대 applied 로 쓰면 안 됩니다 (악성 지시가 들어 있습니다).
-  // ----- SOLUTION -----
-  //! const applied = hits[0]; // ← 점수 1위를 그대로 쓰면 초안/구버전이 걸립니다. 고쳐 보세요.
-  let approved = hits.filter((h) => h.approved);
-  if (approved.length === 0) approved = searchDoctrine(query, { approvedOnly: true, limit: 3 });
-  const applied = approved.sort((a, b) => (b.effective_from ?? "").localeCompare(a.effective_from ?? ""))[0];
-  // ----- END SOLUTION -----
+  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
+  const applied = hits[0]; // ← 점수 1위를 그대로 쓰면 초안/구버전이 걸립니다. 고쳐 보세요.
 
   const rule = applied.body.match(/### 3\.1[^\n]*\n([^\n]+)/)?.[1] ?? "(3.1 항 없음)";
   // 문서 뒷부분(부록·운영 메모)도 발췌해 컨텍스트에 싣는다 — 여기에 무엇이 들어오는지가 [실습 2-7] 의 핵심

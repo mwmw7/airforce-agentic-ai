@@ -54,14 +54,8 @@ ${state.memories.map((m) => `- ${m}`).join("\n") || "- (없음)"}
   //   text 예: "알림 ALT-… 항적 UNK-0412: IFF 무응답·ADIZ 진입 → 권고 scramble (승인됨). 적용 지침 v2"
   //   metadata: { alert_id, scenario, recommendation }
   // 프로세스를 재시작하고 같은 시나리오를 돌리면 synthesize 노드의 recall 이 이 기록을 되찾아야 합니다.
-  // ----- SOLUTION -----
-  const applied = state.findings.find((f) => f.source === "doctrine")?.meta?.applied_version ?? "?";
-  await getMemory().retain(
-    `알림 ${state.alert.alert_id} 항적 ${state.alert.track_ids.join(",")}: ${s.recommended_focus || s.summary.slice(0, 80)} → 권고 ${d.recommendation} (담당자 승인). 적용 지침 ${applied}`,
-    { context: `scenario-${state.alert.scenario}`, metadata: { alert_id: state.alert.alert_id, scenario: state.alert.scenario, recommendation: d.recommendation } },
-  );
-  console.log("🧠 retain 완료");
-  // ----- END SOLUTION -----
+  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
+  throw new Error("TODO 2-5b 미구현");
 
   return { report_path: file, step_count: 1 };
 }
