@@ -70,7 +70,6 @@ airforce-agentic-ai/
 │  └─ trace.ts               ④ 트레이서 (traces/*.jsonl → 강의 5 에서 Langfuse)
 ├─ labs/
 │  ├─ lab0-pure-loop/        [실습 0] 프레임워크 없는 while 루프 Agent          (1일차)
-│  ├─ lab1-yumini/           [실습 1] 유미니 상담 준비 도우미 — 정진태 강사 추가 예정 (1일차)
 │  └─ lab2-scramble/         [실습 2] 스크램블 판단 보조 Agent — LangGraph.js   (2일차)
 │     ├─ state.ts             공유 State (reducer)
 │     ├─ graph.ts             노드·엣지 조립
