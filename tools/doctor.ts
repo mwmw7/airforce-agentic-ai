@@ -6,9 +6,9 @@
 import "dotenv/config";
 import fs from "node:fs";
 
-const ok = (m: string) => console.log(`  ✅ ${m}`);
-const warn = (m: string) => console.log(`  ⚠️  ${m}`);
-const bad = (m: string) => console.log(`  ❌ ${m}`);
+const ok = (m: string) => console.log(`  [OK]   ${m}`);
+const warn = (m: string) => console.log(`  [참고] ${m}`);
+const bad = (m: string) => console.log(`  [문제] ${m}`);
 
 console.log("\n공군 Agentic AI 교육 · 환경 점검\n");
 
@@ -21,7 +21,7 @@ fs.existsSync(".env") ? ok(".env 있음") : warn(".env 없음 — `cp .env.examp
 
 // LLM
 const llmMode = process.env.LLM_MODE ?? "mock";
-if (llmMode === "mock") warn("LLM_MODE=mock — 규칙 기반 응답. 실제 모델을 쓰려면 .env 에서 relay/ollama/cloud 로 바꾸세요");
+if (llmMode === "mock") warn("LLM_MODE=mock — 정해진 답으로 흐름만 확인. 실제 모델은 .env 에서 relay(강사 Bedrock)/ollama/cloud 로");
 else {
   try {
     const r = await fetch(`${process.env.LLM_BASE_URL}/models`, { headers: { Authorization: `Bearer ${process.env.LLM_API_KEY}` } });
@@ -44,12 +44,17 @@ else {
   } catch { bad("Hindsight 서버에 연결할 수 없음 — docker 실행 여부 확인 또는 MEMORY_MODE=file"); }
 }
 
+// 웹 검색
+const searchMode = process.env.SEARCH_MODE ?? "mock";
+if (searchMode === "mock") warn("SEARCH_MODE=mock — data/web/ 의 가상 검색 결과 사용. 실제 검색은 SEARCH_MODE=tavily + TAVILY_API_KEY");
+else process.env.TAVILY_API_KEY ? ok("SEARCH_MODE=tavily, 키 있음") : bad("SEARCH_MODE=tavily 인데 TAVILY_API_KEY 없음");
+
 // 데이터
 ["data/api/tracks.json", "data/alerts/scenario-1.json", "data/doctrine/v2-2026-rules.md"].forEach((f) => fs.existsSync(f) ? ok(f) : bad(`${f} 없음`));
 
 console.log(`
 다음 단계
-  pnpm loop:run            # [실습 0] 순수 루프
-  pnpm scramble:inspect  # [실습 2-2] MCP 서버를 Inspector 로 열어보기
+  pnpm loop:run                    # [실습 0] Agent 루프
+  pnpm scramble:inspect            # [실습 2-2] MCP 서버를 Inspector 로 열어보기
   pnpm scramble:run --scenario 1   # [실습 2] 스크램블 판단 보조 Agent
 `);

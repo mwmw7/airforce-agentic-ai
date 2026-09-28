@@ -32,10 +32,21 @@ export interface Memory {
 }
 
 export const MEMORY_MODE = (process.env.MEMORY_MODE ?? "file") as "hindsight" | "file";
-const BANK = process.env.HINDSIGHT_BANK ?? "scramble";
 
 export function getMemory(): Memory {
-  return MEMORY_MODE === "hindsight" ? new HindsightMemory(BANK) : new FileMemory(BANK);
+  const bank = process.env.HINDSIGHT_BANK ?? "scramble"; // 부를 때마다 읽는다 — 채점은 별도 기억 공간을 쓴다
+  return MEMORY_MODE === "hindsight" ? new HindsightMemory(bank) : new FileMemory(bank);
+}
+
+/** 기억 남기기 (Hindsight retain) */
+export async function saveMemory(text: string): Promise<void> {
+  await getMemory().retain(text);
+}
+
+/** 기억 떠올리기 (Hindsight recall) — 찾은 기억의 문장만 돌려준다 */
+export async function findMemories(query: string, limit = 3): Promise<string[]> {
+  const hits = await getMemory().recall(query, { limit });
+  return hits.map((h) => h.text);
 }
 
 // ── Hindsight 서버 ────────────────────────────────────────────

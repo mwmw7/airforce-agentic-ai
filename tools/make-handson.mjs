@@ -60,7 +60,7 @@ for (const file of DIRS.flatMap((d) => (fs.existsSync(path.join(ROOT, d)) ? walk
       total++;
       changed = true;
       if (CHECK) console.log(`${path.relative(ROOT, file)}: ${currentTodo}${placeholder.length ? " (자리표시자)" : ""}`);
-      out.push(`${indent}// ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일`);
+      out.push(`${indent}// [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일`);
       if (placeholder.length) out.push(...placeholder);
       else out.push(`${indent}throw new Error("${currentTodo} 미구현");`);
       i = j + 1;

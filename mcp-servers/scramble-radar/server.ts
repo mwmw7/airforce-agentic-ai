@@ -6,7 +6,7 @@
  *   Server 가 제공하는 것: Tools(함수) · Resources(읽기 전용 데이터) · Prompts(템플릿)
  *
  * 같은 서버를 두 곳에 꽂아 동일하게 동작하는지 확인해 보세요.
- *   1) 내 Agent   : labs/lab2-scramble/nodes/investigate.ts 가 MultiServerMCPClient 로 연결
+ *   1) 내 Agent   : labs/lab2-scramble/ask-radar.ts 가 stdio 로 연결
  *   2) Claude Code: `claude mcp add radar -- pnpm exec tsx mcp-servers/scramble-radar/server.ts`
  *   3) Inspector  : pnpm scramble:inspect
  *
@@ -35,15 +35,15 @@ function loadTracks(): Track[] {
 
 const server = new McpServer({ name: "scramble-radar", version: "0.1.0" });
 
-// ===== TODO 2-2a: MCP 도구 get_track 등록 =====
+// ===== TODO 2-2: MCP 도구 get_track 등록 =====
 // server.registerTool(name, { description, inputSchema }, handler) 로 도구를 등록하세요.
 //   · name        : "get_track"
 //   · description : 모델이 이 도구를 '언제' 쓸지 판단하는 유일한 근거입니다. 구체적으로 쓰세요.
 //   · inputSchema : zod 스키마 ({ track_id: z.string() })
 //   · handler     : loadTracks() 에서 track_id 로 찾아 { content: [{ type: "text", text: JSON }] } 반환
 //                   못 찾으면 에러를 던지지 말고 { error: "not_found" } 를 텍스트로 돌려주세요 (모델이 다음 행동을 고를 수 있게).
-// ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
-throw new Error("TODO 2-2a 미구현");
+// [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일
+throw new Error("TODO 2-2 미구현");
 
 // 완성 제공: 반경 검색 (편대 여부 판단용)
 server.registerTool(
