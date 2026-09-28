@@ -8,7 +8,7 @@
  * 같은 서버를 두 곳에 꽂아 동일하게 동작하는지 확인해 보세요.
  *   1) 내 Agent   : labs/lab2-scramble/nodes/investigate.ts 가 MultiServerMCPClient 로 연결
  *   2) Claude Code: `claude mcp add radar -- pnpm exec tsx mcp-servers/scramble-radar/server.ts`
- *   3) Inspector  : pnpm mcp:radar:inspect
+ *   3) Inspector  : pnpm scramble:inspect
  *
  * 데이터는 data/api/tracks.json (교육용 합성 자료). 실제로는 SQLite 등으로 바꾸면 됩니다.
  */

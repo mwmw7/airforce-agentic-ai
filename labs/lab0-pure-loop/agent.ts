@@ -1,28 +1,30 @@
 /**
  * [실습 0] 프레임워크 없는 순수 Agent 루프 (1일차 · 40분)
  *
- * 목표: "Agent = while 루프 + 도구 호출 결과를 다시 모델에 되돌려 넣기" 를 손으로 확인한다.
+ * Agent = while 루프 + "모델이 부른 도구를 내 코드가 실행하고, 결과를 다시 모델에게 보여주기"
  *
- *   사용자 목표 ─▶ 모델 ─▶ (도구 호출?) ─▶ 내 코드가 도구 실행 ─▶ 결과를 messages 에 추가 ─▶ 다시 모델 …
- *                                   └─ (호출 없음) ─▶ 최종 답변, 루프 종료
+ *   질문 ─▶ 모델 ─┬─ 도구 호출 요청 ─▶ 내 코드가 도구 실행 ─▶ 결과를 messages 에 추가 ─▶ 다시 모델 …
+ *                └─ 요청 없음      ─▶ 최종 답변, 끝
  *
- * 핵심 관찰 포인트
- *   · 모델은 "부르겠다" 고 말할 뿐, 실행은 내 코드(executeTool)가 한다.
- *   · 루프를 언제 멈출지(MAX_STEPS)도 모델이 아니라 내 코드가 정한다 = Harness.
+ * 관찰 포인트
+ *   · 모델은 "이 도구를 불러 달라" 고 말할 뿐, 실제 실행은 내 코드(runTool)가 한다.
+ *   · 언제 멈출지(MAX_STEPS)도 모델이 아니라 내 코드가 정한다 = Harness.
  *
- * 실행:  pnpm lab0            (정상 종료)
- *        pnpm lab0:limit      (MAX_STEPS=2 로 강제 중단 → 중단 이유가 코드에서 나오는지 확인)
+ * 실행:  pnpm loop:run      정상 종료
+ *        pnpm loop:limit    MAX_STEPS=1 로 강제 중단 → 중단 사유가 코드에서 나오는지 확인
  */
-import { chat, type Msg, type Tool } from "../../src/lib/llm.js";
 import { readFileSync } from "node:fs";
+import { chat, type Msg, type Tool } from "../../src/lib/llm.js";
 
-// ── 1. 도구 정의: 모델에게는 "이런 도구가 있다" 는 설명(JSON Schema)만 보여준다 ──
+const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
+
+// ── 1. 도구 설명: 모델은 이 설명만 보고 "어떤 도구를 부를지" 결정한다 ──
 const tools: Tool[] = [
   {
     type: "function",
     function: {
       name: "get_track",
-      description: "가상 항적 DB 에서 항적 ID 로 현재 위치·속도·IFF 응답을 조회한다. (교육용 합성 자료)",
+      description: "항적 ID 로 현재 위치·속도·IFF 응답을 조회한다. (교육용 합성 자료)",
       parameters: {
         type: "object",
         properties: { track_id: { type: "string", description: "예: UNK-0412" } },
@@ -32,53 +34,53 @@ const tools: Tool[] = [
   },
 ];
 
-// ── 2. 도구 실행: 실제 일은 여기서, 모델이 아니라 내 코드가 한다 ──
-function executeTool(name: string, args: Record<string, unknown>): string {
-  if (name === "get_track") {
-    const db = JSON.parse(readFileSync(new URL("../../data/api/tracks.json", import.meta.url), "utf8")) as Record<string, unknown>[];
-    const hit = db.find((t) => t.track_id === args.track_id);
-    return hit ? JSON.stringify(hit) : JSON.stringify({ error: "not_found", track_id: args.track_id });
-  }
-  return JSON.stringify({ error: "unknown_tool", name });
+// ── 2. 도구 실행: 실제 일은 모델이 아니라 여기(내 코드)서 한다 ──
+const tracks: { track_id: string }[] = JSON.parse(
+  readFileSync(new URL("../../data/api/tracks.json", import.meta.url), "utf8"),
+);
+
+function runTool(name: string, args: Record<string, unknown>): string {
+  if (name !== "get_track") return JSON.stringify({ error: `모르는 도구: ${name}` });
+  const track = tracks.find((t) => t.track_id === args.track_id);
+  return JSON.stringify(track ?? { error: `항적 없음: ${args.track_id}` });
 }
 
 // ── 3. Agent 루프 ──
-async function runAgent(goal: string) {
-  const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
+async function runAgent(question: string): Promise<string> {
   const messages: Msg[] = [
-    { role: "system", content: "너는 공역 감시 보조 에이전트다. 필요한 도구를 호출해 사실을 확인한 뒤 한국어로 간결히 보고하라." },
-    { role: "user", content: goal },
+    { role: "system", content: "너는 공역 감시 보조 에이전트다. 도구로 사실을 확인한 뒤 한국어로 간결히 보고하라." },
+    { role: "user", content: question },
   ];
 
   for (let step = 1; step <= MAX_STEPS; step++) {
     console.log(`\n── step ${step} ──`);
-    const res = await chat(messages, tools, { label: `lab0.step${step}` });
+    const reply = await chat(messages, tools, { label: `lab0.step${step}` });
 
-    // 도구 호출이 없으면 = 최종 답변
-    if (res.toolCalls.length === 0) {
-      console.log("✅ 최종 답변:", res.content);
-      return res.content;
+    // 도구 호출 요청이 없으면 = 최종 답변 → 끝
+    if (reply.toolCalls.length === 0) {
+      console.log("✅ 최종 답변:", reply.content);
+      return reply.content;
     }
 
-    // ===== TODO 0-2: 도구 결과를 messages 에 되돌려 넣기 =====
-    // 모델이 요청한 도구 호출(res.toolCalls)을 하나씩 실행하고,
-    // (1) 모델의 "도구를 부르겠다" 메시지(assistant, tool_calls 포함)와
-    // (2) 각 도구의 실행 결과(role: "tool", tool_call_id 매칭)를
-    // messages 배열 끝에 순서대로 추가하세요. 그래야 다음 루프에서 모델이 결과를 볼 수 있습니다.
-    // 힌트: OpenAI 호환 형식 — assistant 메시지의 tool_calls[i].function.arguments 는 "문자열(JSON)" 입니다.
+    // ===== TODO 0-2: 도구를 실행하고 결과를 messages 에 되돌려 넣기 =====
+    // ① 모델의 "도구를 불러 달라" 는 요청을 assistant 메시지로 messages 에 추가
+    //    (tool_calls[i].function.arguments 는 JSON "문자열" — JSON.stringify(call.args))
+    // ② reply.toolCalls 를 하나씩 runTool 로 실행하고,
+    //    결과를 { role: "tool", tool_call_id: call.id, content: 결과 } 로 messages 에 추가
+    // → 그래야 다음 step 에서 모델이 도구 결과를 볼 수 있습니다.
     // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
     throw new Error("TODO 0-2 미구현");
   }
 
-  // ===== TODO 0-3: 강제 중단은 모델이 아니라 Harness 가 한다 =====
-  // 루프가 MAX_STEPS 를 다 쓰고 여기까지 내려오면 "왜 멈췄는지" 를 코드가 기록하고 알려야 합니다.
-  // 중단 사유를 콘솔에 출력하고, 호출자에게 구분 가능한 값(예: "[중단] 최대 스텝 초과") 을 돌려주세요.
+  // ===== TODO 0-3: 강제 중단은 모델이 아니라 Harness(내 코드)가 한다 =====
+  // 여기까지 왔다 = 모델이 답을 못 낸 채 MAX_STEPS 를 다 썼다는 뜻입니다.
+  // 중단 사유를 콘솔에 출력하고, 구분 가능한 문자열(예: "[중단] 최대 스텝 초과")을 return 하세요.
   // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
   throw new Error("TODO 0-3 미구현");
 }
 
-const goal = process.argv[2] ?? "항적 UNK-0412 의 현재 상태를 확인하고 특이사항을 보고해줘.";
-runAgent(goal).catch((e) => {
+const question = process.argv[2] ?? "항적 UNK-0412 의 현재 상태를 확인하고 특이사항을 보고해줘.";
+runAgent(question).catch((e) => {
   console.error(e);
   process.exit(1);
 });

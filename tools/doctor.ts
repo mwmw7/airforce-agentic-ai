@@ -1,6 +1,6 @@
 /**
  * tools/doctor.ts — [실습 0-1] 환경 점검
- *   pnpm run doctor
+ *   pnpm setup:check
  * Node 버전, .env, 모드별 연결(LLM / Jev / Hindsight) 을 확인하고 어떤 실습이 바로 가능한지 알려줍니다.
  */
 import "dotenv/config";
@@ -49,7 +49,7 @@ else {
 
 console.log(`
 다음 단계
-  pnpm lab0            # [실습 0] 순수 루프
-  pnpm mcp:radar:inspect  # [실습 2-2] MCP 서버를 Inspector 로 열어보기
-  pnpm lab2 --scenario 1   # [실습 2] 스크램블 판단 보조 Agent
+  pnpm loop:run            # [실습 0] 순수 루프
+  pnpm scramble:inspect  # [실습 2-2] MCP 서버를 Inspector 로 열어보기
+  pnpm scramble:run --scenario 1   # [실습 2] 스크램블 판단 보조 Agent
 `);
