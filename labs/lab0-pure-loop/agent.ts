@@ -10,8 +10,8 @@
  *   · 모델은 "부르겠다" 고 말할 뿐, 실행은 내 코드(executeTool)가 한다.
  *   · 루프를 언제 멈출지(MAX_STEPS)도 모델이 아니라 내 코드가 정한다 = Harness.
  *
- * 실행:  npm run lab0            (정상 종료)
- *        npm run lab0:limit      (MAX_STEPS=2 로 강제 중단 → 중단 이유가 코드에서 나오는지 확인)
+ * 실행:  pnpm lab0            (정상 종료)
+ *        pnpm lab0:limit      (MAX_STEPS=2 로 강제 중단 → 중단 이유가 코드에서 나오는지 확인)
  */
 import { chat, type Msg, type Tool } from "../../src/lib/llm.js";
 import { readFileSync } from "node:fs";

@@ -55,7 +55,7 @@ async function runWorker({ alert, source }: WorkerInput): Promise<Finding> {
 // ── radar: MCP 서버(mcp-servers/scramble-radar) 를 stdio 로 띄워 도구 호출 ──
 // Host(이 Agent) → Client → stdio → Server 구조가 코드에 그대로 드러납니다.
 async function radarWorker(alert: ScrambleStateT["alert"]): Promise<Finding> {
-  const transport = new StdioClientTransport({ command: "npx", args: ["tsx", "mcp-servers/scramble-radar/server.ts"], stderr: "ignore" });
+  const transport = new StdioClientTransport({ command: "pnpm", args: ["exec", "tsx", "mcp-servers/scramble-radar/server.ts"], stderr: "ignore" });
   const client = new Client({ name: "scramble-agent", version: "0.1.0" });
   await client.connect(transport);
   try {

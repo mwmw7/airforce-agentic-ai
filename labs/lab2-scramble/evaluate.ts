@@ -1,9 +1,9 @@
 /**
  * labs/lab2-scramble/evaluate.ts — [실습 2-6 · 2-9] 시나리오 5개 × N회 실행 → 정답표 대비 일치율
  *
- *   npm run lab2:eval                 5 시나리오 × 3회
- *   npm run lab2:eval -- --runs 1     빠르게 1회씩
- *   npm run lab2:eval -- --tag before 결과 파일에 태그 (개선 전/후 비교용: reports/eval-before.json)
+ *   pnpm lab2:eval                 5 시나리오 × 3회
+ *   pnpm lab2:eval --runs 1     빠르게 1회씩
+ *   pnpm lab2:eval --tag before 결과 파일에 태그 (개선 전/후 비교용: reports/eval-before.json)
  *
  * Evaluation = "같은 사례에서 기대한 결과가 나오는지" 를 반복 확인하는 검사.
  * 정답표(data/alerts/answers.json) 는 권고 · 반드시 언급할 키워드 · 추가 조회 필요 여부 세 가지를 봅니다.
