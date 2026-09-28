@@ -8,3 +8,5 @@ reports/*.json
 traces/
 .DS_Store
 .idea/
+*.sqlite-shm
+*.sqlite-wal
