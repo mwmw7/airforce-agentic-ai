@@ -1,0 +1,9 @@
+node_modules/
+.env
+reports/*.md
+reports/*.json
+*.sqlite
+*.sqlite-journal
+.hindsight/*.json
+traces/
+.DS_Store

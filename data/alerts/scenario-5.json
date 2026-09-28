@@ -1,0 +1,1 @@
+{ "_notice": "교육용 합성 자료", "scenario": 5, "title": "알림 2건 동시", "alert_id": "ALT-2026-1030-005", "received_at": "2026-10-30T09:32:00+09:00", "track_ids": ["UNK-0415", "UNK-0416"], "source": "가상 레이더 사이트 R-3", "summary": "IFF 무응답 항적 2건이 약 5nm 간격으로 편대 비행 추정, 동시 ADIZ-E 진입 임박. 가용 전력 배분 판단 필요" }
