@@ -27,8 +27,10 @@ export function makeCheckpointer(): SqliteSaver {
   // ===== TODO 2-5c: SQLite Checkpointer =====
   // SqliteSaver.fromConnString("checkpoints.sqlite") 를 반환하세요.
   // 메모리 저장(MemorySaver) 과 달리 프로세스가 죽어도 상태가 남습니다.
-  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
-  return SqliteSaver.fromConnString(":memory:"); // ← 메모리 DB: 프로세스가 죽으면 사라집니다. 파일로 바꾸세요
+  // ----- SOLUTION -----
+  //! return SqliteSaver.fromConnString(":memory:"); // ← 메모리 DB: 프로세스가 죽으면 사라집니다. 파일로 바꾸세요
+  return SqliteSaver.fromConnString(path.resolve(process.cwd(), "checkpoints.sqlite"));
+  // ----- END SOLUTION -----
 }
 
 function printApproval(req: ApprovalRequest) {
@@ -79,8 +81,9 @@ export async function runScenario(opts: { scenario: number; thread?: string; res
     // ===== TODO 2-5d: Command({ resume }) 로 재개 =====
     // graph.invoke(new Command({ resume: { approved, note } }), config) 를 호출해 approve 노드를 이어가세요.
     // 같은 config(thread_id) 를 넘겨야 저장된 상태를 찾습니다.
-    // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
-    throw new Error("TODO 2-5d 미구현");
+    // ----- SOLUTION -----
+    result = await graph.invoke(new Command({ resume: { approved, note } }), config);
+    // ----- END SOLUTION -----
   }
 
   console.log(`\n■ 종료: 권고=${result.decision?.recommendation} 승인=${result.approved ?? "-"} 보고서=${result.report_path ? path.relative(process.cwd(), result.report_path) : "없음"} steps=${result.step_count}`);

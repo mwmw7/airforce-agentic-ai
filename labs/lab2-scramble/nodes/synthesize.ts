@@ -20,8 +20,11 @@ export async function synthesizeNode(state: ScrambleStateT): Promise<Partial<Scr
   // getMemory().recall(query) 로 알림 요약과 관련된 과거 기록을 최대 3건 가져와
   // memories(string[]) 로 만드세요. 기록이 없으면 빈 배열입니다.
   // (2-5 에서 retain 을 완성한 뒤 같은 시나리오를 다시 돌리면 여기서 되찾아옵니다)
-  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
-  const memories: string[] = [];
+  // ----- SOLUTION -----
+  //! const memories: string[] = [];
+  const hits = await getMemory().recall(`${state.alert.summary} ${state.alert.track_ids.join(" ")}`, { limit: 3 });
+  const memories = hits.map((h) => `${h.timestamp?.slice(0, 10) ?? ""} ${h.text}`.trim());
+  // ----- END SOLUTION -----
   if (memories.length) console.log(`🧠 recall ${memories.length}건`);
 
   const findingsText = state.findings

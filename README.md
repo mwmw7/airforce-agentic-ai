@@ -11,13 +11,13 @@
 
 | 브랜치 | 용도 | 누가 |
 |---|---|---|
-| `main` | **핸즈온용.** 핵심 구간 17곳이 비어 있고 주석으로 할 일이 적혀 있음 (`✏️ 여기에 코드를 작성하세요`) | 교육생 |
-| `solution` | **완성본.** 모든 빈칸이 채워진 정답 코드 | 강사 · 막힌 교육생 |
+| `main` | **완성본.** 모든 코드가 채워진 정답 · 개발 브랜치 | 강사 · 막힌 교육생 |
+| `hands-on` | **핸즈온용.** `main` 과 같지만 핵심 구간 17곳이 비어 있고 주석으로 할 일이 적혀 있음 (`✏️ 여기에 코드를 작성하세요`) | 교육생 |
 
-막히면 정답을 보세요. 파일 경로가 같으니 `git diff main solution -- <파일>` 로 내 코드와 정답을 나란히 비교할 수 있습니다.
+교육생은 `hands-on` 브랜치에서 실습합니다. 막히면 정답을 보세요. 파일 경로가 같으니 `git diff hands-on main -- <파일>` 로 내 코드와 정답을 나란히 비교할 수 있습니다.
 
 ```bash
-git diff main solution -- labs/lab2-scramble/nodes/triage.ts
+git diff hands-on main -- labs/lab2-scramble/nodes/triage.ts
 ```
 
 빈칸 목록은 `pnpm make:handson --check` 로 언제든 볼 수 있습니다.
@@ -39,6 +39,7 @@ git diff main solution -- labs/lab2-scramble/nodes/triage.ts
 ```bash
 git clone https://github.com/mwmw7/airforce-agentic-ai.git
 cd airforce-agentic-ai
+git checkout hands-on        # 실습용 브랜치 (빈칸 버전)
 corepack enable && corepack prepare pnpm@12.6.0 --activate   # pnpm 이 없다면 (Node 22 내장 corepack)
 pnpm install                 # 현장 네트워크 부하를 피하려면 미리 해 두세요
 cp .env.example .env        # 토큰은 당일 강사가 배포. 없어도 mock/local 모드로 전부 실행됩니다
@@ -55,7 +56,7 @@ pnpm lab0:limit                 # 호출 한도 1 로 강제 중단 — 중단 �
 pnpm lab2 --scenario 1       # [실습 2] 스크램블 판단 보조 Agent (승인 프롬프트에서 y/n)
 ```
 
-`main` 브랜치에서는 빈칸 때문에 `lab2` 가 triage 노드만 돌고 끝납니다. 그게 정상이며, 실습 순서대로 빈칸을 채우면 한 노드씩 살아납니다.
+`hands-on` 브랜치에서는 빈칸 때문에 `lab2` 가 triage 노드만 돌고 끝납니다. 그게 정상이며, 실습 순서대로 빈칸을 채우면 한 노드씩 살아납니다.
 
 ---
 
@@ -92,7 +93,7 @@ airforce-agentic-ai/
 
 ## 3. 2일차 실습 순서 ↔ 빈칸 (TODO) 대응표
 
-`main` 브랜치에서 아래 순서대로 채웁니다. 각 TODO 위에는 무엇을 왜 하는지 주석이 있습니다.
+`hands-on` 브랜치에서 아래 순서대로 채웁니다. 각 TODO 위에는 무엇을 왜 하는지 주석이 있습니다.
 
 | 단계 | TODO | 파일 | 확인 명령 | 핵심 개념 |
 |---|---|---|---|---|
@@ -168,18 +169,20 @@ docker run -p 8888:8888 vectorize/hindsight     # 이미지 이름·옵션은 ht
 
 ## 6. 강사용 — 두 브랜치 관리
 
-정답은 `solution` 에서만 고치고, `main` 은 스크립트로 생성합니다.
+모든 작업은 `main` (완성본) 에서 하고, `hands-on` 은 스크립트로 생성합니다.
 
 ```bash
-git checkout solution
-# … 코드 수정 …
-git commit -am "fix: …"
-
 git checkout main
-git checkout solution -- .            # solution 트리를 그대로 가져온 뒤
+# … 코드 수정 …
+git commit -am "fix: …" && git push
+
+git checkout hands-on
+git checkout main -- .                # main 트리를 그대로 가져온 뒤
 node tools/make-handson.mjs           # 마커 기준으로 빈칸 생성
-git commit -am "handson: regenerate from solution"
+git commit -am "handson: regenerate from main" && git push
 ```
+
+`main` 에서 파일을 삭제·이동했다면 `hands-on` 에서도 같은 파일을 `git rm` 해 주세요 (`git checkout main -- .` 은 삭제를 옮기지 않습니다).
 
 마커 규칙은 `tools/make-handson.mjs` 상단 주석 참고 (`// ===== TODO x-y: … =====` / `// ----- SOLUTION -----` / `//!` 자리표시자 / `// ----- END SOLUTION -----`).
 

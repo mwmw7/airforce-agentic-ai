@@ -38,8 +38,13 @@ for (const s of SCENARIOS) {
     //   rec_ok       : d.recommendation === key.recommendation
     //   mention_ok   : key.must_mention 의 모든 키워드가 (synthesis.facts + summary + findings.content) 안에 등장
     //   more_info_ok : d.needs_more_info === key.needs_more_info
-    // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
-    const rec_ok = false, mention_ok = false, more_info_ok = false;
+    // ----- SOLUTION -----
+    //! const rec_ok = false, mention_ok = false, more_info_ok = false;
+    const haystack = [result.synthesis?.summary, ...(result.synthesis?.facts ?? []), ...result.findings.map((f) => f.content)].join("\n");
+    const rec_ok = d?.recommendation === key.recommendation;
+    const mention_ok = key.must_mention.every((k) => haystack.includes(k));
+    const more_info_ok = d?.needs_more_info === key.needs_more_info;
+    // ----- END SOLUTION -----
 
     rows.push({ scenario: s, run: r, recommendation: d?.recommendation, rec_ok, mention_ok, more_info_ok, blocked: result.blocked_reason, confidence: d?.confidence });
   }

@@ -50,8 +50,20 @@ export async function guardrailNode(state: ScrambleStateT): Promise<Partial<Scra
   //     trace.event("guardrail.block", …) 을 남기세요. (승인 노드는 이 사유를 담당자에게 보여줍니다)
   // (2) 권고(d.recommendation)가 "scramble" 인데 적용 지침 버전(findings doctrine.meta.applied_version)이 승인본이 아니면 차단.
   // 차단은 '흐름을 끊는 것' 이 아니라 '사람에게 사유와 함께 넘기는 것' 입니다 — 여기서 throw 하지 마세요.
-  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
+  // ----- SOLUTION -----
+  //! let blocked_reason: string | undefined;
   let blocked_reason: string | undefined;
+  const injected = detectInjection(state);
+  if (injected) {
+    blocked_reason = `지시문 탐지: "${injected}" — 문서 내용은 데이터이지 명령이 아님. 자동 저장 금지`;
+    trace.event("guardrail.block", { kind: "injection", match: injected });
+  }
+  const applied = String(state.findings.find((f) => f.source === "doctrine")?.meta?.applied_version ?? "");
+  if (!blocked_reason && d.recommendation === "scramble" && /draft/i.test(applied)) {
+    blocked_reason = `미승인 지침(${applied}) 에 근거한 출격 권고 — 승인본으로 재조사 필요`;
+    trace.event("guardrail.block", { kind: "unapproved_doctrine", applied });
+  }
+  // ----- END SOLUTION -----
 
   // 2층: 모델 기반 (Jev) — 낮은 확신 또는 자동 저장 위험 → 사람 회부 사유 추가
   const notes: string[] = [];

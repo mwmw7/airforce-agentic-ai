@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tools/make-handson.mjs — solution 코드에서 hands-on(빈칸) 코드를 자동 생성
+ * tools/make-handson.mjs — main(완성본) 코드에서 hands-on(빈칸) 코드를 자동 생성
  *
  * 마커 규칙 (TS 파일 안)
  *   // ===== TODO 2-1: 제목 =====        ← 이 줄부터 설명 주석은 두 브랜치 모두 유지
@@ -15,8 +15,8 @@
  *   node tools/make-handson.mjs --check    변환 대상 TODO 목록만 출력
  *
  * 강사용 워크플로
- *   git checkout solution && (코드 수정) && git commit
- *   git checkout main && git checkout solution -- . && node tools/make-handson.mjs && git commit
+ *   git checkout main && (코드 수정) && git commit
+ *   git checkout hands-on && git checkout main -- . && node tools/make-handson.mjs && git commit
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -60,7 +60,7 @@ for (const file of DIRS.flatMap((d) => (fs.existsSync(path.join(ROOT, d)) ? walk
       total++;
       changed = true;
       if (CHECK) console.log(`${path.relative(ROOT, file)}: ${currentTodo}${placeholder.length ? " (자리표시자)" : ""}`);
-      out.push(`${indent}// ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일`);
+      out.push(`${indent}// ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일`);
       if (placeholder.length) out.push(...placeholder);
       else out.push(`${indent}throw new Error("${currentTodo} 미구현");`);
       i = j + 1;
