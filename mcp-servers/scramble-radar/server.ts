@@ -42,22 +42,8 @@ const server = new McpServer({ name: "scramble-radar", version: "0.1.0" });
 //   · inputSchema : zod 스키마 ({ track_id: z.string() })
 //   · handler     : loadTracks() 에서 track_id 로 찾아 { content: [{ type: "text", text: JSON }] } 반환
 //                   못 찾으면 에러를 던지지 말고 { error: "not_found" } 를 텍스트로 돌려주세요 (모델이 다음 행동을 고를 수 있게).
-// ----- SOLUTION -----
-server.registerTool(
-  "get_track",
-  {
-    description:
-      "가상 항적 DB 에서 항적 ID(예: UNK-0412) 로 현재 위치·고도·속도·진로·IFF 응답 상태를 조회한다. 미식별 항적 알림을 받으면 가장 먼저 호출한다. (교육용 합성 자료)",
-    inputSchema: { track_id: z.string().describe("항적 ID, 예: UNK-0412") },
-  },
-  async ({ track_id }) => {
-    const hit = loadTracks().find((t) => t.track_id === track_id);
-    return {
-      content: [{ type: "text", text: JSON.stringify(hit ?? { error: "not_found", track_id }) }],
-    };
-  },
-);
-// ----- END SOLUTION -----
+// ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
+throw new Error("TODO 2-2a 미구현");
 
 // 완성 제공: 반경 검색 (편대 여부 판단용)
 server.registerTool(

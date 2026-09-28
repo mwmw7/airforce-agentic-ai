@@ -58,16 +58,11 @@ export const ScrambleState = Annotation.Root({
   // Worker 4개가 각자 findings 에 1건씩 쓰면 4건이 모두 남아야 합니다.
   // Annotation<Finding[]>({ reducer: (prev, next) => ..., default: () => [] }) 형태로
   // '이전 배열 + 새 배열' 을 이어 붙이는 reducer 를 정의하세요. (덮어쓰기면 마지막 Worker 결과만 남습니다)
-  // ----- SOLUTION -----
-  //! findings: Annotation<Finding[]>({
-  //!   reducer: (prev, next) => { throw new Error("TODO 2-2b 미구현: 이전 배열과 새 배열을 이어 붙이세요"); },
-  //!   default: () => [],
-  //! }),
+  // ✏️  여기에 코드를 작성하세요 — 정답은 solution 브랜치의 같은 파일
   findings: Annotation<Finding[]>({
-    reducer: (prev, next) => [...prev, ...next],
+    reducer: (prev, next) => { throw new Error("TODO 2-2b 미구현: 이전 배열과 새 배열을 이어 붙이세요"); },
     default: () => [],
   }),
-  // ----- END SOLUTION -----
 
   memories: Annotation<string[]>({ reducer: (_p, n) => n, default: () => [] }),
   synthesis: Annotation<Synthesis | undefined>(),
