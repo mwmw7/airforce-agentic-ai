@@ -66,32 +66,15 @@ async function runAgent(goal: string) {
     // (2) 각 도구의 실행 결과(role: "tool", tool_call_id 매칭)를
     // messages 배열 끝에 순서대로 추가하세요. 그래야 다음 루프에서 모델이 결과를 볼 수 있습니다.
     // 힌트: OpenAI 호환 형식 — assistant 메시지의 tool_calls[i].function.arguments 는 "문자열(JSON)" 입니다.
-    // ----- SOLUTION -----
-    messages.push({
-      role: "assistant",
-      content: res.content || null,
-      tool_calls: res.toolCalls.map((c) => ({
-        id: c.id,
-        type: "function",
-        function: { name: c.name, arguments: JSON.stringify(c.args) },
-      })),
-    });
-    for (const call of res.toolCalls) {
-      const output = executeTool(call.name, call.args);
-      console.log(`🔧 ${call.name}(${JSON.stringify(call.args)}) → ${output.slice(0, 120)}`);
-      messages.push({ role: "tool", tool_call_id: call.id, content: output });
-    }
-    // ----- END SOLUTION -----
+    // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
+    throw new Error("TODO 0-2 미구현");
   }
 
   // ===== TODO 0-3: 강제 중단은 모델이 아니라 Harness 가 한다 =====
   // 루프가 MAX_STEPS 를 다 쓰고 여기까지 내려오면 "왜 멈췄는지" 를 코드가 기록하고 알려야 합니다.
   // 중단 사유를 콘솔에 출력하고, 호출자에게 구분 가능한 값(예: "[중단] 최대 스텝 초과") 을 돌려주세요.
-  // ----- SOLUTION -----
-  const reason = `[중단] 최대 스텝(${MAX_STEPS}) 초과 — Harness 가 루프를 멈췄습니다. 모델은 아직 최종 답변을 내지 않았습니다.`;
-  console.log("⛔", reason);
-  return reason;
-  // ----- END SOLUTION -----
+  // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
+  throw new Error("TODO 0-3 미구현");
 }
 
 const goal = process.argv[2] ?? "항적 UNK-0412 의 현재 상태를 확인하고 특이사항을 보고해줘.";

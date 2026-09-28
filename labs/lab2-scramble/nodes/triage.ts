@@ -17,35 +17,12 @@ export async function triageNode(state: ScrambleStateT): Promise<Partial<Scrambl
   //   threat_score    : score  — 위협 등급 4단계 (예: ["무시 가능","낮음","중간","높음"])
   //   first_source    : choice — 먼저 볼 소스 { radar: …, doctrine: …, past_incidents: …, weather_assets: … }
   // instructions 는 판정 기준을 '한 문장' 으로. 모델이 아니라 판정기라는 점을 기억하세요 (장황한 프롬프트 불필요).
-  // ----- SOLUTION -----
-  //! const questions: Record<string, JevQuestion> = {
-  //!   // investigate_now: { type: "noul", instructions: "…", criteria: { true: "…", false: "…" } },
-  //!   // threat_score:    { type: "score", instructions: "…", criteria: ["…", "…", "…", "…"] },
-  //!   // first_source:    { type: "choice", instructions: "…", criteria: { radar: "…", doctrine: "…", past_incidents: "…", weather_assets: "…" } },
-  //! };
+  // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
   const questions: Record<string, JevQuestion> = {
-    investigate_now: {
-      type: "noul",
-      instructions: "이 알림은 즉시 조사에 착수해야 하는가?",
-      criteria: { true: "IFF 무응답·식별구역 진입/접근·내륙 진로 등 위협 신호가 있다", false: "IFF 정상이고 항로 이탈이 경미하거나 정기 훈련이다" },
-    },
-    threat_score: {
-      type: "score",
-      instructions: "알림 요약만으로 본 초기 위협 등급",
-      criteria: ["무시 가능", "낮음 (감시)", "중간 (추가 조회)", "높음 (즉응 검토)"],
-    },
-    first_source: {
-      type: "choice",
-      instructions: "가장 먼저 조회해야 할 정보원",
-      criteria: {
-        radar: "항적 상세(IFF·속도·진로) 확인이 급하다",
-        doctrine: "적용 지침 버전 확인이 먼저다",
-        past_incidents: "유사 사건 전례가 판단을 좌우한다",
-        weather_assets: "기상·가용 전력이 제약이다",
-      },
-    },
+    // investigate_now: { type: "noul", instructions: "…", criteria: { true: "…", false: "…" } },
+    // threat_score:    { type: "score", instructions: "…", criteria: ["…", "…", "…", "…"] },
+    // first_source:    { type: "choice", instructions: "…", criteria: { radar: "…", doctrine: "…", past_incidents: "…", weather_assets: "…" } },
   };
-  // ----- END SOLUTION -----
 
   if (Object.keys(questions).length === 0) console.warn("⚠️  TODO 2-1: questions 가 비어 있습니다 — Jev 에게 물어볼 질문 3개를 채우세요");
   const res = await decide({ alert: state.alert }, questions);

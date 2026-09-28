@@ -39,17 +39,8 @@ export async function decideNode(state: ScrambleStateT): Promise<Partial<Scrambl
     //   criteria.true : 출격 권고, 낮은 확신, 지시문 포함 문서, 조회 실패 중 하나라도 있다
     //   criteria.false: 감시/대기 권고이고 확신이 높으며 이상 징후가 없다
     // 결과는 아래 Decision.risky_to_autosave 에 들어가고, guardrail 노드가 이 값으로 사람 회부를 결정합니다.
-    // ----- SOLUTION -----
-    //! // risky_to_autosave: { type: "noul", instructions: "…", criteria: { true: "…", false: "…" } },
-    risky_to_autosave: {
-      type: "noul",
-      instructions: "이 결과를 담당자 승인 없이 저장·통보하면 위험한가?",
-      criteria: {
-        true: "출격 권고이거나, 확신이 낮거나, 문서에 에이전트 지시문이 포함됐거나, 조회 실패가 있다",
-        false: "감시/대기 권고이고 확신이 높으며 이상 징후가 없다",
-      },
-    },
-    // ----- END SOLUTION -----
+    // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
+    // risky_to_autosave: { type: "noul", instructions: "…", criteria: { true: "…", false: "…" } },
   };
 
   const res = await jevDecide(
@@ -80,9 +71,6 @@ export function routeAfterDecide(state: ScrambleStateT): "guardrail" | "worker_r
   // · needs_more_info 이고 아직 재조사를 안 했으면(state.findings 에 past_incidents 가 1건뿐) → "worker_retry"
   // · 그 외 → "guardrail"
   // 재조사 무한 루프를 막는 것은 모델이 아니라 이 코드입니다.
-  // ----- SOLUTION -----
-  const retried = state.findings.filter((f) => f.source === "past_incidents").length > 1;
-  if (d.needs_more_info && !retried) return "worker_retry";
-  return "guardrail";
-  // ----- END SOLUTION -----
+  // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
+  throw new Error("TODO 2-4b 미구현");
 }

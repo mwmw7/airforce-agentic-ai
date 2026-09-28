@@ -47,12 +47,8 @@ export async function approveNode(state: ScrambleStateT): Promise<Partial<Scramb
   // const answer = interrupt(request) as ApprovalResponse;
   // 한 줄이지만, 이 한 줄이 "장기 실행 Agent 제어" 의 핵심입니다.
   // 돌아온 answer 로 approved / approver_note 를 반환하세요.
-  // ----- SOLUTION -----
-  const answer = interrupt(request) as ApprovalResponse;
-  trace.event("node.approve.resumed", { approved: answer.approved });
-  console.log(`👤 담당자 응답: ${answer.approved ? "승인" : "반려"}${answer.note ? ` (${answer.note})` : ""}`);
-  return { approved: answer.approved, approver_note: answer.note, step_count: 1 };
-  // ----- END SOLUTION -----
+  // ✏️  여기에 코드를 작성하세요 — 정답은 main 브랜치의 같은 파일
+  throw new Error("TODO 2-5a 미구현");
 }
 
 export function routeAfterApprove(state: ScrambleStateT): "report" | "__end__" {
