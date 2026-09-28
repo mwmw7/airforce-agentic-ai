@@ -96,7 +96,7 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   const results: Msg[] = calls.map((call) => {
     const args = JSON.parse(call.function.arguments || "{}");
     const result = runTool(call.function.name, args);
-    console.log(`🔧 ${call.function.name}(${JSON.stringify(args)}) → ${result.slice(0, 120)}`);
+    console.log(`  [도구] ${call.function.name}(${JSON.stringify(args)}) → ${result.slice(0, 120)}`);
     return { role: "tool", tool_call_id: call.id, content: result };
   });
   return { messages: results };
@@ -106,7 +106,7 @@ async function toolsNode(state: S): Promise<Partial<S>> {
 /** stop: Harness 가 루프를 끊을 때 들르는 노드 */
 async function stopNode(): Promise<Partial<S>> {
   const stopped = `[중단] 최대 스텝(${MAX_STEPS}) 초과 — 모델이 아니라 코드가 루프를 멈췄습니다.`;
-  console.log("⛔", stopped);
+  console.log(stopped);
   return { answer: stopped };
 }
 
@@ -150,7 +150,7 @@ const result = await graph.invoke(
 ).catch((e) => {
   if (e?.lc_error_code !== "GRAPH_RECURSION_LIMIT") throw e;
   // 여기까지 왔다 = route 가 루프를 끊지 못해 LangGraph 의 최후 안전장치가 걸렸다는 뜻
-  console.error("\n⛔ LangGraph recursionLimit 도달 — route 가 루프를 끊지 못했습니다. TODO 0-2 · 0-3 을 확인하세요.");
+  console.error("\n[중단] LangGraph recursionLimit 도달 — route 가 루프를 끊지 못했습니다. TODO 0-2 · 0-3 을 확인하세요.");
   process.exit(1);
 });
-console.log(`\n✅ 최종 답변 (steps=${result.steps}):\n${result.answer}`);
+console.log(`\n[최종 답변] (steps=${result.steps}):\n${result.answer}`);

@@ -1,45 +1,55 @@
 /**
- * labs/lab2-scramble/graph.ts — 스크램블 판단 보조 Agent 그래프
+ * labs/lab2-scramble/graph.ts — 단계들을 선으로 잇기
  *
- *            ┌─▶ rag ─┐
- *   START ───┼─▶ web ─┼─▶ judge ─▶ approve ─▶ report ─▶ END
- *            └─▶ mcp ─┘   (Jev)     (사람)     (로컬 LLM)
+ *            ┌─▶ searchDocs ─┐
+ *   START ───┼─▶ searchWeb  ─┼─▶ checkSafety ─▶ decide ─▶ askHuman ─▶ writeReport ─▶ END
+ *            └─▶ askRadar   ─┘   (수상한 지시    (기억 +    (사람이     (LLM 보고서 +
+ *                                 걸러내기)      Jev 판정)   결정)       기억 남기기)
  *
- *   · START 에서 세 노드로 엣지를 그으면 → 셋이 동시에 실행된다 (fan-out)
- *   · 세 노드에서 judge 로 한 번에 엣지를 그으면 → 셋이 모두 끝나야 judge 가 실행된다 (fan-in)
- *   · approve 에서 멈췄다가 다시 이어가려면 상태를 저장할 곳(checkpointer) 이 필요하다
+ *   · START 에서 세 단계로 선을 그으면 → 셋이 동시에 실행된다
+ *   · 세 단계에서 checkSafety 로 한 번에 선을 그으면 → 셋이 모두 끝나야 checkSafety 가 실행된다
+ *   · askHuman 에서 멈췄다가 이어가려면 진행 상황을 저장할 곳(checkpointer)이 필요하다 → checkpoints.sqlite 파일
  */
-import { END, MemorySaver, START, StateGraph } from "@langchain/langgraph";
+import { END, START, StateGraph } from "@langchain/langgraph";
+import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { ScrambleState } from "./state.js";
-import { approveNode, judgeNode, mcpNode, ragNode, reportNode, webNode } from "./nodes.js";
+import { searchDocs } from "./search-docs.js";
+import { searchWeb } from "./search-web.js";
+import { askRadar } from "./ask-radar.js";
+import { checkSafety } from "./check-safety.js";
+import { decide } from "./decide.js";
+import { askHuman } from "./ask-human.js";
+import { writeReport } from "./write-report.js";
 
 export function buildGraph() {
   const graph = new StateGraph(ScrambleState)
-    .addNode("rag", ragNode)
-    .addNode("web", webNode)
-    .addNode("mcp", mcpNode)
-    .addNode("judge", judgeNode)
-    .addNode("approve", approveNode)
-    .addNode("report", reportNode);
+    .addNode("searchDocs", searchDocs)
+    .addNode("searchWeb", searchWeb)
+    .addNode("askRadar", askRadar)
+    .addNode("checkSafety", checkSafety)
+    .addNode("decide", decide)
+    .addNode("askHuman", askHuman)
+    .addNode("writeReport", writeReport);
 
-  // ===== TODO 2-3: 엣지 연결 (병렬 수집 → 판정 → 승인 → 보고서) =====
-  // · START 에서 rag · web · mcp 로 각각 addEdge  → 세 노드가 동시에 실행됩니다
-  // · addEdge(["rag", "web", "mcp"], "judge")    → 셋 다 끝나야 judge 가 한 번 실행됩니다
-  // · judge → approve → report → END 는 한 줄로 이어집니다
+  // ===== TODO 2-3: 선 잇기 (동시에 수집 → 안전 검사 → 판정 → 사람 → 보고서) =====
+  // · START 에서 searchDocs · searchWeb · askRadar 로 각각 addEdge  → 세 단계가 동시에 실행됩니다
+  // · addEdge(["searchDocs", "searchWeb", "askRadar"], "checkSafety")  → 셋 다 끝나야 한 번 실행됩니다
+  // · checkSafety → decide → askHuman → writeReport → END 는 한 줄로 이어집니다
   // ----- SOLUTION -----
-  //! // 시작 뼈대: 모든 노드를 '한 줄로 차례차례' 실행합니다. 수집 3개를 병렬로 바꿔 보세요
-  //! graph.addEdge(START, "rag").addEdge("rag", "web").addEdge("web", "mcp").addEdge("mcp", "judge")
-  //!   .addEdge("judge", "approve").addEdge("approve", "report").addEdge("report", END);
+  //! // 시작 뼈대: 모든 단계를 '한 줄로 차례차례' 실행합니다. 수집 3단계를 동시에 돌도록 바꿔 보세요
+  //! graph.addEdge(START, "searchDocs").addEdge("searchDocs", "searchWeb").addEdge("searchWeb", "askRadar").addEdge("askRadar", "checkSafety")
+  //!   .addEdge("checkSafety", "decide").addEdge("decide", "askHuman").addEdge("askHuman", "writeReport").addEdge("writeReport", END);
   graph
-    .addEdge(START, "rag")
-    .addEdge(START, "web")
-    .addEdge(START, "mcp")
-    .addEdge(["rag", "web", "mcp"], "judge")
-    .addEdge("judge", "approve")
-    .addEdge("approve", "report")
-    .addEdge("report", END);
+    .addEdge(START, "searchDocs")
+    .addEdge(START, "searchWeb")
+    .addEdge(START, "askRadar")
+    .addEdge(["searchDocs", "searchWeb", "askRadar"], "checkSafety")
+    .addEdge("checkSafety", "decide")
+    .addEdge("decide", "askHuman")
+    .addEdge("askHuman", "writeReport")
+    .addEdge("writeReport", END);
   // ----- END SOLUTION -----
 
-  // MemorySaver: 멈춘 지점의 상태를 메모리에 저장 → interrupt 후 같은 thread_id 로 이어갈 수 있다
-  return graph.compile({ checkpointer: new MemorySaver() });
+  // 진행 상황을 파일에 저장 → 프로그램을 껐다 켜도 같은 번호(thread_id)로 이어갈 수 있다
+  return graph.compile({ checkpointer: SqliteSaver.fromConnString("checkpoints.sqlite") });
 }

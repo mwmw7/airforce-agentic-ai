@@ -6,7 +6,7 @@
  *   Server 가 제공하는 것: Tools(함수) · Resources(읽기 전용 데이터) · Prompts(템플릿)
  *
  * 같은 서버를 두 곳에 꽂아 동일하게 동작하는지 확인해 보세요.
- *   1) 내 Agent   : labs/lab2-scramble/sources.ts 의 queryRadarMcp 가 stdio 로 연결
+ *   1) 내 Agent   : labs/lab2-scramble/ask-radar.ts 가 stdio 로 연결
  *   2) Claude Code: `claude mcp add radar -- pnpm exec tsx mcp-servers/scramble-radar/server.ts`
  *   3) Inspector  : pnpm scramble:inspect
  *

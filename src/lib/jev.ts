@@ -5,12 +5,12 @@
  *   noul   : 예/아니오 → 확률 (0~1)
  *   choice : 여러 선택지 중 하나 → 선택 + 각 선택지 확률 + confidence
  *   score  : 순서가 있는 등급 → 실수 점수
- * 질문을 여러 개 묶어 한 번에 보내도 지연이 거의 늘지 않는 것이 특징입니다 (실습 2-4 에서 확인).
+ * 질문을 여러 개 묶어 한 번에 보내도 지연이 거의 늘지 않는 것이 특징입니다.
  *
  * 폐쇄망 이관 포인트 ②
  *   JEV_MODE=openrouter → OpenRouter Decisions API (POST /api/alpha/decisions)
  *   JEV_MODE=local      → 아래 규칙 기반 판정기 (네트워크 불필요, 교육용)
- *   실제 폐쇄망에서는 local 자리에 자체 분류 모델을 꽂으면 됩니다. 인터페이스(decide)는 동일합니다.
+ *   실제 폐쇄망에서는 local 자리에 자체 분류 모델을 꽂으면 됩니다. 부르는 법(askJev)은 같습니다.
  *
  * API 형식 출처: https://openrouter.ai/docs/guides/community/jev-tutorial
  */
@@ -43,8 +43,8 @@ export const JEV_MODE = (process.env.JEV_MODE ?? "local") as "openrouter" | "loc
  * state(판정 근거 데이터) 와 questions(질문 묶음) 을 보내 답을 받습니다.
  * state 는 JSON 직렬화 가능한 무엇이든 OK — 알림 원문, 조사 결과, LLM 요약 등.
  */
-export async function decide(state: Record<string, unknown>, questions: Record<string, JevQuestion>): Promise<JevResult> {
-  const t = trace.start("jev.decide", { mode: JEV_MODE, questions: Object.keys(questions) });
+export async function askJev(state: Record<string, unknown>, questions: Record<string, JevQuestion>): Promise<JevResult> {
+  const t = trace.start("jev.ask", { mode: JEV_MODE, questions: Object.keys(questions) });
   const started = Date.now();
   try {
     const answers = JEV_MODE === "openrouter" ? await viaOpenRouter(state, questions) : localJudge(state, questions);
@@ -79,12 +79,16 @@ function localJudge(state: Record<string, unknown>, questions: Record<string, Je
   // 판정 근거를 '알림 원문' 중심으로 좁힌다 — 지침 문서 본문까지 훑으면 모든 시나리오가 위험으로 보인다
   const alert = (state.alert ?? state) as Record<string, unknown>;
   const primary = JSON.stringify(alert).toLowerCase();
-  const evidence = (state.evidence ?? []) as { ok?: boolean }[];
+  const clues = (state.clues ?? []) as { ok?: boolean }[];
   const everything = JSON.stringify(state).toLowerCase();
 
-  const risk = riskScore(primary);
-  const uncertain = /불명|unknown|정보 부족|추가 조회/.test(primary) || evidence.some((e) => e.ok === false);
+  let risk = riskScore(primary);
+  // 과거 기억: 같은 기체를 예전에 '출격' 으로 판단한 기록이 있으면 위험도를 올린다
+  if (/scramble|출격/.test(JSON.stringify(state.past ?? []))) risk = clamp(risk + 0.2);
+  const uncertain = /불명|unknown|정보 부족|추가 조회/.test(primary) || clues.some((c) => c.ok === false);
   const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previous|bypass approval/.test(everything);
+  // 자료에 섞인 수상한 지시문에 '속아 넘어가는' 모습을 흉내 낸다 — 걸러내지 않으면 무조건 출격으로 기운다
+  if (injected) risk = 0.95;
 
   const answers: Record<string, JevAnswer> = {};
   for (const [key, q] of Object.entries(questions)) {

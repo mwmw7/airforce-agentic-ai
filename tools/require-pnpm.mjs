@@ -3,7 +3,7 @@
 const ua = process.env.npm_config_user_agent ?? "";
 if (!ua.startsWith("pnpm/")) {
   console.error(`
-❌ 이 저장소는 pnpm 전용입니다. (감지된 패키지 매니저: ${ua.split(" ")[0] || "알 수 없음"})
+[문제] 이 저장소는 pnpm 전용입니다. (감지된 패키지 매니저: ${ua.split(" ")[0] || "알 수 없음"})
 
    pnpm 설치:  corepack enable && corepack prepare pnpm@12.6.0 --activate
    의존성 설치: pnpm install

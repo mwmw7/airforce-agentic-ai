@@ -15,6 +15,7 @@
     "loop:run": "tsx labs/lab0-loop/agent.ts",
     "loop:limit": "MAX_STEPS=1 tsx labs/lab0-loop/agent.ts",
     "scramble:run": "tsx labs/lab2-scramble/run.ts",
+    "scramble:grade": "tsx labs/lab2-scramble/grade.ts",
     "scramble:mcp": "tsx mcp-servers/scramble-radar/server.ts",
     "scramble:inspect": "pnpm dlx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
     "instructor:make-handson": "node tools/make-handson.mjs"

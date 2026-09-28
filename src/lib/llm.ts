@@ -1,16 +1,15 @@
 /**
  * src/lib/llm.ts — LLM 호출 (OpenAI 호환 API 한 곳으로 통일)
  *
- * 두 종류의 LLM 을 씁니다.
- *   chat()      메인 LLM  — 도구 호출·조사 (Bedrock 중계 / 클라우드 / Ollama / mock)
- *   localChat() 로컬 LLM  — 보고서 작성 (내 PC 의 Ollama. 데이터가 밖으로 나가지 않음)
+ *   chat()    도구를 쓰는 대화 한 번   — [실습 0] 루프에서 사용
+ *   askLLM()  글 한 편 쓰기            — [실습 2] 보고서 작성에서 사용
  *
- * 폐쇄망 이관 포인트 ①
- *   둘 다 "OpenAI 호환 chat/completions" 로 호출합니다.
- *   교체할 것은 .env 의 BASE_URL / API_KEY / MODEL 세 줄뿐입니다.
- *
- * *_MODE=mock 이면 네트워크 없이 규칙 기반으로 응답합니다.
- *   → 키가 없는 교육생도 그래프 흐름을 끝까지 따라올 수 있게 하기 위한 장치입니다.
+ * 어떤 모델을 쓸지는 .env 의 LLM_MODE 한 줄로 바꿉니다.
+ *   relay  : 강사가 AWS Bedrock 에 올려 둔 모델 (기본. 주소와 조별 토큰만 붙이면 됨)
+ *   ollama : 내 노트북의 Ollama (ollama pull qwen3:8b)
+ *   cloud  : 워크숍 당일 배포되는 클라우드 키
+ *   mock   : 네트워크 없이 흐름만 확인 (정해진 답을 돌려줌)
+ * 폐쇄망으로 옮길 때도 .env 의 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 세 줄만 바꾸면 됩니다.
  */
 import "dotenv/config";
 import OpenAI from "openai";
@@ -23,27 +22,19 @@ export type Tool = ChatCompletionTool;
 export const LLM_MODE = (process.env.LLM_MODE ?? "mock") as "relay" | "ollama" | "cloud" | "mock";
 export const LLM_MODEL = process.env.LLM_MODEL ?? "qwen3-32b";
 
-export const LOCAL_LLM_MODE = (process.env.LOCAL_LLM_MODE ?? "mock") as "ollama" | "mock";
-export const LOCAL_LLM_MODEL = process.env.LOCAL_LLM_MODEL ?? "qwen3:8b";
-
-const mainClient = lazyClient(process.env.LLM_BASE_URL, process.env.LLM_API_KEY);
-const localClient = lazyClient(process.env.LOCAL_LLM_BASE_URL ?? "http://localhost:11434/v1", "ollama");
-
-function lazyClient(baseURL: string | undefined, apiKey: string | undefined) {
-  let c: OpenAI | null = null;
-  return () => (c ??= new OpenAI({ baseURL, apiKey: apiKey ?? "no-key" }));
-}
+let client: OpenAI | null = null;
+const getClient = () => (client ??= new OpenAI({ baseURL: process.env.LLM_BASE_URL, apiKey: process.env.LLM_API_KEY ?? "no-key" }));
 
 export interface ChatResult {
   content: string;
   toolCalls: { id: string; name: string; args: Record<string, unknown> }[];
 }
 
-/** 메인 LLM 한 번 호출. 도구 호출이 있으면 toolCalls 로 돌려줍니다. */
+/** 모델을 한 번 부른다. 모델이 도구를 쓰고 싶어 하면 toolCalls 로 돌려준다. */
 export async function chat(messages: Msg[], tools?: Tool[], opts: { label?: string } = {}): Promise<ChatResult> {
   const t = trace.start("llm.chat", { mode: LLM_MODE, model: LLM_MODEL, label: opts.label, n_messages: messages.length });
   try {
-    const result = LLM_MODE === "mock" ? mockChat(messages, tools) : await realChat(mainClient(), LLM_MODEL, messages, tools);
+    const result = LLM_MODE === "mock" ? mockChat(messages, tools) : await realChat(messages, tools);
     t.end({ content_preview: result.content.slice(0, 120), tool_calls: result.toolCalls.map((c) => c.name) });
     return result;
   } catch (e) {
@@ -52,11 +43,12 @@ export async function chat(messages: Msg[], tools?: Tool[], opts: { label?: stri
   }
 }
 
-/** 로컬 LLM(Ollama) 으로 글을 쓰게 합니다. mock 이면 fallback 을 그대로 돌려줍니다. */
-export async function localChat(messages: Msg[], opts: { label?: string; fallback: string }): Promise<string> {
-  const t = trace.start("llm.local", { mode: LOCAL_LLM_MODE, model: LOCAL_LLM_MODEL, label: opts.label });
+/** 모델에게 글을 쓰게 한다. mock 모드면 mockText 를 그대로 돌려준다. */
+export async function askLLM(input: { system: string; user: string; mockText: string }): Promise<string> {
+  const t = trace.start("llm.write", { mode: LLM_MODE, model: LLM_MODEL });
   try {
-    const text = LOCAL_LLM_MODE === "mock" ? opts.fallback : (await realChat(localClient(), LOCAL_LLM_MODEL, messages)).content;
+    const messages: Msg[] = [{ role: "system", content: input.system }, { role: "user", content: input.user }];
+    const text = LLM_MODE === "mock" ? input.mockText : (await realChat(messages)).content;
     t.end({ preview: text.slice(0, 120) });
     return text;
   } catch (e) {
@@ -65,9 +57,9 @@ export async function localChat(messages: Msg[], opts: { label?: string; fallbac
   }
 }
 
-async function realChat(client: OpenAI, model: string, messages: Msg[], tools?: Tool[]): Promise<ChatResult> {
-  const res = await client.chat.completions.create({
-    model,
+async function realChat(messages: Msg[], tools?: Tool[]): Promise<ChatResult> {
+  const res = await getClient().chat.completions.create({
+    model: LLM_MODEL,
     messages,
     tools: tools?.length ? tools : undefined,
     temperature: 0.2,
@@ -84,18 +76,18 @@ export function safeJson(s: string): Record<string, unknown> {
   try {
     return JSON.parse(s);
   } catch {
-    // 로컬 모델이 JSON 앞뒤에 설명을 붙이는 경우가 잦아 첫 { … 마지막 } 만 잘라 재시도
+    // 작은 모델이 JSON 앞뒤에 설명을 붙이는 경우가 잦아 첫 { … 마지막 } 만 잘라 재시도
     const a = s.indexOf("{"), b = s.lastIndexOf("}");
     if (a >= 0 && b > a) {
-      try { return JSON.parse(s.slice(a, b + 1)); } catch { /* fallthrough */ }
+      try { return JSON.parse(s.slice(a, b + 1)); } catch { /* 아래로 */ }
     }
     return { _raw: s };
   }
 }
 
 // ──────────────────────────────────────────────────────────────
-// mock 모드: 실습 흐름을 재현하는 규칙 기반 응답기
-//   · 도구가 주어지고 아직 도구 결과가 없으면 → 첫 번째 도구를 호출한다
+// mock 모드: 실습 흐름을 재현하는 정해진 응답
+//   · 도구가 주어지고 아직 도구 결과가 없으면 → 첫 번째 도구를 부른다
 //   · 도구 결과가 있으면 → 결과를 요약해 답한다
 // ──────────────────────────────────────────────────────────────
 function mockChat(messages: Msg[], tools?: Tool[]): ChatResult {

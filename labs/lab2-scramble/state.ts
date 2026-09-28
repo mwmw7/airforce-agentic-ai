@@ -1,10 +1,10 @@
 /**
- * labs/lab2-scramble/state.ts — 그래프 전체가 공유하는 State
+ * labs/lab2-scramble/state.ts — 모든 단계가 함께 쓰는 칠판(State)
  *
- * LangGraph 의 State 는 "노드들이 읽고 쓰는 공용 칠판" 입니다.
- *   · reducer 가 없는 필드 → 새 값으로 덮어쓰기
- *   · reducer 가 있는 필드 → 이전 값과 합치기
- * 조사 노드 3개(rag · web · mcp)가 동시에 evidence 에 쓰므로, evidence 에는 '이어 붙이기' reducer 가 필요합니다.
+ * 각 단계(노드)는 칠판을 읽고, 바꿀 칸만 돌려줍니다.
+ *   · 합치는 규칙(reducer)이 없는 칸 → 새 값으로 덮어쓰기
+ *   · 합치는 규칙이 있는 칸       → 이전 값과 합치기
+ * 자료 수집 3단계(문서 · 웹 · 레이더)가 동시에 clues 칸에 쓰므로, clues 에는 '이어 붙이기' 규칙이 필요합니다.
  */
 import { Annotation } from "@langchain/langgraph";
 
@@ -19,22 +19,23 @@ export interface Alert {
   summary: string;
 }
 
-/** 조사 노드 하나가 모아 온 자료 */
-export interface Evidence {
-  source: "rag" | "web" | "mcp";
+/** 수집 단계 하나가 모아 온 단서 */
+export interface Clue {
+  from: "docs" | "web" | "radar";
   ok: boolean;
   lines: string[]; // 사람이 읽을 수 있는 한 줄 요약들
 }
 
-/** Jev 판정 결과 */
-export interface Judgement {
-  recommendation: "scramble" | "monitor" | "hold";
+/** Jev 의 판정 */
+export interface Decision {
+  choice: "scramble" | "monitor" | "hold"; // 출격 / 감시 강화 / 대기
   probabilities: Record<string, number>;
   confidence: number;
+  past: string[]; // 판정할 때 떠올린 과거 기억
 }
 
-/** 담당자 응답 (Human-in-the-Loop) */
-export interface Approval {
+/** 담당자(사람)의 결정 */
+export interface HumanAnswer {
   approved: boolean;
   note?: string;
 }
@@ -42,24 +43,26 @@ export interface Approval {
 export const ScrambleState = Annotation.Root({
   alert: Annotation<Alert>(),
 
-  // ===== TODO 2-1: 병렬 조사 결과를 '누적' 하는 reducer =====
-  // rag · web · mcp 노드가 각자 evidence 에 1건씩 쓰면 3건이 모두 남아야 합니다.
-  // Annotation<Evidence[]>({ reducer: (prev, next) => ..., default: () => [] }) 형태로
-  // '이전 배열 + 새 배열' 을 이어 붙이세요. (덮어쓰면 마지막 노드 결과만 남습니다)
+  // ===== TODO 2-1: 동시에 들어오는 단서를 '이어 붙이는' 규칙 =====
+  // 문서 · 웹 · 레이더 단계가 각자 clues 에 1건씩 쓰면 3건이 모두 남아야 합니다.
+  // Annotation<Clue[]>({ reducer: (prev, next) => ..., default: () => [] }) 모양으로
+  // '이전 배열 + 새 배열' 을 이어 붙이세요. (덮어쓰면 마지막에 끝난 단계의 단서만 남습니다)
   // ----- SOLUTION -----
-  //! evidence: Annotation<Evidence[]>({
-  //!   reducer: (prev, next) => { throw new Error("TODO 2-1 미구현: 이전 배열과 새 배열을 이어 붙이세요"); },
+  //! clues: Annotation<Clue[]>({
+  //!   reducer: (prev, next) => { throw new Error("TODO 2-1: 이전 배열과 새 배열을 이어 붙이세요"); },
   //!   default: () => [],
   //! }),
-  evidence: Annotation<Evidence[]>({
+  clues: Annotation<Clue[]>({
     reducer: (prev, next) => [...prev, ...next],
     default: () => [],
   }),
   // ----- END SOLUTION -----
 
-  judgement: Annotation<Judgement | undefined>(),
-  approval: Annotation<Approval | undefined>(),
-  report_path: Annotation<string | undefined>(),
+  cleanClues: Annotation<Clue[]>(), // 안전 검사를 통과한 단서 (판정에는 이것만 쓴다)
+  blocked: Annotation<string[]>(),  // 안전 검사에서 걸러낸 문장
+  decision: Annotation<Decision>(),
+  human: Annotation<HumanAnswer>(),
+  reportFile: Annotation<string>(),
 });
 
-export type ScrambleStateT = typeof ScrambleState.State;
+export type State = typeof ScrambleState.State;
