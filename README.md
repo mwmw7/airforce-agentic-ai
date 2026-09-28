@@ -20,7 +20,7 @@
 git diff main solution -- labs/lab2-scramble/nodes/triage.ts
 ```
 
-빈칸 목록은 `npm run make:handson -- --check` 로 언제든 볼 수 있습니다.
+빈칸 목록은 `pnpm make:handson --check` 로 언제든 볼 수 있습니다.
 
 ---
 
@@ -39,19 +39,20 @@ git diff main solution -- labs/lab2-scramble/nodes/triage.ts
 ```bash
 git clone https://github.com/mwmw7/airforce-agentic-ai.git
 cd airforce-agentic-ai
-npm install                 # 현장 네트워크 부하를 피하려면 미리 해 두세요
+corepack enable && corepack prepare pnpm@12.6.0 --activate   # pnpm 이 없다면 (Node 22 내장 corepack)
+pnpm install                 # 현장 네트워크 부하를 피하려면 미리 해 두세요
 cp .env.example .env        # 토큰은 당일 강사가 배포. 없어도 mock/local 모드로 전부 실행됩니다
-npm run doctor              # 환경 점검
+pnpm run doctor              # 환경 점검
 ```
 
-`npm run doctor` 결과에 ❌ 가 없으면 준비 완료입니다. ⚠️ 는 "네트워크 없이 도는 대체 모드" 라는 뜻이라 실습에는 지장이 없습니다.
+`pnpm run doctor` 결과에 ❌ 가 없으면 준비 완료입니다. ⚠️ 는 "네트워크 없이 도는 대체 모드" 라는 뜻이라 실습에는 지장이 없습니다.
 
 ### 1-3. 첫 실행
 
 ```bash
-npm run lab0                       # [실습 0] 50줄짜리 순수 Agent 루프
-npm run lab0:limit                 # 호출 한도 1 로 강제 중단 — 중단 사유가 '코드' 에서 나오는지 확인
-npm run lab2 -- --scenario 1       # [실습 2] 스크램블 판단 보조 Agent (승인 프롬프트에서 y/n)
+pnpm lab0                       # [실습 0] 50줄짜리 순수 Agent 루프
+pnpm lab0:limit                 # 호출 한도 1 로 강제 중단 — 중단 사유가 '코드' 에서 나오는지 확인
+pnpm lab2 --scenario 1       # [실습 2] 스크램블 판단 보조 Agent (승인 프롬프트에서 y/n)
 ```
 
 `main` 브랜치에서는 빈칸 때문에 `lab2` 가 triage 노드만 돌고 끝납니다. 그게 정상이며, 실습 순서대로 빈칸을 채우면 한 노드씩 살아납니다.
@@ -96,24 +97,24 @@ airforce-agentic-ai/
 
 | 단계 | TODO | 파일 | 확인 명령 | 핵심 개념 |
 |---|---|---|---|---|
-| 0-2 | 도구 결과를 messages 에 되돌려 넣기 | `labs/lab0-pure-loop/agent.ts` | `npm run lab0` | Agent Loop · Tool Calling |
-| 0-3 | 강제 중단은 Harness 가 | 〃 | `npm run lab0:limit` | Harness |
-| 2-1 | Jev 트리아지 질문 3개 | `nodes/triage.ts` | `npm run lab2 -- --scenario 1` | 판정 모델 · noul/choice/score |
-| 2-2a | MCP 도구 `get_track` 등록 | `mcp-servers/scramble-radar/server.ts` | `npm run mcp:radar:inspect` | MCP Server |
+| 0-2 | 도구 결과를 messages 에 되돌려 넣기 | `labs/lab0-pure-loop/agent.ts` | `pnpm lab0` | Agent Loop · Tool Calling |
+| 0-3 | 강제 중단은 Harness 가 | 〃 | `pnpm lab0:limit` | Harness |
+| 2-1 | Jev 트리아지 질문 3개 | `nodes/triage.ts` | `pnpm lab2 --scenario 1` | 판정 모델 · noul/choice/score |
+| 2-2a | MCP 도구 `get_track` 등록 | `mcp-servers/scramble-radar/server.ts` | `pnpm mcp:radar:inspect` | MCP Server |
 | 2-2b | findings 누적 reducer | `state.ts` | — | State · Reducer |
 | 2-2c | `Send` 로 Worker 4개 병렬 | `nodes/investigate.ts` | — | Orchestrator–Workers |
-| 2-2d | 그래프 조립 | `graph.ts` | `npm run lab2 -- --scenario 1` | StateGraph · Edge |
-| 2-3 | 구·신 지침 충돌 → 최신 승인본 | `nodes/investigate.ts` | `npm run lab2 -- --scenario 4` | Agentic Retrieval |
+| 2-2d | 그래프 조립 | `graph.ts` | `pnpm lab2 --scenario 1` | StateGraph · Edge |
+| 2-3 | 구·신 지침 충돌 → 최신 승인본 | `nodes/investigate.ts` | `pnpm lab2 --scenario 4` | Agentic Retrieval |
 | 2-4a | Hindsight `recall` | `nodes/synthesize.ts` | — | 장기 메모리 |
-| 2-4b | confidence 기반 분기 | `nodes/decide.ts` | `npm run lab2 -- --scenario 3` | 조건부 엣지 · 재조사 상한 |
-| 2-5a | `interrupt()` 승인 대기 | `nodes/approve.ts` | `npm run lab2 -- --scenario 1 --exit` | Human-in-the-Loop |
+| 2-4b | confidence 기반 분기 | `nodes/decide.ts` | `pnpm lab2 --scenario 3` | 조건부 엣지 · 재조사 상한 |
+| 2-5a | `interrupt()` 승인 대기 | `nodes/approve.ts` | `pnpm lab2 --scenario 1 --exit` | Human-in-the-Loop |
 | 2-5b | Hindsight `retain` | `nodes/report.ts` | 같은 시나리오 재실행 → recall 확인 | 장기 메모리 |
-| 2-5c | SQLite Checkpointer | `run.ts` | `npm run lab2:resume -- --thread <id>` | Checkpoint · 재개 |
+| 2-5c | SQLite Checkpointer | `run.ts` | `pnpm lab2:resume --thread <id>` | Checkpoint · 재개 |
 | 2-5d | `Command({ resume })` | `run.ts` | 〃 | 재개 |
-| 2-6 | 채점 규칙 | `evaluate.ts` | `npm run lab2:eval -- --runs 1 --tag before` | Evaluation |
-| 2-7 | 결정적 가드레일 (지시문 탐지) | `nodes/guardrail.ts` | `npm run lab2:injection` | Prompt Injection · Sandbox |
+| 2-6 | 채점 규칙 | `evaluate.ts` | `pnpm lab2:eval --runs 1 --tag before` | Evaluation |
+| 2-7 | 결정적 가드레일 (지시문 탐지) | `nodes/guardrail.ts` | `pnpm lab2:injection` | Prompt Injection · Sandbox |
 | 2-8 | Jev 가드레일 질문 | `nodes/decide.ts` | 〃 | 모델 기반 Guardrail |
-| 2-9 | 개선 루프 | (자유) | `npm run lab2:eval -- --tag after` | 전후 비교 |
+| 2-9 | 개선 루프 | (자유) | `pnpm lab2:eval --tag after` | 전후 비교 |
 
 ### 그래프 한눈에
 
@@ -129,19 +130,19 @@ START ─▶ triage ─▶ [Send ×4] ─▶ worker ─▶ synthesize ─▶ dec
 ## 4. 자주 쓰는 명령
 
 ```bash
-npm run check                          # 타입 검사
-npm run lab2 -- --scenario 4           # 구·신 지침 충돌 + Prompt Injection 시나리오
-npm run lab2 -- --scenario 1 --exit    # 승인 대기에서 종료 → 프로세스가 죽어도 상태는 SQLite 에
-npm run lab2:resume -- --thread <id>   # 그 지점부터 재개
-npm run lab2:eval                      # 5 시나리오 × 3회 → 정답표 일치율 표 + reports/eval-*.json
-npm run mcp:radar:inspect              # MCP Inspector 로 서버 도구 직접 호출해 보기
+pnpm check                          # 타입 검사
+pnpm lab2 --scenario 4           # 구·신 지침 충돌 + Prompt Injection 시나리오
+pnpm lab2 --scenario 1 --exit    # 승인 대기에서 종료 → 프로세스가 죽어도 상태는 SQLite 에
+pnpm lab2:resume --thread <id>   # 그 지점부터 재개
+pnpm lab2:eval                      # 5 시나리오 × 3회 → 정답표 일치율 표 + reports/eval-*.json
+pnpm mcp:radar:inspect              # MCP Inspector 로 서버 도구 직접 호출해 보기
 cat traces/<run>.jsonl | jq .          # 트레이스 읽기 (jq 없으면 그냥 cat)
 ```
 
 Claude Code 에 같은 MCP 서버 꽂기:
 
 ```bash
-claude mcp add radar -- npx tsx mcp-servers/scramble-radar/server.ts
+claude mcp add radar -- pnpm exec tsx mcp-servers/scramble-radar/server.ts
 ```
 
 ---

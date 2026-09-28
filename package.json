@@ -2,18 +2,20 @@
   "name": "airforce-agentic-ai",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@12.6.0",
   "description": "공군 AI센터 Agentic AI 교육 (2026.10.29~30) 핸즈온 저장소 — TypeScript · LangGraph.js · MCP · Jev · Hindsight",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
+    "preinstall": "node tools/require-pnpm.mjs",
     "check": "tsc --noEmit",
     "doctor": "tsx tools/doctor.ts",
     "lab0": "tsx labs/lab0-pure-loop/agent.ts",
     "lab0:limit": "MAX_STEPS=1 tsx labs/lab0-pure-loop/agent.ts",
     "mcp:radar": "tsx mcp-servers/scramble-radar/server.ts",
-    "mcp:radar:inspect": "npx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
+    "mcp:radar:inspect": "pnpm dlx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
     "lab2": "tsx labs/lab2-scramble/run.ts",
     "lab2:resume": "tsx labs/lab2-scramble/run.ts --resume",
     "lab2:eval": "tsx labs/lab2-scramble/evaluate.ts",

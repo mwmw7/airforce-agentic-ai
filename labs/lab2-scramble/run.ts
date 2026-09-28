@@ -1,10 +1,10 @@
 /**
  * labs/lab2-scramble/run.ts — 스크램블 판단 보조 Agent 실행기
  *
- *   npm run lab2 -- --scenario 1              시나리오 1 실행, 승인 프롬프트에서 y/n 입력
- *   npm run lab2 -- --scenario 1 --exit       승인 대기 지점에서 프로세스를 그냥 끝낸다 (중단 시연)
- *   npm run lab2:resume -- --thread <id>      SQLite 체크포인트에서 승인 대기 지점부터 재개
- *   npm run lab2 -- --scenario 1 --yes        승인 자동 (평가 스크립트용)
+ *   pnpm lab2 --scenario 1              시나리오 1 실행, 승인 프롬프트에서 y/n 입력
+ *   pnpm lab2 --scenario 1 --exit       승인 대기 지점에서 프로세스를 그냥 끝낸다 (중단 시연)
+ *   pnpm lab2:resume --thread <id>      SQLite 체크포인트에서 승인 대기 지점부터 재개
+ *   pnpm lab2 --scenario 1 --yes        승인 자동 (평가 스크립트용)
  *
  * thread_id 하나 = 실행 하나. 같은 thread_id 로 다시 invoke 하면 저장된 상태에서 이어갑니다.
  */
@@ -63,7 +63,7 @@ export async function runScenario(opts: { scenario: number; thread?: string; res
     printApproval(req);
 
     if (opts.exitAtInterrupt) {
-      console.log(`\n⏸  승인 대기 상태로 종료합니다. 재개:  npm run lab2:resume -- --thread ${threadId}`);
+      console.log(`\n⏸  승인 대기 상태로 종료합니다. 재개:  pnpm lab2:resume --thread ${threadId}`);
       return { threadId, result, interrupted: true };
     }
 
