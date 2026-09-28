@@ -10,17 +10,17 @@
   },
   "scripts": {
     "preinstall": "node tools/require-pnpm.mjs",
-    "check": "tsc --noEmit",
-    "doctor": "tsx tools/doctor.ts",
-    "lab0": "tsx labs/lab0-pure-loop/agent.ts",
-    "lab0:limit": "MAX_STEPS=1 tsx labs/lab0-pure-loop/agent.ts",
-    "mcp:radar": "tsx mcp-servers/scramble-radar/server.ts",
-    "mcp:radar:inspect": "pnpm dlx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
-    "lab2": "tsx labs/lab2-scramble/run.ts",
-    "lab2:resume": "tsx labs/lab2-scramble/run.ts --resume",
-    "lab2:eval": "tsx labs/lab2-scramble/evaluate.ts",
-    "lab2:injection": "tsx labs/lab2-scramble/run.ts --scenario 4",
-    "make:handson": "node tools/make-handson.mjs"
+    "setup:check": "tsx tools/doctor.ts",
+    "typecheck": "tsc --noEmit",
+    "loop:run": "tsx labs/lab0-pure-loop/agent.ts",
+    "loop:limit": "MAX_STEPS=1 tsx labs/lab0-pure-loop/agent.ts",
+    "scramble:run": "tsx labs/lab2-scramble/run.ts",
+    "scramble:resume": "tsx labs/lab2-scramble/run.ts --resume",
+    "scramble:eval": "tsx labs/lab2-scramble/evaluate.ts",
+    "scramble:attack": "tsx labs/lab2-scramble/run.ts --scenario 4",
+    "scramble:mcp": "tsx mcp-servers/scramble-radar/server.ts",
+    "scramble:inspect": "pnpm dlx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
+    "instructor:make-handson": "node tools/make-handson.mjs"
   },
   "dependencies": {
     "@langchain/core": "^0.3.50",
