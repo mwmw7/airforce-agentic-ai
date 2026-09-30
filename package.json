@@ -18,6 +18,7 @@
     "scramble:grade": "tsx labs/lab2-scramble/grade.ts",
     "scramble:mcp": "tsx mcp-servers/scramble-radar/server.ts",
     "scramble:inspect": "pnpm dlx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
+    "graph": "tsx tools/draw-graph.ts",
     "instructor:make-handson": "node tools/make-handson.mjs"
   },
   "dependencies": {
