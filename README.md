@@ -53,6 +53,7 @@ pnpm setup:check             # 환경 점검
 ```bash
 pnpm loop:run                    # [실습 0] 가장 작은 Agent 루프
 pnpm loop:limit                  # 호출 한도 1 로 강제 중단 — 멈추는 건 모델이 아니라 코드
+pnpm loop:run --watch            # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
 pnpm scramble:run --scenario 1   # [실습 2] 스크램블 판단 보조 Agent (담당자 확인에서 y/n)
 ```
 
@@ -122,6 +123,7 @@ pnpm scramble:run --scenario 2              # 시나리오 2
 pnpm scramble:run --scenario 1 --yes        # 담당자 확인 자동 승인 (반복 테스트용)
 pnpm scramble:run --resume <실행번호>        # 담당자 확인 중에 껐던 실행 이어가기 (실행번호는 시작할 때 출력됨)
 pnpm scramble:run --scenario 3 --no-safety  # 안전 검사를 끄면 판정이 어떻게 바뀌는지 (강사 시연)
+pnpm scramble:run --scenario 1 --watch      # 단계마다 들어간 값(입력 state)·나온 값(돌려준 칸)·형태를 보여 주며 실행. --watch=full 이면 자르지 않고 전부
 pnpm scramble:grade                         # 시나리오 6개 × 3회 채점표
 pnpm scramble:grade --times 1 --tag before  # 고치기 전 결과 저장 → 고친 뒤 --tag after 와 비교
 pnpm scramble:inspect                       # MCP Inspector 로 서버 도구 직접 호출

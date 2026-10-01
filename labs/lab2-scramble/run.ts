@@ -4,6 +4,7 @@
  *   pnpm scramble:run --scenario 1        시나리오 1 실행, 담당자 확인에서 y/n
  *   pnpm scramble:run --scenario 1 --yes  자동 승인 (반복 테스트용)
  *   pnpm scramble:run --resume <번호>      담당자 확인 중에 껐던 실행 이어가기
+ *   pnpm scramble:run --scenario 1 --watch   단계마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
  *
  * 흐름: 실행 → askHuman 에서 멈춤 → 담당자에게 묻기 → Command({ resume: 답 }) 로 이어가기
  */
@@ -13,6 +14,7 @@ import path from "node:path";
 import readline from "node:readline/promises";
 import { Command } from "@langchain/langgraph";
 import { trace } from "../../src/lib/trace.js";
+import { showDebug, WATCH } from "../../src/lib/show.js";
 import { buildGraph } from "./graph.js";
 import type { Question } from "./ask-human.js";
 import type { Alert, HumanAnswer } from "./state.js";
@@ -29,13 +31,15 @@ const config = { configurable: { thread_id: threadId } };
 /** 그래프를 돌리면서 끝난 단계를 한 줄씩 보여 주고 trace 에도 남긴다 */
 async function runAndShow(input: unknown) {
   let last = Date.now();
-  for await (const update of await graph.stream(input as never, { ...config, streamMode: "updates" })) {
-    for (const [step, value] of Object.entries(update)) {
+  // updates: 단계가 끝날 때 바뀐 칸 / debug: 단계마다 들어간 값·나온 값 (--watch 일 때만 화면에 찍는다)
+  for await (const [mode, chunk] of await graph.stream(input as never, { ...config, streamMode: ["updates", "debug"] })) {
+    if (mode === "debug") { showDebug(chunk as never); continue; }
+    for (const [step, value] of Object.entries(chunk)) {
       if (step === "__interrupt__") continue;
       const ms = Date.now() - last;
       last = Date.now();
       trace.event(`step.${step}`, { thread_id: threadId, ms, value: value as Record<string, unknown> });
-      console.log(`  [완료] ${step.padEnd(12)} ${String(ms).padStart(5)}ms`);
+      if (WATCH === "off") console.log(`  [완료] ${step.padEnd(12)} ${String(ms).padStart(5)}ms`); // --watch 면 ◀ 줄이 대신한다
     }
   }
 }

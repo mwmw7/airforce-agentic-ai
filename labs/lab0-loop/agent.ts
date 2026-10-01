@@ -18,10 +18,12 @@
  * 실행:  pnpm loop:run      정상 종료
  *        pnpm loop:limit    MAX_STEPS=1 로 강제 중단 → 중단 사유가 코드에서 나오는지 확인
  *        pnpm loop:run "UNK-0413 항적과 현재 기상을 확인해줘"   질문 바꿔 보기
+ *        pnpm loop:run --watch   단계마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
  */
 import { readFileSync } from "node:fs";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { chat, type Msg, type Tool } from "../../src/lib/llm.js";
+import { showDebug } from "../../src/lib/show.js";
 
 const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
 
@@ -140,20 +142,28 @@ export const graph = new StateGraph(LoopState)
 
 // 이 파일을 직접 실행할 때만 질문을 던진다 (pnpm graph 가 import 할 때는 그림만 그린다)
 if (process.argv[1]?.endsWith("agent.ts")) {
-  const question = process.argv[2] ?? "항적 UNK-0412 의 현재 상태를 확인하고 특이사항을 보고해줘.";
-  const result = await graph.invoke(
-    {
-      messages: [
-        { role: "system", content: "너는 공역 감시 보조 에이전트다. 도구로 사실을 확인한 뒤 한국어로 간결히 보고하라." },
-        { role: "user", content: question },
-      ],
-    },
-    { recursionLimit: MAX_STEPS * 2 + 5 }, // LangGraph 자체 안전장치 (route 의 MAX_STEPS 가 먼저 걸린다)
-  ).catch((e) => {
+  // 명령줄의 첫 번째 일반 인자가 질문 (--watch 같은 옵션은 제외)
+  const question = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "항적 UNK-0412 의 현재 상태를 확인하고 특이사항을 보고해줘.";
+  const input = {
+    messages: [
+      { role: "system", content: "너는 공역 감시 보조 에이전트다. 도구로 사실을 확인한 뒤 한국어로 간결히 보고하라." },
+      { role: "user", content: question },
+    ] as Msg[],
+  };
+
+  let result = { steps: 0, answer: "" };
+  try {
+    // values: 단계가 끝날 때마다 칠판(State) 전체 / debug: 단계마다 들어간 값·나온 값 (--watch 일 때만 화면에 찍힌다)
+    // recursionLimit 은 LangGraph 자체 안전장치 (route 의 MAX_STEPS 가 먼저 걸린다)
+    for await (const [mode, chunk] of await graph.stream(input, { recursionLimit: MAX_STEPS * 2 + 5, streamMode: ["values", "debug"] })) {
+      if (mode === "debug") showDebug(chunk as never);
+      else result = chunk;
+    }
+  } catch (e: any) {
     if (e?.lc_error_code !== "GRAPH_RECURSION_LIMIT") throw e;
     // 여기까지 왔다 = route 가 루프를 끊지 못해 LangGraph 의 최후 안전장치가 걸렸다는 뜻
     console.error("\n[중단] LangGraph recursionLimit 도달 — route 가 루프를 끊지 못했습니다. TODO 0-2 · 0-3 을 확인하세요.");
     process.exit(1);
-  });
+  }
   console.log(`\n[최종 답변] (steps=${result.steps}):\n${result.answer}`);
 }
