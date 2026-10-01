@@ -8,7 +8,7 @@ import { graph as loopGraph } from "../labs/lab0-loop/agent.js";
 import { buildGraph as buildScrambleGraph } from "../labs/lab2-scramble/graph.js";
 
 const drawings = [
-  { file: "lab0-loop.md", title: "실습 0 — agent ⇄ tools 루프", app: loopGraph },
+  { file: "lab0-loop.md", title: "실습 0 — 보고 → agent ⇄ tools → judge", app: loopGraph },
   { file: "lab2-scramble.md", title: "실습 2 — 스크램블 판단 보조", app: buildScrambleGraph() },
 ];
 

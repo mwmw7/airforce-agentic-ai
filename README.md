@@ -51,9 +51,12 @@ pnpm setup:check             # 환경 점검
 ### 1-3. 첫 실행
 
 ```bash
-pnpm loop:run                    # [실습 0] 가장 작은 Agent 루프
+pnpm loop:run                    # [실습 0] 보고 1번 → LLM 이 레이더 확인 → Jev 판정 → 출격이면 사람이 승인(y/n)
+pnpm loop:run 3                  # 보고 3번 (1~4), 또는 pnpm loop:run "한강에 오리 풍선이 떠요" 처럼 내 보고
 pnpm loop:limit                  # 호출 한도 1 로 강제 중단 — 멈추는 건 모델이 아니라 코드
 pnpm loop:run --watch            # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
+pnpm loop:live                   # 브라우저(http://localhost:3030)에서 실시간으로 보기 — 보고를 무작위로 계속 돌리고, 멈추면 버튼으로 답할 수 있다 (Ctrl+C 로 끝)
+LLM_MOCK_SLOW=1 pnpm loop:run    # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다 (한도는 .env 의 LLM_TIMEOUT_SEC · RUN_TIMEOUT_SEC)
 pnpm scramble:run --scenario 1   # [실습 2] 스크램블 판단 보조 Agent (담당자 확인에서 y/n)
 ```
 
@@ -172,7 +175,7 @@ airforce-agentic-ai/
 │  ├─ memory.ts              장기 기억 (Hindsight 서버 / 파일)
 │  └─ trace.ts               실행 기록 (traces/*.jsonl)
 ├─ labs/
-│  ├─ lab0-loop/             [실습 0] Agent 루프 (1일차)
+│  ├─ lab0-loop/             [실습 0] 보고 → agent ⇄ tools → judge(Jev) (1일차)
 │  └─ lab2-scramble/         [실습 2] 스크램블 판단 보조 Agent (2일차) — 파일 설명은 2장
 ├─ mcp-servers/scramble-radar/  가상 항적 DB MCP 서버
 ├─ data/                     교육용 합성 자료
@@ -180,7 +183,7 @@ airforce-agentic-ai/
 │  ├─ doctrine/               지침 v1(옛) · v2(현행) · v3-draft(미승인) — 문서 검색은 v2 만
 │  ├─ incidents/              과거 사건 보고서 5건
 │  ├─ web/                    가상 웹 검색 결과 (수상한 지시문 1건 포함)
-│  └─ api/                    항적 · 기상 · 전력
+│  └─ api/                    항적 · 기상 · 전력 · 레이더 화면(실습 0 용, radar-screen.json)
 ├─ reports/                  Agent 가 쓴 보고서 · 채점 결과
 ├─ traces/                   실행 기록
 └─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기)
