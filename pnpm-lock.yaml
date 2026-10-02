@@ -172,6 +172,9 @@ importers:
       '@langchain/langgraph':
         specifier: ^1.4.18
         version: 1.4.18(@langchain/core@1.2.14(openai@4.104.0(ws@8.22.0)(zod@3.25.76))(ws@8.22.0))(zod@3.25.76)
+      '@typesafe-ai/sdk':
+        specifier: ^0.6.0
+        version: 0.6.0
       dotenv:
         specifier: ^16.4.0
         version: 16.6.1
@@ -612,6 +615,10 @@ packages:
 
   '@types/yauzl@2.10.3':
     resolution: {integrity: sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==}
+
+  '@typesafe-ai/sdk@0.6.0':
+    resolution: {integrity: sha512-IddX+Q0XM+VagOUZFeP7wZjaO4SHMdvnh2zEBdrZZnXedWI3BNK1lKhMx3ayrkFWvVLbVcUHJy6AVZlY+e6Jaw==}
+    engines: {node: '>=20'}
 
   '@typescript/vfs@1.6.5':
     resolution: {integrity: sha512-gobLHQLmvQGJInFk31NvgMd1uYzRXsd8qgnOssyLD055R2QPnw1ubRbBQ4+T+5qC7IQVuYXdvNDE2G7tMDVHgw==}
@@ -1850,6 +1857,8 @@ snapshots:
     dependencies:
       '@types/node': 22.20.4
     optional: true
+
+  '@typesafe-ai/sdk@0.6.0': {}
 
   '@typescript/vfs@1.6.5(supports-color@7.2.0)(typescript@5.9.3)':
     dependencies:

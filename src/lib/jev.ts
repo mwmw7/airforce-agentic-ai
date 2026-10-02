@@ -8,13 +8,15 @@
  * 질문을 여러 개 묶어 한 번에 보내도 지연이 거의 늘지 않는 것이 특징입니다.
  *
  * 폐쇄망 이관 포인트 ②
- *   JEV_MODE=openrouter → OpenRouter Decisions API (POST /api/alpha/decisions)
+ *   JEV_MODE=typesafe   → TypeSafe 공식 SDK (@typesafe-ai/sdk, TYPESAFE_API_KEY) — 기본 권장
+ *   JEV_MODE=openrouter → OpenRouter Decisions API (POST /api/alpha/decisions, OPENROUTER_API_KEY)
  *   JEV_MODE=local      → 아래 규칙 기반 판정기 (네트워크 불필요, 교육용)
  *   실제 폐쇄망에서는 local 자리에 자체 분류 모델을 꽂으면 됩니다. 부르는 법(askJev)은 같습니다.
  *
  * API 형식 출처: https://openrouter.ai/docs/guides/community/jev-tutorial
  */
 import "dotenv/config";
+import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { traceable } from "langsmith/traceable";
 import { trace } from "./trace.js";
 
@@ -34,11 +36,11 @@ export interface JevAnswer {
 
 export interface JevResult {
   answers: Record<string, JevAnswer>;
-  provider: "openrouter" | "local";
+  provider: "typesafe" | "openrouter" | "local";
   ms: number;
 }
 
-export const JEV_MODE = (process.env.JEV_MODE ?? "local") as "openrouter" | "local";
+export const JEV_MODE = (process.env.JEV_MODE ?? "local") as "typesafe" | "openrouter" | "local";
 
 /**
  * state(판정 근거 데이터) 와 questions(질문 묶음) 을 보내 답을 받습니다.
@@ -49,7 +51,9 @@ export const askJev = traceable(async function askJev(state: Record<string, unkn
   const t = trace.start("jev.ask", { mode: JEV_MODE, questions: Object.keys(questions) });
   const started = Date.now();
   try {
-    const answers = JEV_MODE === "openrouter" ? await viaOpenRouter(state, questions) : localJudge(state, questions);
+    const answers = JEV_MODE === "typesafe" ? await viaTypeSafe(state, questions)
+      : JEV_MODE === "openrouter" ? await viaOpenRouter(state, questions)
+      : localJudge(state, questions);
     const result: JevResult = { answers, provider: JEV_MODE, ms: Date.now() - started };
     t.end({ answers, ms: result.ms });
     return result;
@@ -58,6 +62,15 @@ export const askJev = traceable(async function askJev(state: Record<string, unkn
     throw e;
   }
 }, { name: "jev.ask", run_type: "tool" });
+
+/** TypeSafe 공식 SDK: 질문 모양이 우리 JevQuestion 과 같아서 그대로 넘긴다. 키는 SDK 가 TYPESAFE_API_KEY 에서 읽는다 */
+async function viaTypeSafe(state: Record<string, unknown>, questions: Record<string, JevQuestion>) {
+  if (!process.env.TYPESAFE_API_KEY) throw new Error("TYPESAFE_API_KEY 가 없습니다. .env 를 확인하거나 JEV_MODE=local 로 실행하세요.");
+  const client = new TypeSafeClient({ defaultModel: process.env.JEV_MODEL ?? "jev-latest" });
+  // SDK 의 타입은 더 엄격하지만(질문·state 모양이 고정) 실제 JSON 모양은 같으므로 모양만 맞춰 넘긴다
+  const { answers } = await client.systemOne({ state, questions } as unknown as Parameters<typeof client.systemOne>[0]);
+  return answers as unknown as Record<string, JevAnswer>;
+}
 
 async function viaOpenRouter(state: Record<string, unknown>, questions: Record<string, JevQuestion>) {
   const key = process.env.OPENROUTER_API_KEY;

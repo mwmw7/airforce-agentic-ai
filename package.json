@@ -22,6 +22,7 @@
   "dependencies": {
     "@langchain/core": "^1.2.14",
     "@langchain/langgraph": "^1.4.18",
+    "@typesafe-ai/sdk": "^0.6.0",
     "dotenv": "^16.4.0",
     "langsmith": "0.10.5",
     "openai": "^4.100.0",
