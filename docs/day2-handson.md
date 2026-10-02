@@ -29,7 +29,7 @@
 | 시간 | 구분 | 꼭 다루는 내용 |
 |---|---|---|
 | 09:00~12:00 | 강의 2-A + 실습 2-A<br>외부 기술 소개와 연결 | · 문서 검색(RAG) · 웹 검색 · MCP 세 경로를 **동시에** 돌려 자료 수집 (Task Decomposition · Subagent)<br>· 장기 기억(Hindsight): 어제 판단을 오늘 기억<br>· 판정 모델(Jev): 출격 여부 + 확신도<br>· 사람 승인(interrupt) 후 재개, 강제 종료 후 Checkpoint 재개<br>· LLM 은 보고서 작성에만 사용 (사실은 코드가, 문장은 LLM 이) |
-| 13:00~14:10 | 강의 2-B + 실습 2-B<br>운영 · 안전 · 개선 | · 문서 속 악성 지시(Prompt Injection) 걸러내기, 끄고 비교<br>· 담당자 결정 없이는 저장 금지, 보고서 폴더 격리, MCP 서버에 키 미전달 (Guardrail · Sandbox)<br>· 모델 교체(Bedrock · Ollama · 클라우드) 후 결과 비교<br>· 채점표로 수정 전후 비교, 실행 기록을 Langfuse 로 인계 |
+| 13:00~14:10 | 강의 2-B + 실습 2-B<br>운영 · 안전 · 개선 | · 문서 속 악성 지시(Prompt Injection) 걸러내기, 끄고 비교<br>· 담당자 결정 없이는 저장 금지, 보고서 폴더 격리, MCP 서버에 키 미전달 (Guardrail · Sandbox)<br>· 모델 교체(Bedrock · Ollama · 클라우드) 후 결과 비교<br>· 채점표로 수정 전후 비교 |
 | 14:30~16:00 | 특강 (이현우 90분)<br>Langfuse | · Trace · Observability, 지연 · 사용량 · 비용 해석<br>· Dataset · 평가 기준 · 사람 검토 · 자동 평가<br>· 프롬프트 · 모델 · 코드 변경 전후 비교<br>· 오전 실습 결과를 그대로 띄워 시연 |
 
 휴식: 09:50~10:05, 11:00~11:15, 14:10~14:30
@@ -46,7 +46,7 @@
 | State · Checkpoint · Retry | 단서 누적 State, 저장 후 강제 종료 → 재개 |
 | Task Decomposition · Subagent | 수집 3단계 동시 실행 후 합류 |
 | HITL · 장기 실행 제어 | interrupt 로 승인 · 반려, 이어가기 |
-| Trace · Evaluation · Observability | 단계별 기록, LangSmith / Langfuse, 채점표 |
+| Trace · Evaluation · Observability | 단계별 기록, LangSmith, 채점표 (Langfuse 는 이현우 특강에서) |
 | 권한 · Prompt Injection · Guardrail | 수상한 지시 제거, 담당자 결정 없이는 저장 금지 |
 | Sandbox | 보고서는 지정 폴더에만, MCP 서버에 API 키 미전달 |
 | (플러스알파) 판정 모델 | Jev 출격 판정 + 확신도 |
@@ -76,7 +76,7 @@ Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강
 
 ## 부록. 현재 구현 상태 (2026-10-02)
 
-핸즈온 코드는 `labs/agent/main.ts` 하나에서 출발해 위 10단계를 하나씩 붙여 가는 중입니다.
+핸즈온 코드는 `labs/agent/main.ts` 하나에서 출발해 위 10단계를 하나씩 붙여 가는 중입니다. Langfuse 연동은 이현우 특강 범위라 이 핸즈온에서는 제외합니다.
 
 | 상태 | 내용 | 위치 |
 |---|---|---|
@@ -96,4 +96,3 @@ Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강
 | 미구현 | LLM 보고서 작성 + 저장 폴더 격리 | 빈칸 9 |
 | 미구현 | SQLite 저장 후 강제 종료 → 재개 (`--resume`) | 빈칸 10 |
 | 미구현 | 채점표 (시나리오 × 정답표) | 2-B 시연 |
-| 미구현 | Langfuse 이중 출력 · Dataset 업로드 · 인계 문서 | 특강 인계 |
