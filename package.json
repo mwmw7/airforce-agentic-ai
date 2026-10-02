@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@12.6.0",
-  "description": "공군 AI센터 Agentic AI 교육 (2026.10.29~30) 핸즈온 저장소 — TypeScript · LangGraph.js · MCP · Jev · Hindsight",
+  "description": "공군 AI센터 Agentic AI 교육 (2026.10.29~30) 핸즈온 저장소 — TypeScript · LangGraph.js · Jev",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -12,29 +12,23 @@
     "preinstall": "node tools/require-pnpm.mjs",
     "setup:check": "tsx tools/doctor.ts",
     "typecheck": "tsc --noEmit",
-    "loop:run": "tsx labs/lab0-loop/agent.ts",
-    "loop:limit": "MAX_STEPS=1 tsx labs/lab0-loop/agent.ts",
-    "scramble:run": "tsx labs/lab2-scramble/run.ts",
-    "scramble:grade": "tsx labs/lab2-scramble/grade.ts",
-    "scramble:mcp": "tsx mcp-servers/scramble-radar/server.ts",
-    "scramble:inspect": "pnpm dlx @modelcontextprotocol/inspector tsx mcp-servers/scramble-radar/server.ts",
+    "agent": "tsx labs/agent/main.ts",
+    "agent:limit": "MAX_STEPS=1 tsx labs/agent/main.ts",
+    "agent:live": "tsx labs/agent/main.ts --live",
+    "studio": "langgraphjs dev --port 2024",
     "graph": "tsx tools/draw-graph.ts",
     "instructor:make-handson": "node tools/make-handson.mjs"
   },
   "dependencies": {
-    "@langchain/core": "^0.3.50",
-    "@langchain/langgraph": "^0.3.0",
-    "@langchain/langgraph-checkpoint-sqlite": "^0.1.0",
-    "@langchain/openai": "^0.5.0",
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "@vectorize-io/hindsight-client": "^0.4.0",
-    "better-sqlite3": "^11.0.0",
+    "@langchain/core": "^1.2.14",
+    "@langchain/langgraph": "^1.4.18",
     "dotenv": "^16.4.0",
+    "langsmith": "0.10.5",
     "openai": "^4.100.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.0",
+    "@langchain/langgraph-cli": "1.5.1",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"

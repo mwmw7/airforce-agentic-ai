@@ -1,1 +1,0 @@
-{ "_notice": "교육용 합성 자료", "scenario": 2, "title": "민항기 오인 가능 (IFF 정상)", "alert_id": "ALT-2026-1030-002", "received_at": "2026-10-30T09:03:00+09:00", "track_ids": ["UNK-0413"], "source": "가상 레이더 사이트 R-5", "summary": "국제 항로 R-211 에서 8nm 이탈한 항적, IFF Mode3 정상 응답, 고도 35000ft 순항, 비행계획 대조 필요" }

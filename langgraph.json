@@ -1,0 +1,9 @@
+{
+  "_notice": "LangGraph Studio(공식 디버거)용 설정. pnpm studio 로 띄운다 — LangSmith 무료 API 키 필요(.env 의 LANGSMITH_API_KEY)",
+  "node_version": "22",
+  "dependencies": ["."],
+  "graphs": {
+    "agent": "./labs/agent/main.ts:graph"
+  },
+  "env": ".env"
+}

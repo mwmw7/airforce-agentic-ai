@@ -4,12 +4,10 @@
  *   출력: docs/graphs/*.md  → VS Code 미리보기(Mermaid 확장) 또는 https://mermaid.live 에 붙여넣기
  */
 import { mkdirSync, writeFileSync } from "node:fs";
-import { graph as loopGraph } from "../labs/lab0-loop/agent.js";
-import { buildGraph as buildScrambleGraph } from "../labs/lab2-scramble/graph.js";
+import { graph as agentGraph } from "../labs/agent/main.js";
 
 const drawings = [
-  { file: "lab0-loop.md", title: "실습 0 — agent ⇄ tools 루프", app: loopGraph },
-  { file: "lab2-scramble.md", title: "실습 2 — 스크램블 판단 보조", app: buildScrambleGraph() },
+  { file: "agent.md", title: "내 에이전트 — 보고 → agent ⇄ tools → judge", app: agentGraph },
 ];
 
 mkdirSync("docs/graphs", { recursive: true });

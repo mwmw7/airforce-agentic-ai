@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent 루프 실시간 보기</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root { --bg:#0f1716; --fg:#e6ecea; --muted:#9aaba8; --line:#2a3836; --panel:#182221; --now:#f0a04b; --done:#3fc0b8; --human:#ff7a95; --err:#ff6b6b; --llm:#b48cff; --tool:#7ad37a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font: 14px/1.5 "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif; height:100vh; display:grid; grid-template-rows:auto 1fr; }
+
+  /* 상단: 지금 무슨 보고를, 어디까지 */
+  header { display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header .round { font-weight:600; white-space:nowrap; }
+  header .report { color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { padding:3px 10px; border-radius:999px; font-size:12.5px; font-weight:600; white-space:nowrap; background:var(--line); color:var(--muted); }
+  .badge.now { background:#3a2a10; color:var(--now); } .badge.human { background:#3b1420; color:var(--human); animation:pulse 1s infinite; } .badge.done { background:#10302e; color:var(--done); }
+
+  main { display:grid; grid-template-columns: minmax(300px, 42%) 1fr; min-height:0; }
+  @media (max-width: 820px) { main { grid-template-columns:1fr; grid-template-rows:40% 60%; } }
+  #graph { padding:12px; overflow:auto; display:flex; align-items:center; justify-content:center; }
+  #graph svg { max-width:100%; height:auto; }
+  #right { border-left:1px solid var(--line); min-width:0; display:grid; grid-template-rows:auto 1fr; min-height:0; }
+
+  /* ① 담당자 확인 카드: 기다릴 때만 */
+  #ask { display:none; margin:12px; padding:14px 16px; border:2px solid var(--human); border-radius:10px; background:#1f1116; }
+  #ask.on { display:block; }
+  #ask h2 { margin:0 0 6px; font-size:15px; color:var(--human); }
+  #ask .q { margin:0 0 8px; font-weight:600; }
+  #ask .facts { margin:0 0 10px; color:var(--muted); font-size:13px; white-space:pre-wrap; }
+  #ask .btns { display:flex; gap:8px; flex-wrap:wrap; }
+  #ask button { background:var(--human); color:#1a0208; border:0; border-radius:7px; padding:8px 14px; font:inherit; font-weight:600; cursor:pointer; }
+  #ask button:disabled { opacity:.4; cursor:default; }
+  #ask .hint { margin-top:8px; font-size:12px; color:var(--muted); }
+
+  /* ② 진행 이야기 */
+  #story { overflow:auto; padding:6px 12px 16px; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; padding:6px 0; color:var(--muted); font-size:12.5px; position:sticky; top:0; background:var(--bg); }
+  .toolbar label { cursor:pointer; user-select:none; }
+  details.round { border:1px solid var(--line); border-radius:8px; background:var(--panel); margin-bottom:10px; }
+  details.round summary { cursor:pointer; padding:8px 12px; font-weight:600; list-style:none; display:flex; gap:10px; align-items:baseline; }
+  details.round summary::-webkit-details-marker { display:none; }
+  details.round summary .r { color:var(--muted); font-weight:500; }
+  details.round summary .d { margin-left:auto; color:var(--done); font-weight:500; font-size:12.5px; }
+  .lines { padding:0 12px 10px; display:grid; gap:4px; }
+  .ln { display:grid; grid-template-columns:72px 1fr; gap:10px; align-items:baseline; }
+  .ln .k { color:var(--muted); font-size:12px; text-align:right; white-space:nowrap; }
+  .ln.llm .k { color:var(--llm); } .ln.tool .k { color:var(--tool); } .ln.jev .k { color:var(--llm); } .ln.human .k { color:var(--human); }
+  .ln.end .v { color:var(--done); font-weight:600; } .ln.err .v { color:var(--err); } .ln.human .v { color:var(--human); }
+  .ln .v { min-width:0; word-break:break-word; }
+  .ln .v small { color:var(--muted); }
+  /* ③ 디버그 줄: 스위치 켤 때만 */
+  .ln.dbg { display:none; }
+  body.debug .ln.dbg { display:grid; }
+  .ln.dbg .k { color:var(--muted); font-family:ui-monospace,Menlo,monospace; }
+  .ln.dbg details { color:var(--muted); font-size:12px; }
+  .ln.dbg summary { cursor:pointer; }
+  .ln.dbg pre { margin:4px 0 0; white-space:pre-wrap; word-break:break-all; max-height:220px; overflow:auto; font-size:11.5px; }
+
+  /* 그래프 아래 '지금 단계' 카드 */
+  #graph { flex-direction:column; gap:10px; }
+  #now { width:100%; max-width:520px; border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:10px 14px; font-size:13.5px; min-height:64px; }
+  #now h3 { margin:0 0 6px; font-size:13px; color:var(--muted); font-weight:500; }
+  #now .big { font-weight:600; font-size:15px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .chip { padding:2px 9px; border-radius:999px; background:#1c3a2a; color:var(--tool); font-weight:600; font-size:12.5px; }
+  .chip.llm { background:#2a1f44; color:var(--llm); }
+  .bars { display:grid; grid-template-columns:70px 1fr 44px; gap:4px 8px; align-items:center; margin-top:6px; }
+  .bars .lab { color:var(--muted); font-size:12.5px; text-align:right; }
+  .bars .bar { height:10px; background:var(--line); border-radius:5px; overflow:hidden; }
+  .bars .bar i { display:block; height:100%; background:var(--llm); border-radius:5px; }
+  .bars .bar.pick i { background:var(--now); }
+  .bars .pct { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .meter { display:flex; gap:4px; margin-top:6px; align-items:center; }
+  .meter b { width:22px; height:10px; border-radius:3px; background:var(--line); }
+  .meter b.on { background:var(--err); }
+  .meter span { color:var(--muted); font-size:12.5px; margin-left:6px; }
+  .decide { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); color:var(--done); font-weight:600; }
+  /* 그래프 노드 */
+  text.badge { fill:#f0a04b; font-size:11px; font-weight:600; }
+  text.badge.jev { fill:#b48cff; }
+  g.node .nodeLabel, g.node .nodeLabel p { color:#15201f !important; font-weight:600; }
+  g.node.now rect, g.node.now polygon, g.node.now path { stroke:var(--now) !important; stroke-width:4px !important; filter:drop-shadow(0 0 8px var(--now)); }
+  g.node.done rect, g.node.done polygon, g.node.done path { stroke:var(--done) !important; stroke-width:3px !important; }
+  g.node.human rect, g.node.human polygon, g.node.human path { stroke:var(--human) !important; stroke-width:4px !important; filter:drop-shadow(0 0 10px var(--human)); }
+  @keyframes pulse { 50% { opacity:.55; } }
+  g.node.now, g.node.human { animation:pulse 1s infinite; }
+</style>
+</head>
+<body>
+<header>
+  <span class="round" id="round">대기 중</span>
+  <span class="report" id="report">실행을 기다립니다</span>
+  <span class="badge" id="status">연결됨</span>
+</header>
+<main>
+  <div id="graph"><pre class="mermaid"></pre><div id="now"><h3>지금 단계</h3><span class="big">실행을 기다립니다</span></div></div>
+  <div id="right">
+    <section id="ask">
+      <h2>담당자 확인이 필요합니다</h2>
+      <p class="q" id="askQ"></p>
+      <p class="facts" id="askFacts"></p>
+      <div class="btns" id="askBtns"></div>
+      <p class="hint">여기 버튼이나 터미널 입력, 먼저 온 쪽으로 이어갑니다.</p>
+    </section>
+    <div id="story">
+      <div class="toolbar">
+        <span>진행 이야기 (최근 회차가 위)</span>
+        <label><input type="checkbox" id="dbg"> 디버그(들어간 값·나온 값) 보기</label>
+      </div>
+      <div id="rounds"></div>
+    </div>
+  </div>
+</main>
+<script>
+  const MERMAID = __MERMAID__;
+  const $ = (id) => document.getElementById(id);
+  let nodes = {}, cur = null; // cur = 현재 회차의 .lines 요소
+
+  document.getElementById("dbg").onchange = (e) => document.body.classList.toggle("debug", e.target.checked);
+
+  // 그림 라이브러리(CDN)가 안 떠도 오른쪽 이야기는 보이게 한다
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: false, theme: "dark" });
+    mermaid.render("g1", MERMAID).then(({ svg }) => {
+      $("graph").insertAdjacentHTML("afterbegin", svg);
+      for (const g of document.querySelectorAll("g.node")) nodes[g.textContent.trim()] = g; // 글자로 노드를 찾는다
+    }).catch((e) => { $("graph").textContent = "그림을 못 그렸습니다: " + e; });
+  } else $("graph").textContent = "그림 라이브러리(mermaid, CDN)를 못 받았습니다. 인터넷 연결을 확인하세요. 오른쪽 이야기는 계속 보입니다.";
+  listen();
+
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const pct = (x) => Math.round((x ?? 0) * 100);
+  /** 그래프 노드 아래에 짧은 글자(배지)를 붙인다 */
+  function badge(name, text, cls) {
+    const g = nodes[name]; if (!g) return;
+    g.querySelector("text.badge")?.remove();
+    if (!text) return;
+    const box = g.querySelector("rect, polygon, path")?.getBBox(); if (!box) return;
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("class", "badge " + (cls || "")); t.setAttribute("x", box.x + box.width / 2); t.setAttribute("y", box.y + box.height + 14); t.setAttribute("text-anchor", "middle");
+    t.textContent = text; g.append(t);
+  }
+  const clearBadges = () => Object.keys(nodes).forEach((n) => badge(n, ""));
+  const showNow = (title, html) => { $("now").innerHTML = `<h3>${esc(title)}</h3>${html}`; };
+  /** Jev 답을 그림으로: 선택지 확률 막대 + 위험도 칸 + 정체불명 % + 코드 결정 */
+  function jevCard(j) {
+    const bars = Object.entries(j.probabilities || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+      `<span class="lab">${esc(k)}</span><span class="bar ${k === j.action ? "pick" : ""}"><i style="width:${pct(v)}%"></i></span><span class="pct">${pct(v)}%</span>`).join("");
+    const meter = [0, 1, 2, 3].map((i) => `<b class="${i <= j.danger ? "on" : ""}"></b>`).join("") + `<span>위험도 ${j.danger}단계</span>`;
+    return `<span class="big">Jev 의견: ${esc(j.action)} <small style="color:var(--muted)">(확신 ${pct(j.confidence)}%)</small></span>
+      <div class="bars">${bars}</div><div class="meter">${meter}</div>
+      <div class="meter"><span style="margin:0">정체불명 ${pct(j.unknown)}%</span></div>
+      <div class="decide">코드 결정: ${esc(j.decision)}</div>`;
+  }
+  const mark = (name, cls) => { const g = nodes[name]; if (!g) return; g.classList.remove("now", "done", "human"); if (cls) g.classList.add(cls); };
+  const clearAll = () => Object.keys(nodes).forEach((n) => mark(n, null));
+  const setStatus = (text, cls) => { $("status").textContent = text; $("status").className = "badge " + (cls || ""); };
+
+  /** 이야기 한 줄 */
+  function line(cls, k, html) {
+    if (!cur) return;
+    const el = document.createElement("div"); el.className = "ln " + cls;
+    el.innerHTML = `<span class="k">${esc(k)}</span><span class="v">${html}</span>`;
+    cur.append(el);
+    el.scrollIntoView({ block: "nearest" });
+  }
+  /** 디버그 줄 (스위치 켤 때만 보임) */
+  function dbg(k, title, data) {
+    if (!cur) return;
+    const el = document.createElement("div"); el.className = "ln dbg";
+    el.innerHTML = `<span class="k">${esc(k)}</span><span class="v"><details><summary>${esc(title)}</summary><pre>${esc(JSON.stringify(data, null, 1))}</pre></details></span>`;
+    cur.append(el);
+  }
+  /** 도구 결과를 "키 값 | 키 값" 한 줄로 */
+  function cells(text) {
+    try { const d = JSON.parse(text); return (Array.isArray(d) ? d : [d]).map((r) => Object.entries(r).filter(([k]) => k !== "_notice").map(([k, v]) => `<small>${esc(k)}</small> ${esc(v)}`).join("  ·  ")).join("<br>"); }
+    catch { return esc(text); }
+  }
+
+  function startRound(e) {
+    clearAll(); clearBadges(); showNow("지금 단계", `<span class="big">보고 접수</span><div style="color:var(--muted)">${esc(e.report)}</div>`);
+    for (const d of document.querySelectorAll("details.round[open]")) d.open = false; // 지난 회차는 접는다
+    const d = document.createElement("details"); d.className = "round"; d.open = true;
+    d.innerHTML = `<summary><span class="r">${e.round}회차</span><span>${esc(e.report)}</span><span class="d"></span></summary><div class="lines"></div>`;
+    $("rounds").prepend(d);
+    cur = d.querySelector(".lines");
+    $("round").textContent = `${e.round}회차`; $("report").textContent = e.report; setStatus("실행 중", "now");
+    $("ask").classList.remove("on");
+  }
+
+  // 이벤트는 순서대로 '재생' 한다. 실제로는 1~2ms 만에 끝나는 단계도 눈에 보이게 잠깐 머문다 (오래된 기록을 따라잡을 때는 바로)
+  const queue = []; let playing = false;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const HOLD = { node_start: 700, tool: 350, llm: 350, node_end: 150 };
+  async function play() {
+    if (playing) return; playing = true;
+    while (queue.length) {
+      const e = queue.shift();
+      try { handle(e); } catch (err) { console.error("이벤트 처리 실패", e, err); } // 하나가 깨져도 다음은 계속
+      const old = Date.now() - e.at > 5000;
+      if (!old && HOLD[e.type]) await sleep(HOLD[e.type]);
+    }
+    playing = false;
+  }
+
+  function listen() {
+    const es = new EventSource("/events");
+    es.onopen = () => { if ($("status").textContent === "연결 안 됨" || $("status").textContent === "연결됨") setStatus("연결됨 · 실행을 기다립니다", ""); };
+    es.onerror = () => setStatus("연결 안 됨 — 터미널에서 pnpm agent:live 가 돌고 있는지, 주소·포트가 맞는지 확인", "human");
+    es.onmessage = (m) => { queue.push(JSON.parse(m.data)); play(); };
+  }
+
+  function handle(e) {
+    {
+      switch (e.type) {
+        case "run_start": startRound(e); break;
+        case "node_start":
+          mark(e.name, "now"); setStatus(`${e.name} 실행 중`, "now"); dbg("▶ " + e.name, "들어간 값", e.input);
+          if (e.name === "agent") showNow("agent", `<span class="big">모델에게 묻는 중…</span><div style="color:var(--muted)">도구를 더 쓸래, 사실을 정리할래?</div>`);
+          if (e.name === "judge") showNow("judge", `<span class="big">Jev 에게 세 질문 보내는 중…</span><div style="color:var(--muted)">뭘 할까 · 얼마나 위험해 · 정체 모르겠어</div>`);
+          if (e.name === "askHuman") showNow(e.name, `<span class="big" style="color:var(--human)">사람을 기다리는 중</span>`);
+          // approve 는 Jev 카드를 그대로 둔다 — 사람이 그걸 보고 결정한다
+          if (e.name === "stop") showNow("stop", `<span class="big" style="color:var(--err)">내 코드가 끊었습니다</span>`);
+          break;
+        case "node_end":
+          mark(e.name, e.interrupt ? "human" : "done"); dbg("◀ " + e.name, `나온 값 (${e.ms}ms)`, e.output);
+          if (e.output?.judgment && e.name === "judge") {
+            const j = e.output.judgment;
+            line("jev", "Jev 판정", `${esc(j.action)} <small>(확신 ${pct(j.confidence)}%)</small> · 위험도 ${j.danger}단계 · 정체불명 ${pct(j.unknown)}%`);
+            badge("judge", `Jev: ${j.action} ${pct(j.confidence)}%`, "jev");
+            showNow("judge — Jev 가 답했다", jevCard(j));
+          }
+          if (e.name === "approve" && e.output?.judgment) showNow("approve — 사람이 결정했다", `<span class="big">${esc(e.output.judgment.decision)}</span>`);
+          break;
+        case "llm": {
+          const n = (e.label.match(/\d+/) || [""])[0];
+          const r = e.received;
+          const pick = r.toolCalls?.length ? `도구 쓰기 → ${r.toolCalls.map((c) => c.name).join(", ")}` : `사실 정리: ${esc(r.content)}`;
+          line("llm", `모델 ${n}회째`, `${pick} <small>${e.ms}ms${r.usage ? ` · ${r.usage.prompt_tokens + r.usage.completion_tokens} 토큰` : ""}</small>`);
+          if (r.toolCalls?.length) {
+            badge("tools", r.toolCalls.map((c) => c.name).join(" · "));
+            showNow(`agent — 모델 ${n}회째 답`, `<span class="big">도구를 쓰겠다</span><div class="chips">${r.toolCalls.map((c) => `<span class="chip">${esc(c.name)}${Object.keys(c.args || {}).length ? " " + esc(Object.values(c.args).join(", ")) : ""}</span>`).join("")}</div>`);
+          } else showNow(`agent — 모델 ${n}회째 답`, `<span class="big">사실 정리 (도구 안 씀)</span><div style="color:var(--muted)">${esc(r.content)}</div>`);
+          dbg("LLM " + n, "모델에게 보낸 것 / 받은 것", { 보냄: e.sent, 받음: e.received });
+          break;
+        }
+        case "llm_error": line("err", "모델 늦음", esc(e.message)); break;
+        case "tool": line("tool", e.name, cells(e.result)); showNow(`tools — ${e.name} 실행 결과`, `<div style="font-size:13px">${cells(e.result)}</div>`); break;
+        case "waiting": {
+          setStatus("사람을 기다리는 중", "human");
+          const [q, facts] = e.question.split(/\. 사실: /);
+          $("askQ").textContent = q; $("askFacts").textContent = facts ? "사실: " + facts : "";
+          const btns = $("askBtns"); btns.innerHTML = "";
+          for (const [, key, desc] of e.choices.matchAll(/(\w+)\(([^)]*)\)/g)) {
+            const b = document.createElement("button"); b.textContent = `${key} · ${desc}`;
+            b.onclick = () => { fetch("/answer", { method: "POST", body: key }); btns.querySelectorAll("button").forEach((x) => (x.disabled = true)); };
+            btns.append(b);
+          }
+          $("ask").classList.add("on"); $("ask").scrollIntoView({ block: "nearest" });
+          line("human", "담당자 확인", esc(q));
+          break;
+        }
+        case "answered": $("ask").classList.remove("on"); setStatus("실행 중", "now"); line("human", "담당자 답", esc(e.answer)); break;
+        case "run_end": setStatus("끝", "done"); line("end", "결정", esc(e.decision)); if (cur) cur.closest("details").querySelector(".d").textContent = e.decision; $("ask").classList.remove("on"); break;
+        case "round_wait": setStatus(`${e.sec}초 뒤 다음 보고`, ""); break;
+        case "stopped": setStatus("중단", ""); line("err", "중단", esc(e.message)); $("ask").classList.remove("on"); break;
+      }
+    }
+  }
+</script>
+</body>
+</html>

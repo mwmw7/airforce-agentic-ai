@@ -15,6 +15,7 @@
  * API 형식 출처: https://openrouter.ai/docs/guides/community/jev-tutorial
  */
 import "dotenv/config";
+import { traceable } from "langsmith/traceable";
 import { trace } from "./trace.js";
 
 export type JevQuestion =
@@ -42,8 +43,9 @@ export const JEV_MODE = (process.env.JEV_MODE ?? "local") as "openrouter" | "loc
 /**
  * state(판정 근거 데이터) 와 questions(질문 묶음) 을 보내 답을 받습니다.
  * state 는 JSON 직렬화 가능한 무엇이든 OK — 알림 원문, 조사 결과, LLM 요약 등.
+ * LangSmith 가 켜져 있으면 "jev.ask" 라는 tool 기록으로 남는다 (state·questions 가 입력, answers 가 출력).
  */
-export async function askJev(state: Record<string, unknown>, questions: Record<string, JevQuestion>): Promise<JevResult> {
+export const askJev = traceable(async function askJev(state: Record<string, unknown>, questions: Record<string, JevQuestion>): Promise<JevResult> {
   const t = trace.start("jev.ask", { mode: JEV_MODE, questions: Object.keys(questions) });
   const started = Date.now();
   try {
@@ -55,7 +57,7 @@ export async function askJev(state: Record<string, unknown>, questions: Record<s
     t.error(e);
     throw e;
   }
-}
+}, { name: "jev.ask", run_type: "tool" });
 
 async function viaOpenRouter(state: Record<string, unknown>, questions: Record<string, JevQuestion>) {
   const key = process.env.OPENROUTER_API_KEY;
@@ -85,7 +87,7 @@ function localJudge(state: Record<string, unknown>, questions: Record<string, Je
   let risk = riskScore(primary);
   // 과거 기억: 같은 기체를 예전에 '출격' 으로 판단한 기록이 있으면 위험도를 올린다
   if (/scramble|출격/.test(JSON.stringify(state.past ?? []))) risk = clamp(risk + 0.2);
-  const uncertain = /불명|unknown|정보 부족|추가 조회/.test(primary) || clues.some((c) => c.ok === false);
+  const uncertain = /불명|unknown|정보 부족|추가 조회|모르겠/.test(primary) || clues.some((c) => c.ok === false);
   const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previous|bypass approval/.test(everything);
   // 자료에 섞인 수상한 지시문에 '속아 넘어가는' 모습을 흉내 낸다 — 걸러내지 않으면 무조건 출격으로 기운다
   if (injected) risk = 0.95;
@@ -95,6 +97,7 @@ function localJudge(state: Record<string, unknown>, questions: Record<string, Je
     if (q.type === "noul") {
       let p: number;
       if (/추가 조회|more info|충분/.test(q.instructions)) p = uncertain ? 0.78 : 0.18;                 // "더 조회해야 하나?"
+      else if (/정체|짐작/.test(q.instructions)) p = uncertain ? 0.75 : 0.25;                          // "정체를 모르겠나?"
       else if (/승인 없이|위험|risky|autosave/.test(q.instructions)) p = injected ? 0.92 : risk >= 0.6 ? 0.7 : uncertain ? 0.55 : 0.2; // 가드레일
       else if (/안전|safe|정상|normal/.test(q.instructions)) p = 1 - risk;
       else p = risk;                                                                                    // "즉시 조사?"
@@ -123,6 +126,10 @@ function riskScore(text: string): number {
     [/(민항|civil|airline|비행계획)/, -0.1],
     [/iff[^a-z가-힣]{0,6}(mode ?3|정상|normal|valid)/, -0.1],
     [/(불명|unknown|정보 부족)/, 0.25],
+    // 아래는 쉬운 말로 쓴 보고(실습 0)용 신호
+    [/(대답|응답|무전).{0,8}(없|안 )/, 0.3],
+    [/(풍선|새떼|드론|작은 점)/, 0.2],
+    [/(훈련기|예정된|미리 연락|여객기)/, -0.2],
   ];
   for (const [re, w] of signals) if (re.test(text)) s += w;
   return clamp(s);
@@ -135,7 +142,7 @@ function spread(keys: string[], risk: number): Record<string, number> {
     const kk = k.toLowerCase();
     if (/scramble|출격|launch/.test(kk)) raw[k] = risk;
     else if (/monitor|감시|watch/.test(kk)) raw[k] = 1 - Math.abs(risk - 0.5) * 2;
-    else if (/hold|대기|standby|wait/.test(kk)) raw[k] = 1 - risk;
+    else if (/hold|대기|standby|wait|ignore|무시/.test(kk)) raw[k] = 1 - risk;
     else if (/radar|항적|track/.test(kk)) raw[k] = 0.6;
     else if (/doctrine|지침/.test(kk)) raw[k] = 0.4 + risk * 0.3;
     else raw[k] = 0.3;

@@ -1,6 +1,0 @@
-{ "_notice": "교육용 합성 자료", "as_of": "2026-10-30T09:00:00+09:00", "alert_flights": [
-  { "callsign": "ALPHA-1", "base": "가상 제1기지", "type": "F-XX", "status": "READY_5", "note": "5분 대기" },
-  { "callsign": "ALPHA-2", "base": "가상 제1기지", "type": "F-XX", "status": "READY_5", "note": "5분 대기" },
-  { "callsign": "BRAVO-1", "base": "가상 제2기지", "type": "F-XX", "status": "READY_15", "note": "15분 대기" },
-  { "callsign": "BRAVO-2", "base": "가상 제2기지", "type": "F-XX", "status": "MAINT", "note": "정비 중, 가용 불가" }
-], "tanker": { "callsign": "TANK-1", "status": "AIRBORNE", "note": "공중 급유 가능" } }
