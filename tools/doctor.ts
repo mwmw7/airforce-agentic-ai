@@ -49,6 +49,13 @@ const searchMode = process.env.SEARCH_MODE ?? "mock";
 if (searchMode === "mock") warn("SEARCH_MODE=mock — data/web/ 의 가상 검색 결과 사용. 실제 검색은 SEARCH_MODE=tavily + TAVILY_API_KEY");
 else process.env.TAVILY_API_KEY ? ok("SEARCH_MODE=tavily, 키 있음") : bad("SEARCH_MODE=tavily 인데 TAVILY_API_KEY 없음");
 
+// LangSmith 트레이싱 (선택)
+if (process.env.LANGSMITH_TRACING === "true") {
+  process.env.LANGSMITH_API_KEY
+    ? ok(`LANGSMITH_TRACING=true — 실행 기록이 smith.langchain.com 프로젝트 '${process.env.LANGSMITH_PROJECT ?? "default"}' 로 올라감`)
+    : bad("LANGSMITH_TRACING=true 인데 LANGSMITH_API_KEY 없음 — 키를 넣거나 LANGSMITH_TRACING=false 로");
+} else warn("LANGSMITH_TRACING 꺼짐 — traces/*.jsonl 에만 기록. 켜려면 .env 에 LANGSMITH_TRACING=true + LANGSMITH_API_KEY");
+
 // 데이터
 ["data/api/tracks.json", "data/alerts/scenario-1.json", "data/doctrine/v2-2026-rules.md"].forEach((f) => fs.existsSync(f) ? ok(f) : bad(`${f} 없음`));
 

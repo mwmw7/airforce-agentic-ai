@@ -17,6 +17,7 @@
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
+import { traceable } from "langsmith/traceable";
 import { trace } from "./trace.js";
 
 export interface MemoryHit {
@@ -38,16 +39,18 @@ export function getMemory(): Memory {
   return MEMORY_MODE === "hindsight" ? new HindsightMemory(bank) : new FileMemory(bank);
 }
 
+// 아래 두 함수는 LangSmith 가 켜져 있으면 "memory.retain" / "memory.recall" tool 기록으로 남는다 (꺼져 있으면 그냥 통과)
+
 /** 기억 남기기 (Hindsight retain) */
-export async function saveMemory(text: string): Promise<void> {
+export const saveMemory = traceable(async function saveMemory(text: string): Promise<void> {
   await getMemory().retain(text);
-}
+}, { name: "memory.retain", run_type: "tool" });
 
 /** 기억 떠올리기 (Hindsight recall) — 찾은 기억의 문장만 돌려준다 */
-export async function findMemories(query: string, limit = 3): Promise<string[]> {
+export const findMemories = traceable(async function findMemories(query: string, limit = 3): Promise<string[]> {
   const hits = await getMemory().recall(query, { limit });
   return hits.map((h) => h.text);
-}
+}, { name: "memory.recall", run_type: "tool" });
 
 // ── Hindsight 서버 ────────────────────────────────────────────
 class HindsightMemory implements Memory {

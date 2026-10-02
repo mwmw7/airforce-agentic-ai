@@ -87,13 +87,19 @@ interface Judgment { action: string; probabilities: Record<string, number>; conf
 // ── 3. 단계 ──
 
 /** agent: 모델을 한 번 부른다. 답변이든 도구 요청이든 모델의 말로 기록에 남긴다 */
+// 모델에게 주는 역할 설명 (대화의 첫 줄). 그래프 안에서 넣어야 터미널·Studio 어디서 돌려도 같다
+const SYSTEM = "너는 관제실 보조다. 보고를 받으면 레이더를 봐라. 한 번에 하나만 잡히니 보고와 관련된 게 나올 때까지 몇 번 더 봐도 된다. 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 확인된 사실만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
+
 async function agentNode(state: S): Promise<Partial<S>> {
   const step = state.steps + 1;
+  // 첫 호출이면 대화를 연다: 역할 설명 + 보고 한 줄. (입력에 report 만 있어도 돌아간다 — Studio 에서 { "report": "..." } 만 넣으면 됨)
+  const opening: Msg[] = state.messages.length ? [] : [{ role: "system", content: SYSTEM }, { role: "user", content: state.report }];
+  const history = [...state.messages, ...opening];
   // 매번 묻는 건 같다: "도구를 더 쓸래, 아니면 지금까지 본 걸로 사실을 정리할래?" — 둘 중 하나를 모델이 고른다
   console.log(`\n── 모델 호출 ${step}회째 (${LLM_MODE === "mock" ? "가짜 모델 mock" : LLM_MODEL}) · 도구를 더 쓸지, 사실을 정리할지 묻는다 ──`);
   let reply;
   try {
-    reply = await chat(state.messages, tools, { label: `loop.step${step}` });
+    reply = await chat(history, tools, { label: `loop.step${step}` });
   } catch (e) {
     if (!isTimeout(e)) throw e;
     // 늦었다 → 여기서 정하지 않고 이유만 적는다. 다음에 뭘 할지는 사람에게 묻는다 (askHuman)
@@ -110,7 +116,7 @@ async function agentNode(state: S): Promise<Partial<S>> {
         tool_calls: reply.toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.args) } })),
       }
     : { role: "assistant", content: reply.content };
-  return { messages: [assistant], steps: 1, facts: reply.content };
+  return { messages: [...opening, assistant], steps: 1, facts: reply.content };
 }
 
 /** tools: 모델이 바로 앞에서 쓰고 싶다고 한 도구를 실행하고, 결과를 기록에 남긴다 */
@@ -238,7 +244,6 @@ export const graph = new StateGraph(LoopState)
 // ── 6. 실행: 보고 하나를 넣고 돌린다 ──
 // 이 파일을 직접 실행할 때만 돈다 (pnpm graph 가 import 할 때는 그림만 그린다)
 if (process.argv[1]?.endsWith("agent.ts")) {
-  const SYSTEM = "너는 관제실 보조다. 보고를 받으면 레이더를 봐라. 한 번에 하나만 잡히니 보고와 관련된 게 나올 때까지 몇 번 더 봐도 된다. 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 확인된 사실만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   /** 사람에게 묻는다. 터미널 입력과 브라우저 버튼(--live) 중 먼저 온 답을 쓴다 */
@@ -261,9 +266,9 @@ if (process.argv[1]?.endsWith("agent.ts")) {
     console.log(`[설정] 모델 호출 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 호출`);
     send("run_start", { round, report });
 
-    // thread_id = 이 실행의 번호 (멈췄다 이어갈 때 같은 번호로 찾는다) / recursionLimit = LangGraph 자체 안전장치
-    const config = { configurable: { thread_id: `loop-${round}-${Date.now()}` }, recursionLimit: MAX_STEPS * 2 + 5 };
-    const input = { report, messages: [{ role: "system", content: SYSTEM }, { role: "user", content: report }] as Msg[] };
+    // thread_id = 이 실행의 번호 (멈췄다 이어갈 때 같은 번호로 찾는다) / recursionLimit = LangGraph 자체 안전장치 / runName = LangSmith 에 올라갈 때 기록 이름
+    const config = { configurable: { thread_id: `loop-${round}-${Date.now()}` }, recursionLimit: MAX_STEPS * 2 + 5, runName: `loop.round-${round}` };
+    const input = { report };  // 대화의 첫 줄(역할 설명 + 보고)은 agent 노드가 스스로 연다
     let result = {} as S;
 
     /** 그래프를 돌린다. values: 단계마다 칠판 전체 / debug: 들어간 값·나온 값 (--watch 터미널, --live 브라우저) */

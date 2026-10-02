@@ -15,6 +15,7 @@
  * API 형식 출처: https://openrouter.ai/docs/guides/community/jev-tutorial
  */
 import "dotenv/config";
+import { traceable } from "langsmith/traceable";
 import { trace } from "./trace.js";
 
 export type JevQuestion =
@@ -42,8 +43,9 @@ export const JEV_MODE = (process.env.JEV_MODE ?? "local") as "openrouter" | "loc
 /**
  * state(판정 근거 데이터) 와 questions(질문 묶음) 을 보내 답을 받습니다.
  * state 는 JSON 직렬화 가능한 무엇이든 OK — 알림 원문, 조사 결과, LLM 요약 등.
+ * LangSmith 가 켜져 있으면 "jev.ask" 라는 tool 기록으로 남는다 (state·questions 가 입력, answers 가 출력).
  */
-export async function askJev(state: Record<string, unknown>, questions: Record<string, JevQuestion>): Promise<JevResult> {
+export const askJev = traceable(async function askJev(state: Record<string, unknown>, questions: Record<string, JevQuestion>): Promise<JevResult> {
   const t = trace.start("jev.ask", { mode: JEV_MODE, questions: Object.keys(questions) });
   const started = Date.now();
   try {
@@ -55,7 +57,7 @@ export async function askJev(state: Record<string, unknown>, questions: Record<s
     t.error(e);
     throw e;
   }
-}
+}, { name: "jev.ask", run_type: "tool" });
 
 async function viaOpenRouter(state: Record<string, unknown>, questions: Record<string, JevQuestion>) {
   const key = process.env.OPENROUTER_API_KEY;

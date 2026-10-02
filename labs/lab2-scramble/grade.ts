@@ -27,7 +27,8 @@ for (let round = 1; round <= TIMES; round++) {
   process.env.HINDSIGHT_BANK = `grade-${Date.now()}`; // 회차마다 새 기억 공간
   for (const n of SCENARIOS) {
     const alert = JSON.parse(fs.readFileSync(path.resolve("data/alerts", `scenario-${n}.json`), "utf8"));
-    const config = { configurable: { thread_id: `grade-${n}-${round}-${Date.now()}` } };
+    // runName · tags 는 LangSmith 가 켜져 있을 때 기록 이름과 꼬리표 (--tag before/after 로 전후 비교)
+    const config = { configurable: { thread_id: `grade-${n}-${round}-${Date.now()}` }, runName: `grade.scenario-${n}`, tags: ["grade", TAG] };
     await graph.invoke({ alert }, config);                                     // askHuman 에서 멈춤
     await graph.invoke(new Command({ resume: { approved: true, note: "채점 자동 승인" } }), config); // 자동 승인
     const choice = (await graph.getState(config)).values.decision?.choice ?? "-";

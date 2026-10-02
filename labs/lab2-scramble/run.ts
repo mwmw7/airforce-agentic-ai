@@ -32,7 +32,9 @@ const config = { configurable: { thread_id: threadId } };
 async function runAndShow(input: unknown) {
   let last = Date.now();
   // updates: 단계가 끝날 때 바뀐 칸 / debug: 단계마다 들어간 값·나온 값 (--watch 일 때만 화면에 찍는다)
-  for await (const [mode, chunk] of await graph.stream(input as never, { ...config, streamMode: ["updates", "debug"] })) {
+  // LangSmith 가 켜져 있으면(.env LANGSMITH_TRACING=true) 이 실행 전체가 아래 이름의 기록 한 그루로 올라간다. 꺼져 있으면 무시된다
+  const tracing = { runName: `scramble.scenario-${alert?.scenario ?? "resume"}`, tags: args.includes("--no-safety") ? ["no-safety"] : [] };
+  for await (const [mode, chunk] of await graph.stream(input as never, { ...config, ...tracing, streamMode: ["updates", "debug"] })) {
     if (mode === "debug") { showDebug(chunk as never); continue; }
     for (const [step, value] of Object.entries(chunk)) {
       if (step === "__interrupt__") continue;

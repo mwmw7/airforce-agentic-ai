@@ -10,3 +10,6 @@ traces/
 .idea/
 *.sqlite-shm
 *.sqlite-wal
+
+# LangGraph API
+.langgraph_api

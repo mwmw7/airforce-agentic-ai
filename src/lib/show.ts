@@ -51,6 +51,9 @@ function pretty(v: unknown): string {
 
 const startedAt = new Map<string, number>(); // task id → 시작 시각 (걸린 시간 계산용)
 
+/** 노드가 돌려준 칸. LangGraph 0.3 은 [["칸", 값]] 쌍 배열, 1.x 는 { 칸: 값 } 객체로 준다 — 둘 다 받는다 */
+const asObject = (r: unknown): Record<string, unknown> => (Array.isArray(r) ? Object.fromEntries(r as [string, unknown][]) : ((r as Record<string, unknown>) ?? {}));
+
 /** debug 이벤트 하나를 받아 그린다. --watch 가 없으면 아무것도 하지 않는다. */
 export function showDebug(ev: { type: string; payload: Record<string, unknown> }) {
   const p = ev.payload;
@@ -59,7 +62,7 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
     send("node_start", { name: p.name, from: (p.triggers as string[])?.join(", "), input: p.input });
   }
   if (ev.type === "task_result") {
-    const out = Object.fromEntries((p.result as [string, unknown][]) ?? []);
+    const out = asObject(p.result);
     const stopped = ((p.interrupts as unknown[]) ?? []).length > 0;
     send("node_end", { name: p.name, ms: Date.now() - (startedAt.get(String(p.id)) ?? Date.now()), output: out, interrupt: stopped });
   }
@@ -75,11 +78,11 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
 
   if (ev.type === "task_result") {
     const ms = Date.now() - (startedAt.get(String(p.id)) ?? Date.now());
-    const result = (p.result as [string, unknown][]) ?? [];
+    const result = asObject(p.result);
     const interrupts = (p.interrupts as { value: unknown }[]) ?? [];
     console.log(`${bold(cyan("◀ " + String(p.name)))}  ${dim(ms + "ms")}`);
-    console.log(`  ${dim("출력 형태")} ${shape(Object.fromEntries(result))}`);
-    for (const [k, v] of result) console.log(`  ${yellow(k)} ${pretty(v)}`);
+    console.log(`  ${dim("출력 형태")} ${shape(result)}`);
+    for (const [k, v] of Object.entries(result)) console.log(`  ${yellow(k)} ${pretty(v)}`);
     for (const i of interrupts) console.log(`  ${yellow("여기서 멈춤 — 사람에게 보낼 질문")} ${pretty(i.value)}`);
   }
 }

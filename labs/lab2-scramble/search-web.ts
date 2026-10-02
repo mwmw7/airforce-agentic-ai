@@ -5,6 +5,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { traceable } from "langsmith/traceable";
 import { splitWords } from "./search-docs.js";
 import type { Clue, State } from "./state.js";
 
@@ -34,8 +35,8 @@ function searchSampleFile(query: string): WebResult[] {
     .slice(0, 2);
 }
 
-/** 실제 검색: Tavily API (키는 강사가 배포) */
-async function searchTavily(query: string): Promise<WebResult[]> {
+/** 실제 검색: Tavily API (키는 강사가 배포). LangSmith 가 켜져 있으면 "web.search" tool 기록으로 남는다 */
+const searchTavily = traceable(async function searchTavily(query: string): Promise<WebResult[]> {
   const res = await fetch("https://api.tavily.com/search", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.TAVILY_API_KEY}` },
@@ -44,4 +45,4 @@ async function searchTavily(query: string): Promise<WebResult[]> {
   if (!res.ok) throw new Error(`Tavily ${res.status}`);
   const json = (await res.json()) as { results: { title: string; url: string; content: string }[] };
   return json.results.map((r) => ({ title: r.title, url: r.url, snippet: r.content.slice(0, 200) }));
-}
+}, { name: "web.search", run_type: "tool" });

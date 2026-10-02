@@ -55,6 +55,7 @@ pnpm loop:run                    # [실습 0] 보고 1번 → LLM 이 레이더 
 pnpm loop:run 3                  # 보고 3번 (1~4), 또는 pnpm loop:run "한강에 오리 풍선이 떠요" 처럼 내 보고
 pnpm loop:limit                  # 호출 한도 1 로 강제 중단 — 멈추는 건 모델이 아니라 코드
 pnpm loop:run --watch            # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
+pnpm studio                      # LangGraph Studio(공식 디버거)로 lab0·lab2 그래프 보기·돌리기·멈춤 이어가기·노드별 trace. LangSmith 무료 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
 pnpm loop:live                   # 브라우저(http://localhost:3030)에서 실시간으로 보기 — 보고를 무작위로 계속 돌리고, 멈추면 버튼으로 답할 수 있다 (Ctrl+C 로 끝)
 LLM_MOCK_SLOW=1 pnpm loop:run    # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다 (한도는 .env 의 LLM_TIMEOUT_SEC · RUN_TIMEOUT_SEC)
 pnpm scramble:run --scenario 1   # [실습 2] 스크램블 판단 보조 Agent (담당자 확인에서 y/n)
@@ -154,7 +155,7 @@ claude mcp add radar -- pnpm exec tsx mcp-servers/scramble-radar/server.ts
 
 모델 비교: `LLM_MODE=ollama` + `LLM_BASE_URL=http://localhost:11434/v1` + `LLM_MODEL=qwen3:8b` 로 바꾸면 같은 보고서를 노트북 모델로 써 봅니다.
 
-실행 기록은 `traces/*.jsonl` 에 남습니다 (Langfuse 특강에서 확장).
+실행 기록은 `traces/*.jsonl` 에 남습니다 (Langfuse 특강에서 확장). `.env` 에 `LANGSMITH_TRACING=true` 와 `LANGSMITH_API_KEY` 를 넣으면 같은 실행이 smith.langchain.com 에도 트리(노드 → LLM 호출·Jev·기억·MCP 호출)로 올라갑니다. 코드 수정 없이 켜고 끕니다.
 
 Hindsight 서버 (선택):
 
@@ -218,3 +219,4 @@ git commit -am "handson: regenerate from main" && git push
 - Jev / OpenRouter Decisions API — https://openrouter.ai/docs/guides/community/jev-tutorial
 - Hindsight (Node 클라이언트) — https://hindsight.vectorize.io/sdks/nodejs
 - Langfuse — https://langfuse.com/docs
+- LangSmith — https://docs.smith.langchain.com

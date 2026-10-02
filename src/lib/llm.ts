@@ -10,10 +10,15 @@
  *   cloud  : 워크숍 당일 배포되는 클라우드 키
  *   mock   : 네트워크 없이 흐름만 확인 (정해진 답을 돌려줌)
  * 폐쇄망으로 옮길 때도 .env 의 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 세 줄만 바꾸면 됩니다.
+ *
+ * LangSmith: .env 에 LANGSMITH_TRACING=true + LANGSMITH_API_KEY 가 있으면 chat/askLLM 한 번이 기록 하나로,
+ * 실제 모델 호출(wrapOpenAI)은 그 아래 llm 기록(메시지·토큰 수)으로 올라간다. 꺼져 있으면 아무 일도 하지 않는다.
  */
 import "dotenv/config";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
+import { traceable } from "langsmith/traceable";
+import { wrapOpenAI } from "langsmith/wrappers/openai";
 import { trace } from "./trace.js";
 import { showError, showLLM } from "./show.js";
 
@@ -26,7 +31,8 @@ export const LLM_TIMEOUT_SEC = Number(process.env.LLM_TIMEOUT_SEC ?? 60); // 한
 
 let client: OpenAI | null = null;
 // maxRetries: 0 → 늦으면 SDK 가 몰래 다시 부르지 않는다. 다시 부를지는 내 코드(또는 사람)가 정한다
-const getClient = () => (client ??= new OpenAI({ baseURL: process.env.LLM_BASE_URL, apiKey: process.env.LLM_API_KEY ?? "no-key", timeout: LLM_TIMEOUT_SEC * 1000, maxRetries: 0 }));
+// wrapOpenAI → LangSmith 가 켜져 있을 때만 모델 호출 하나하나를 기록한다 (꺼져 있으면 그냥 통과)
+const getClient = () => (client ??= wrapOpenAI(new OpenAI({ baseURL: process.env.LLM_BASE_URL, apiKey: process.env.LLM_API_KEY ?? "no-key", timeout: LLM_TIMEOUT_SEC * 1000, maxRetries: 0 })));
 
 /** 시간 초과 에러인가? (실제 SDK 에러 또는 mock 의 가짜 에러) */
 export const isTimeout = (e: unknown) => e instanceof OpenAI.APIConnectionTimeoutError || (e as Error)?.name === "MockTimeout";
@@ -38,7 +44,7 @@ export interface ChatResult {
 }
 
 /** 모델을 한 번 부른다. 모델이 도구를 쓰고 싶어 하면 toolCalls 로 돌려준다. */
-export async function chat(messages: Msg[], tools?: Tool[], opts: { label?: string } = {}): Promise<ChatResult> {
+export const chat = traceable(async function chat(messages: Msg[], tools?: Tool[], opts: { label?: string } = {}): Promise<ChatResult> {
   const t = trace.start("llm.chat", { mode: LLM_MODE, model: LLM_MODEL, label: opts.label, n_messages: messages.length });
   const started = Date.now();
   try {
@@ -57,10 +63,10 @@ export async function chat(messages: Msg[], tools?: Tool[], opts: { label?: stri
     showError(opts.label ?? "chat", isTimeout(e) ? `시간 초과: ${LLM_TIMEOUT_SEC}초 안에 답이 없음 (${LLM_MODE === "mock" ? "mock" : LLM_MODEL}) — ${(e as Error).message}` : String(e), Date.now() - started);
     throw e;
   }
-}
+}, { name: "llm.chat" });
 
 /** 모델에게 글을 쓰게 한다. mock 모드면 mockText 를 그대로 돌려준다. */
-export async function askLLM(input: { system: string; user: string; mockText: string }): Promise<string> {
+export const askLLM = traceable(async function askLLM(input: { system: string; user: string; mockText: string }): Promise<string> {
   const t = trace.start("llm.write", { mode: LLM_MODE, model: LLM_MODEL });
   try {
     const started = Date.now();
@@ -73,7 +79,7 @@ export async function askLLM(input: { system: string; user: string; mockText: st
     t.error(e);
     throw e;
   }
-}
+}, { name: "llm.write" });
 
 async function realChat(messages: Msg[], tools?: Tool[]): Promise<ChatResult> {
   const res = await getClient().chat.completions.create({
