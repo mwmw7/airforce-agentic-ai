@@ -33,7 +33,8 @@ export async function createBank(): Promise<void> {
 
 /** 기억 맡기기: "보고 … → 결정 …" 같은 한 줄을 넣는다 */
 export const retain = traceable(async function retain(text: string): Promise<void> {
-  if (hindsight) await hindsight.retain(BANK, text, { context: "관제실 판단 기록" });
+  // async: true → 서버가 뒤에서 정리하게 두고 바로 돌아온다 (기억 정리에 서버 LLM 이 몇 초 걸리므로 판단을 기다리게 하지 않는다)
+  if (hindsight) await hindsight.retain(BANK, text, { context: "관제실 판단 기록", async: true });
   else writeFileSync(FILE, JSON.stringify([...readFile(), { time: new Date().toISOString(), text }], null, 2));
 }, { name: "memory.retain", run_type: "tool" });
 

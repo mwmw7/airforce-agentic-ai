@@ -1,8 +1,8 @@
 # 공군 AI센터 · Agentic AI 설계·구현 실무 — 핸즈온 저장소
 
-2026. 10. 29(목) ~ 30(금) · TypeScript · LangGraph.js · Jev
+2026. 10. 29(목) ~ 30(금) · TypeScript · LangGraph.js · MCP · Jev · Hindsight
 
-> 이 저장소의 모든 데이터(레이더 화면·기상)는 **교육용 합성 자료**이며 실제 공역·부대·기종·규정과 무관합니다.
+> 이 저장소의 모든 데이터(레이더 화면·기상·규정집)는 **교육용 합성 자료**이며 실제 공역·부대·기종·규정과 무관합니다.
 > Agent 는 **권고**까지만 수행하고, 결정은 항상 사람이 합니다.
 
 ---
@@ -30,7 +30,7 @@ git diff hands-on main -- labs/agent/main.ts
 |---|---|
 | Node.js **22 LTS** 이상 (`node -v`) | Ollama + `ollama pull qwen3:8b` (내 노트북 모델로 바꿔 보기) |
 | git, VS Code | LangSmith 무료 계정 (LangGraph Studio · 실행 기록 보기) |
-| 강사가 나눠주는 조별 토큰 (`.env` 에 입력) | |
+| 강사가 나눠주는 조별 토큰 (`.env` 에 입력) | `uv` (Hindsight 기억 서버를 내 노트북에서 띄울 때, https://docs.astral.sh/uv/) |
 
 로컬 LLM 은 설치하지 않아도 됩니다. 모델은 강사가 AWS Bedrock 에 올려 두고 주소만 나눠 드립니다.
 
@@ -51,13 +51,15 @@ pnpm setup:check             # 환경 점검
 ### 1-3. 첫 실행
 
 ```bash
-pnpm agent                       # 보고 1번 → LLM 이 레이더 확인 → Jev 판정 → 출격이면 사람이 승인(y/n)
+pnpm mcp:weather                 # 터미널 1: 날씨 MCP 서버 (켜 둔 채로 둔다. 없으면 agent 는 날씨 없이 돈다)
+pnpm agent                       # 터미널 2: 보고 1번 → LLM 이 레이더·규정집·날씨 확인 → Jev 판정 → 출격이면 사람이 승인(y/n)
 pnpm agent 3                     # 보고 3번 (1~4), 또는 pnpm agent "한강에 오리 풍선이 떠요" 처럼 내 보고
 pnpm agent:limit                 # 호출 한도 1 로 강제 중단 — 멈추는 건 모델이 아니라 코드
 pnpm agent --watch               # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
-pnpm agent:live                  # 브라우저(http://localhost:3030)에서 실시간으로 보기 — 보고를 무작위로 계속 돌리고, 멈추면 버튼으로 답할 수 있다 (Ctrl+C 로 끝)
-LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다 (한도는 .env 의 LLM_TIMEOUT_SEC · RUN_TIMEOUT_SEC)
-pnpm studio                      # LangGraph Studio(공식 디버거) — 그래프 보기·돌리기·멈춤 이어가기. LangSmith 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
+pnpm agent --resume <실행번호>    # 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (실행번호는 시작할 때 출력)
+pnpm agent:live                  # 브라우저(http://localhost:3030)에서 실시간으로 보기 — 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
+LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다
+pnpm studio                      # LangGraph Studio(공식 디버거). LangSmith 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
 ```
 
 `hands-on` 브랜치에서는 빈칸 때문에 "TODO … 미구현" 안내와 함께 멈춥니다. 정상이며, 순서대로 빈칸을 채우면 한 단계씩 살아납니다.
@@ -72,11 +74,11 @@ Studio 의 Input 에는 보고 한 줄만 넣습니다.
 
 ## 2. 내 에이전트 — 한눈에
 
-관제실에 보고 한 줄이 들어오면, 모델이 도구로 사실을 확인하고, 판정 모델이 의견을 내고, 최종 결정은 코드와 사람이 합니다.
+관제실에 보고 한 줄이 들어오면, 모델이 도구로 사실을 확인하고, 지난 기억을 떠올린 뒤 판정 모델이 의견을 내고, 최종 결정은 코드와 사람이 합니다.
 
 ```
 START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
-                ├─ 다 확인했다     ─▶ judge ─┬─ 출격 아님 ─▶ END          (Jev 판정 + 코드가 결정)
+                ├─ 다 확인했다     ─▶ judge ─┬─ 출격 아님 ─▶ END          (기억 recall → Jev 판정 → 코드가 결정 → 기억 retain)
                 │                           └─ 출격!   ─▶ approve ─▶ END  (멈추고 사람이 승인/반려)
                 ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤)
                 └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → judge / stop → stop
@@ -85,20 +87,29 @@ START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent �
 | 단계 (노드) | 하는 일 | 배우는 것 |
 |---|---|---|
 | `agent` | 모델에게 "도구를 더 쓸래, 사실을 정리할래?" 묻기 | Agent Loop · Tool Calling |
-| `tools` | 모델이 고른 도구(look_radar · look_closer · look_weather)를 **내 코드가** 실행 | 모델은 부르겠다고 말할 뿐, 실행은 내 코드 |
-| `judge` | Jev 에게 3가지 질문(출격/감시/무시 · 위험도 · 정체불명 확률) | 판정 모델 |
+| `tools` | 모델이 고른 도구를 **내 코드가** 실행. 로컬 도구(레이더 보기·확대·규정집)와 MCP 도구(날씨)가 한 목록에 섞여 있다 | 모델은 부르겠다고 말할 뿐, 실행은 내 코드 |
+| `judge` | 지난 기억을 떠올리고(recall) Jev 에게 3가지 질문(출격/감시/무시 · 위험도 · 정체불명 확률), 끝나면 기억에 남김(retain) | 판정 모델 · 장기 기억 |
 | `approve` | 출격이면 멈추고 사람에게 승인/반려 묻기 | Human-in-the-Loop (`interrupt`) |
 | `askHuman` | 모델이 늦으면 멈추고 retry / skip / stop 묻기 | 시간 초과 · 사람 개입 |
 | `stop` | MAX_STEPS 를 넘기면 강제 종료 | Harness — 멈추는 건 코드 |
 
 그림: `docs/graphs/agent.md` (`pnpm graph` 로 다시 생성)
 
+### 도구 4개
+
+| 도구 | 어디서 실행 | 자료 |
+|---|---|---|
+| `look_radar` 레이더 한 번 보기 | 로컬 (`main.ts`) | `data/api/radar-screen.json` |
+| `look_closer` 한 자리 확대 | 로컬 (`main.ts`) | 〃 |
+| `look_rulebook` 규정집 찾아보기 (RAG) | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
+| `look_weather` 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | `data/api/weather.json` |
+
 ### 보고 4종 (`labs/agent/main.ts` 의 REPORTS)
 
 | # | 보고 | 보는 포인트 |
 |---|---|---|
-| 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | 도구를 여러 번 쓰고 출격 → 사람 승인 |
-| 2 | 한강 위 거대한 오리 풍선, 김포 쪽으로 | 위험하진 않지만 감시 |
+| 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | 도구를 여러 번 쓰고 출격 → 사람 승인. **두 번 돌리면 두 번째엔 기억이 떠올라 확신이 오른다** |
+| 2 | 한강 위 거대한 오리 풍선, 김포 쪽으로 | 규정집에 "풍선은 감시" 가 있다 |
 | 3 | 잠실 상공 드론 수십 대 | 허가 여부 확인 |
 | 4 | 옆 부대 훈련기, 예정 코스 정상 | 별일 아님 |
 
@@ -106,36 +117,48 @@ START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent �
 
 ## 3. 실습 순서 ↔ 빈칸 (TODO)
 
-| 단계 | 할 일 | 파일 | 확인 명령 |
-|---|---|---|---|
-| 1 | 도구 결과를 모델에게 돌려주기 | `labs/agent/main.ts` | `pnpm agent` |
-| 2 | 강제 중단은 코드가 | 〃 | `pnpm agent:limit` |
+| 단계 | 할 일 | 파일 | 개념 | 확인 명령 |
+|---|---|---|---|---|
+| 1 | 도구 결과를 모델에게 돌려주기 | `labs/agent/main.ts` | Agent Loop | `pnpm agent` |
+| 2 | 강제 중단은 코드가 | 〃 | Harness | `pnpm agent:limit` |
+| 3 | 규정집 줄마다 점수 매기기 | `labs/agent/search-docs.ts` | RAG (찾아서 넣는다) | `pnpm agent 2` |
+| 4 | MCP 서버에 `look_weather` 도구 등록 | `mcp-servers/weather/server.ts` | MCP Server | `pnpm mcp:inspect` → `http://localhost:3333/mcp` |
+| 5 | MCP 도구 목록 받기 · 실행하기 | `labs/agent/mcp.ts` | MCP Client | `pnpm mcp:weather` + `pnpm agent` |
+| 6 | 사람의 답으로 멈춘 곳부터 이어가기 (`Command({ resume })`) | `labs/agent/main.ts` | Checkpointer · HITL | `pnpm agent` → Ctrl+C → `pnpm agent --resume <번호>` |
 
-이 폴더에 한 단계씩 기능(검색 · MCP · 안전 검사 · 기억 · 보고서)을 붙여 나갑니다. 새 단계가 생기면 이 표에 한 줄씩 추가됩니다.
+빈칸이 아닌 것 (완성 코드로 제공 · 시연): 장기 기억(`src/lib/memory.ts`), 모델 교체, Studio.
 
 ---
 
 ## 4. 자주 쓰는 명령
 
 ```bash
+pnpm mcp:weather             # 날씨 MCP 서버 (http://localhost:3333/mcp)
+pnpm mcp:inspect             # MCP Inspector — 화면에서 Streamable HTTP + 위 주소를 넣고 look_weather 를 직접 눌러 본다
+pnpm memory:up               # Hindsight 기억 서버를 내 노트북에 띄운다 (uv 필요, 첫 실행 약 200MB) → .env MEMORY_MODE=hindsight
 pnpm agent --watch=full      # 들어간 값·나온 값을 자르지 않고 전부
 pnpm graph                   # 그래프를 Mermaid 그림으로 (docs/graphs/)
 pnpm typecheck               # 타입 검사
 pnpm setup:check             # 환경 점검
 ```
 
+Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weather http://localhost:3333/mcp`
+
+기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "비슷한 보고 없음", 한 번 더 돌리면 "떠오른 것 N건" 과 함께 확신이 오릅니다.
+
 ---
 
-## 5. 모델·판정기 바꾸기 (.env 두 줄)
+## 5. 모델·판정기·기억 바꾸기 (.env 세 줄)
 
 | 설정 | 기본 (키 없이) | 강사 제공 | 폐쇄망으로 옮길 때 |
 |---|---|---|---|
 | `LLM_MODE` | `mock` (정해진 답) | `relay` — 강사 Bedrock 주소 + 조별 토큰 | vLLM/Ollama 등 OpenAI 호환 주소 |
-| `JEV_MODE` | `local` (규칙 판정기) | `openrouter` — Jev | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
+| `JEV_MODE` | `local` (규칙 판정기) | `typesafe` — Jev (TypeSafe SDK, `TYPESAFE_API_KEY`) | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
+| `MEMORY_MODE` | `file` (`.hindsight/*.json`) | `hindsight` — `pnpm memory:up` 또는 강사 서버 주소 | 자체 호스팅 Hindsight |
 
 모델 비교: `LLM_MODE=ollama` + `LLM_BASE_URL=http://localhost:11434/v1` + `LLM_MODEL=qwen3:8b` 로 바꾸면 같은 보고를 노트북 모델로 돌려 봅니다.
 
-실행 기록은 `traces/*.jsonl` 에 남습니다 (Langfuse 특강에서 확장). `.env` 에 `LANGSMITH_TRACING=true` 와 `LANGSMITH_API_KEY` 를 넣으면 같은 실행이 smith.langchain.com 에도 트리(노드 → LLM 호출·Jev 판정)로 올라갑니다. 코드 수정 없이 켜고 끕니다.
+실행 기록은 `traces/*.jsonl` 에 남습니다 (Langfuse 특강에서 확장). `.env` 에 `LANGSMITH_TRACING=true` 와 `LANGSMITH_API_KEY` 를 넣으면 같은 실행이 smith.langchain.com 에도 트리(노드 → LLM 호출 · Jev · MCP · 기억)로 올라갑니다. 코드 수정 없이 켜고 끕니다.
 
 ---
 
@@ -145,16 +168,26 @@ pnpm setup:check             # 환경 점검
 airforce-agentic-ai/
 ├─ src/lib/                 공용 모듈 — 폐쇄망으로 옮길 때 바꾸는 곳이 전부 여기
 │  ├─ llm.ts                 LLM (Bedrock 중계 / Ollama / 클라우드 / mock)
-│  ├─ jev.ts                 Jev 판정 모델 (OpenRouter / 로컬 규칙 판정기)
+│  ├─ jev.ts                 Jev 판정 모델 (TypeSafe SDK / OpenRouter / 로컬 규칙 판정기)
+│  ├─ memory.ts              장기 기억 (Hindsight 서버 / 파일) — createBank · retain · recall · reflect
 │  ├─ trace.ts               실행 기록 (traces/*.jsonl)
 │  ├─ show.ts                --watch 출력
 │  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm agent:live)
-├─ labs/agent/main.ts        내 에이전트 — 보고 → agent ⇄ tools → judge
-├─ data/api/                 교육용 합성 자료 — 레이더 화면(radar-screen.json) · 기상(weather.json)
+├─ labs/agent/
+│  ├─ main.ts                내 에이전트 — 보고 → agent ⇄ tools → judge → approve (빈칸 1 · 2 · 6)
+│  ├─ search-docs.ts         규정집 찾아보기 (빈칸 3)
+│  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 5)
+├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4)
+├─ data/                     교육용 합성 자료
+│  ├─ api/                    레이더 화면(radar-screen.json) · 기상(weather.json)
+│  └─ docs/rulebook.md        관제 규정 10줄
 ├─ docs/graphs/              그래프 그림 (pnpm graph)
+├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
+├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
+├─ .hindsight/               file 모드 기억 (git 에 안 올라감)
 ├─ traces/                   실행 기록
 ├─ langgraph.json            LangGraph Studio 설정 (pnpm studio)
-└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · draw-graph(그림)
+└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · draw-graph(그림) · memory-up(Hindsight 띄우기)
 ```
 
 ---
@@ -183,5 +216,7 @@ git commit -am "handson: regenerate from main" && git push
 
 - LangGraph.js — https://langchain-ai.github.io/langgraphjs/
 - LangSmith · Studio — https://docs.smith.langchain.com
-- Jev / OpenRouter Decisions API — https://openrouter.ai/docs/guides/community/jev-tutorial
+- MCP TypeScript SDK — https://github.com/modelcontextprotocol/typescript-sdk
+- Jev / TypeSafe — https://typesafe.ai
+- Hindsight (Node 클라이언트 · 로컬 데몬) — https://hindsight.vectorize.io/sdks/nodejs · https://hindsight.vectorize.io/sdks/hindsight-all-npm
 - Langfuse — https://langfuse.com/docs
