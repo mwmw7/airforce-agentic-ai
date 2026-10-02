@@ -31,7 +31,8 @@ else {
 
 // Jev
 const jevMode = process.env.JEV_MODE ?? "local";
-if (jevMode === "local") warn("JEV_MODE=local — 규칙 기반 로컬 판정기. 실제 Jev 는 강사 측 OPENROUTER_API_KEY 필요");
+if (jevMode === "local") warn("JEV_MODE=local — 규칙 기반 로컬 판정기. 실제 Jev 는 강사 측 TYPESAFE_API_KEY 필요");
+else if (jevMode === "typesafe") process.env.TYPESAFE_API_KEY ? ok("JEV_MODE=typesafe, 키 있음") : bad("JEV_MODE=typesafe 인데 TYPESAFE_API_KEY 없음");
 else process.env.OPENROUTER_API_KEY ? ok("JEV_MODE=openrouter, 키 있음") : bad("JEV_MODE=openrouter 인데 OPENROUTER_API_KEY 없음");
 
 // LangSmith 트레이싱 (선택)
