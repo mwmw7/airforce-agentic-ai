@@ -35,6 +35,22 @@ if (jevMode === "local") warn("JEV_MODE=local — 규칙 기반 로컬 판정기
 else if (jevMode === "typesafe") process.env.TYPESAFE_API_KEY ? ok("JEV_MODE=typesafe, 키 있음") : bad("JEV_MODE=typesafe 인데 TYPESAFE_API_KEY 없음");
 else process.env.OPENROUTER_API_KEY ? ok("JEV_MODE=openrouter, 키 있음") : bad("JEV_MODE=openrouter 인데 OPENROUTER_API_KEY 없음");
 
+// 장기 기억 (Hindsight)
+const memMode = process.env.MEMORY_MODE ?? "file";
+if (memMode === "file") warn("MEMORY_MODE=file — .hindsight/*.json 에 저장. 실제 Hindsight 는 pnpm memory:up 후 MEMORY_MODE=hindsight");
+else {
+  try {
+    const r = await fetch(`${process.env.HINDSIGHT_BASE_URL ?? "http://localhost:8888"}/health`);
+    r.ok ? ok(`Hindsight 연결 OK (${process.env.HINDSIGHT_BASE_URL})`) : bad(`Hindsight 응답 ${r.status}`);
+  } catch { bad("Hindsight 서버에 연결할 수 없음 — pnpm memory:up 또는 MEMORY_MODE=file"); }
+}
+
+// 날씨 MCP 서버
+try {
+  const r = await fetch(process.env.MCP_WEATHER_URL ?? "http://localhost:3333/mcp", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  ok(`날씨 MCP 서버 응답 ${r.status} (${process.env.MCP_WEATHER_URL ?? "http://localhost:3333/mcp"})`);
+} catch { warn("날씨 MCP 서버 꺼짐 — 다른 터미널에서 pnpm mcp:weather (없어도 agent 는 날씨 없이 돈다)"); }
+
 // LangSmith 트레이싱 (선택)
 if (process.env.LANGSMITH_TRACING === "true") {
   process.env.LANGSMITH_API_KEY
@@ -47,6 +63,7 @@ if (process.env.LANGSMITH_TRACING === "true") {
 
 console.log(`
 다음 단계
+  pnpm mcp:weather        # 날씨 MCP 서버 (다른 터미널에 켜 둔다)
   pnpm agent              # 보고 한 줄 → agent ⇄ tools → judge
   pnpm agent --watch      # 단계마다 들어간 값·나온 값 보기
   pnpm agent:live         # 브라우저(localhost:3030)에서 실시간 보기

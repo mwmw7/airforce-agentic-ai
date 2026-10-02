@@ -74,23 +74,24 @@ Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강
 
 ---
 
-## 부록. 현재 구현 상태 (2026-10-02)
+## 부록. 현재 구현 상태 (2026-10-02 저녁)
 
-핸즈온 코드는 `labs/agent/main.ts` 하나에서 출발해 위 10단계를 하나씩 붙여 가는 중입니다. Langfuse 연동은 이현우 특강 범위라 이 핸즈온에서는 제외합니다.
+핸즈온 코드는 `labs/agent/main.ts` 하나에서 출발해 아래 단계를 전부 붙였습니다. Langfuse 연동은 이현우 특강 범위라 제외합니다.
 
 | 상태 | 내용 | 위치 |
 |---|---|---|
-| 구현 | Agent Loop (agent ⇄ tools, 도구 3개) | `labs/agent/main.ts` · 빈칸 1 |
+| 구현 | Agent Loop (agent ⇄ tools, 도구 4개) | `labs/agent/main.ts` · 빈칸 1 |
 | 구현 | Harness 강제 중단 (MAX_STEPS) | 〃 · 빈칸 2 |
-| 구현 | Jev 판정 3질문 (choice · score · noul), 키 없으면 로컬 판정기 | `src/lib/jev.ts` |
+| 구현 | RAG: 규정집 찾아보기 (단어 겹침 검색, 라이브러리 없음) | `labs/agent/search-docs.ts` · 빈칸 3 |
+| 구현 | MCP 서버: 날씨 도구를 Streamable HTTP 로 공개 | `mcp-servers/weather/server.ts` · 빈칸 4 |
+| 구현 | MCP 클라이언트: 접속 → 도구 목록 → 실행 | `labs/agent/mcp.ts` · 빈칸 5 |
+| 구현 | Jev 판정 3질문 (TypeSafe SDK 직접 호출, 키 없으면 로컬 판정기) | `src/lib/jev.ts` |
+| 구현 | 장기 기억 Hindsight: createBank · retain · recall · reflect, 서버 없으면 file 모드 | `src/lib/memory.ts` · 시연 |
 | 구현 | HITL: 출격이면 interrupt 로 승인 · 반려 | `labs/agent/main.ts` approve 노드 |
-| 구현 | 모델 지연 처리: 시간 초과 → 사람에게 retry / skip / stop | 〃 askHuman 노드 |
+| 구현 | Checkpoint: LangGraph SqliteSaver, 강제 종료 후 `--resume` | 〃 · 빈칸 6 |
+| 구현 | 모델 지연 처리: 시간 초과 → retry / skip / stop | 〃 askHuman 노드 |
 | 구현 | 모델 교체 (relay · ollama · cloud · mock) | `src/lib/llm.ts` · `LLM_MODE` |
 | 구현 | Trace: traces/*.jsonl + LangSmith, LangGraph Studio | `src/lib/trace.ts` · `langgraph.json` |
 | 구현 | 실시간 보기 (브라우저 · --watch) | `src/lib/live.ts` · `show.ts` |
-| 미구현 | 문서 검색 (RAG) · 웹 검색 | 빈칸 3, 5 |
-| 미구현 | 레이더 MCP 서버 + 연결 | 빈칸 4 |
-| 미구현 | 동시 수집 후 합류 (병렬) | 빈칸 5 |
-| 미구현 | 장기 기억 (Hindsight retain · recall) | 시연용 |
-| 미구현 | LLM 보고서 작성 + 저장 폴더 격리 | 빈칸 9 |
-| 미구현 | SQLite 저장 후 강제 종료 → 재개 (`--resume`) | 빈칸 10 |
+| 미구현 | 동시 수집 후 합류 (병렬) — 지금은 모델이 도구를 하나씩 고른다 | 추후 |
+| 미구현 | LLM 보고서 작성 + 저장 폴더 격리 | 추후 |
