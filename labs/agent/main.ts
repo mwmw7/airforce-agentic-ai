@@ -24,17 +24,20 @@
  *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부)
  *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 사람에게 묻는 화면이 뜬다
  *        pnpm agent:live                      브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
+ *        pnpm agent --resume <실행번호>       담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (checkpoints.sqlite)
  *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" })
  */
 import { readFileSync } from "node:fs";
 import readline from "node:readline/promises";
-import { Annotation, Command, END, interrupt, MemorySaver, START, StateGraph } from "@langchain/langgraph";
+import { Annotation, Command, END, interrupt, START, StateGraph } from "@langchain/langgraph";
+import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
 import { askJev } from "../../src/lib/jev.js";
 import { showDebug, showTool } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
 import { searchDocs } from "./search-docs.js";
 import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
+import { createBank, MEMORY_MODE, recall, retain } from "../../src/lib/memory.js";
 
 // 모델을 최대 몇 번까지 부를지. 이 숫자를 넘으면 내 코드가 멈춘다
 const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
@@ -160,10 +163,15 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   // ----- END SOLUTION -----
 }
 
-/** judge: Jev 에게 세 가지를 한 번에 묻고, 최종 결정은 코드 규칙으로 */
+/** judge: 지난 기억을 떠올리고(recall), Jev 에게 세 가지를 한 번에 묻고, 최종 결정은 코드 규칙으로. 끝나면 이번 판단을 기억에 남긴다(retain) */
 const DANGER = ["전혀 안 위험함, 심심한 하루", "조금 신경 쓰임", "꽤 수상함", "비상! 당장 뭔가 해야 함"];
 async function judgeNode(state: S): Promise<Partial<S>> {
-  const res = await askJev({ report: state.report, facts: state.facts }, {
+  // 장기 기억: 비슷한 보고가 전에 있었나? 있으면 Jev 에게 past 로 같이 보여 준다 (어제 판단을 오늘 기억한다)
+  await createBank();
+  const past = await recall(state.report);
+  console.log(past.length ? `[기억] 떠오른 것 ${past.length}건 (${MEMORY_MODE}):\n${past.map((p) => "   · " + p).join("\n")}` : `[기억] 비슷한 보고 없음 (${MEMORY_MODE})`);
+
+  const res = await askJev({ report: state.report, facts: state.facts, past }, {
     action: { type: "choice", instructions: "report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?", criteria: {
       scramble: "위험해 보인다. 전투기를 띄워서 직접 확인해야 한다",
       watch: "좀 수상하지만 아직은 지켜보면서 정보를 더 모으면 된다",
@@ -184,6 +192,8 @@ async function judgeNode(state: S): Promise<Partial<S>> {
   else if (action.choice === "watch") decision = "일단 지켜보기";
   else decision = "별일 아님. 커피나 한 잔";
 
+  // 이번 판단을 기억에 남긴다. 다음에 비슷한 보고가 오면 recall 로 떠오른다
+  await retain(`보고: ${state.report} → Jev 의견 ${action.choice} (확신 ${Math.round(confidence * 100)}%) → ${decision}`);
   return { judgment: { action: action.choice ?? "?", probabilities: action.probabilities ?? {}, confidence, danger: Math.round(danger.score ?? 0), unknown: noul, decision } };
 }
 
@@ -203,7 +213,9 @@ async function approveNode(state: S): Promise<Partial<S>> {
     고르기: "y(출격 승인) / n(반려, 감시 유지)",
   }) as string;
   const approved = /^(y|yes|승인)/.test(answer);
-  return { judgment: { ...j, decision: approved ? "출격 승인 — 사람이 결정" : "출격 반려, 감시 유지 — 사람이 결정" } };
+  const decision = approved ? "출격 승인 — 사람이 결정" : "출격 반려, 감시 유지 — 사람이 결정";
+  await retain(`보고: ${state.report} → 사람의 결정: ${decision}`); // 사람의 결정도 기억에 남긴다
+  return { judgment: { ...j, decision } };
 }
 
 // judge 다음: 출격이면 사람에게, 아니면 끝
@@ -257,8 +269,9 @@ export const graph = new StateGraph(LoopState)
   .addConditionalEdges("judge", afterJudge, ["approve", END])
   .addEdge("approve", END)
   .addEdge("stop", END)
-  // 멈췄다 이어가려면 진행 상황을 저장할 곳이 필요하다. 여기선 메모리(프로그램 끄면 사라짐), 실습 2 는 sqlite 파일
-  .compile({ checkpointer: new MemorySaver() });
+  // 멈췄다 이어가려면 진행 상황(checkpoint)을 저장할 곳이 필요하다. LangGraph 가 주는 SqliteSaver 를 꽂으면
+  // 단계마다 checkpoints.sqlite 파일에 저장된다 → 프로그램을 껐다 켜도 --resume 으로 멈춘 곳부터 이어간다 (직접 SQL 은 한 줄도 없다)
+  .compile({ checkpointer: SqliteSaver.fromConnString("checkpoints.sqlite") });
 
 // ── 6. 실행: 보고 하나를 넣고 돌린다 ──
 // 이 파일을 직접 실행할 때만 돈다 (pnpm graph 가 import 할 때는 그림만 그린다)
@@ -279,14 +292,21 @@ if (process.argv[1]?.endsWith("main.ts")) {
     return answer;
   }
 
-  /** 보고 하나를 끝까지 돌린다: 처음 돌리고, 멈추면(askHuman·approve) 사람에게 물어 Command({ resume }) 로 이어간다 */
-  async function runOnce(report: string, round: number): Promise<S> {
+  /** 보고 하나를 끝까지 돌린다: 처음 돌리고, 멈추면(askHuman·approve) 사람에게 물어 Command({ resume }) 로 이어간다
+   *  resumeId 가 있으면 새로 시작하지 않고, 그 실행번호로 저장된 곳(checkpoints.sqlite)부터 이어간다 */
+  async function runOnce(report: string, round: number, resumeId?: string): Promise<S> {
+    // thread_id = 이 실행의 번호 (멈췄다 이어갈 때 같은 번호로 찾는다) / recursionLimit = LangGraph 자체 안전장치 / runName = LangSmith 에 올라갈 때 기록 이름
+    const threadId = resumeId ?? `loop-${round}-${Date.now()}`;
+    const config = { configurable: { thread_id: threadId }, recursionLimit: MAX_STEPS * 2 + 5, runName: `loop.round-${round}` };
+    if (resumeId) {
+      report = (await graph.getState(config)).values.report ?? "";
+      if (!report) { console.error(`[오류] 실행번호 ${resumeId} 의 저장 기록이 없습니다 (checkpoints.sqlite)`); process.exit(1); }
+      console.log(`\n[이어가기] 실행번호 ${resumeId} 의 멈춘 곳부터`);
+    }
     console.log(`\n[보고] ${report}`);
-    console.log(`[설정] 모델 호출 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 호출`);
+    console.log(`[설정] 모델 호출 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 호출 · 실행번호 ${threadId} (멈추면 pnpm agent --resume ${threadId})`);
     send("run_start", { round, report });
 
-    // thread_id = 이 실행의 번호 (멈췄다 이어갈 때 같은 번호로 찾는다) / recursionLimit = LangGraph 자체 안전장치 / runName = LangSmith 에 올라갈 때 기록 이름
-    const config = { configurable: { thread_id: `loop-${round}-${Date.now()}` }, recursionLimit: MAX_STEPS * 2 + 5, runName: `loop.round-${round}` };
     const input = { report };  // 대화의 첫 줄(역할 설명 + 보고)은 agent 노드가 스스로 연다
     let result = {} as S;
 
@@ -298,11 +318,20 @@ if (process.argv[1]?.endsWith("main.ts")) {
       }
     }
     async function runWithHuman() {
-      await run(input);
+      if (!resumeId) await run(input); // 이어가기면 처음부터 돌리지 않는다. 저장된 멈춘 곳(아래 interrupt)부터
       for (;;) {
+        // 그래프가 interrupt() 에서 멈춰 있으면 그 질문이 state.tasks 에 들어 있다. 없으면 끝까지 돈 것
         const question = (await graph.getState(config)).tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as { 문제: string; 고르기: string } | undefined;
         if (!question) break;
+        // ===== TODO 6: 사람의 답으로 멈춘 곳부터 이어가기 =====
+        // askPerson(question) 으로 답을 받고, run(new Command({ resume: 답 })) 으로 그래프를 다시 돌리세요.
+        //   · 같은 config(thread_id) 로 돌리면 LangGraph 가 checkpoints.sqlite 에서 멈춘 곳을 찾아 그 답을 interrupt() 의 반환값으로 넣어 준다
+        //   · 그래서 Ctrl+C 로 껐다가 pnpm agent --resume <실행번호> 로 켜도 같은 줄에서 이어진다
+        // ----- SOLUTION -----
+        //! const answer = await askPerson(question);
+        //! break; // ← 이대로면 답을 받고도 이어가지 않습니다
         await run(new Command({ resume: await askPerson(question) }));
+        // ----- END SOLUTION -----
       }
     }
 
@@ -344,6 +373,12 @@ if (process.argv[1]?.endsWith("main.ts")) {
       send("round_wait", { sec: 5 });
       await new Promise((r) => setTimeout(r, 5000));
     }
+  } else if (process.argv.includes("--resume")) {
+    // 멈춘 실행 이어가기: pnpm agent --resume <실행번호>
+    const id = process.argv[process.argv.indexOf("--resume") + 1];
+    if (!id) { console.error("실행번호가 필요합니다: pnpm agent --resume loop-1-1234567890"); process.exit(1); }
+    await runOnce("", 1, id);
+    rl.close();
   } else {
     // 첫 번째 일반 인자가 보고. 숫자면 REPORTS 에서 고르고, 문장이면 그대로 쓴다 (--watch 같은 옵션은 제외)
     const arg = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "1";

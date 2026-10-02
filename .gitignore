@@ -10,3 +10,4 @@ traces/
 
 # LangGraph API
 .langgraph_api
+.hindsight/
