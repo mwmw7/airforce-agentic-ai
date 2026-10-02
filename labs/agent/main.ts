@@ -34,6 +34,7 @@ import { askJev } from "../../src/lib/jev.js";
 import { showDebug, showTool } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
 import { searchDocs } from "./search-docs.js";
+import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
 
 // 모델을 최대 몇 번까지 부를지. 이 숫자를 넘으면 내 코드가 멈춘다
 const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
@@ -49,12 +50,12 @@ const REPORTS = [
 ];
 
 // ── 1. 도구: 설명(모델이 읽는 것) + 실행 함수(내 코드가 돌리는 것) ──
+// 레이더·규정집은 이 파일 안의 로컬 도구. 날씨는 MCP 서버(mcp-servers/weather)에서 받아 온다 → mcp.ts
 const readJson = (file: string) => JSON.parse(readFileSync(new URL(`../../data/api/${file}`, import.meta.url), "utf8"));
 type RadarRow = Record<string, string>;
 
-const tools: Tool[] = [
+const localTools: Tool[] = [
   { type: "function", function: { name: "look_radar", description: "레이더 화면을 한 번 본다. 한 번에 하나만 잡히므로 찾는 게 안 보이면 다시 봐야 한다. 자세한 건 안 보인다. (교육용 합성 자료)", parameters: { type: "object", properties: {} } } },
-  { type: "function", function: { name: "look_weather", description: "지금 날씨(하늘·구름·바람·시야·비행 가능 여부)를 한 번 본다. (교육용 합성 자료)", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "look_closer", description: "레이더 화면에서 한 자리만 확대해 자세히 본다. 수상한 게 있으면 꼭 써 보라. (교육용 합성 자료)",
       parameters: { type: "object", properties: { 어디: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["어디"] } } },
   // RAG: 규정집은 모델이 외우고 있지 않다. 필요할 때 찾아서(search-docs.ts) 대화에 넣어 준다
@@ -67,7 +68,6 @@ const pickOne = <T>(list: T[]): T => list[Math.floor(Math.random() * list.length
 function runTool(name: string, args: Record<string, unknown>): string {
   const rows: RadarRow[] = readJson("radar-screen.json");
   if (name === "look_radar") { const { 자세히, _notice, ...row } = pickOne(rows); return JSON.stringify(row); }   // '자세히' 는 숨긴다 → 확대해야 보인다
-  if (name === "look_weather") { const { _notice, ...w } = pickOne(readJson("weather.json") as RadarRow[]); return JSON.stringify(w); }
   if (name === "look_closer") {
     const where = String(args.어디 ?? "");
     const row = rows.find((r) => where.includes(r.어디.split(" ")[0]));                       // "잠실 위" → "잠실" 로 찾는다
@@ -78,6 +78,13 @@ function runTool(name: string, args: Record<string, unknown>): string {
     return JSON.stringify({ 규정: found.length ? found : ["관련 규정 없음"] });
   }
   return JSON.stringify({ error: `모르는 도구: ${name}` });
+}
+
+// 모델에게 줄 도구 목록 = 로컬 도구 + MCP 서버에서 받은 도구. 첫 호출 때 한 번만 서버에 묻는다
+let tools: Tool[] | null = null;
+async function allTools(): Promise<Tool[]> {
+  if (!tools) tools = [...localTools, ...(await listMcpTools())];
+  return tools;
 }
 
 // ── 2. 공유 기록(칠판): 대화는 뒤에 '이어 붙이기', 호출 횟수는 '더하기', 나머지는 덮어쓰기 ──
@@ -108,7 +115,7 @@ async function agentNode(state: S): Promise<Partial<S>> {
   console.log(`\n── 모델 호출 ${step}회째 (${LLM_MODE === "mock" ? "가짜 모델 mock" : LLM_MODEL}) · 도구를 더 쓸지, 사실을 정리할지 묻는다 ──`);
   let reply;
   try {
-    reply = await chat(history, tools, { label: `loop.step${step}` });
+    reply = await chat(history, await allTools(), { label: `loop.step${step}` });
   } catch (e) {
     if (!isTimeout(e)) throw e;
     // 늦었다 → 여기서 정하지 않고 이유만 적는다. 다음에 뭘 할지는 사람에게 묻는다 (askHuman)
@@ -137,15 +144,18 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   // calls 를 하나씩 runTool(이름, 입력값) 으로 실행하고,
   // 결과를 { role: "tool", tool_call_id: call.id, content: 결과 } 모양으로 만들어 { messages } 로 반환하세요.
   //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 풀어서 넘깁니다 (예: {"어디":"잠실 위"})
+  //   · MCP 에서 받은 도구(isMcpTool)면 callMcpTool, 아니면 runTool
   //   · 반환한 messages 는 공유 기록 뒤에 자동으로 이어 붙여집니다
   // ----- SOLUTION -----
   //! return { messages: [] };
-  const results: Msg[] = calls.map((call) => {
+  const results: Msg[] = [];
+  for (const call of calls) {
     const args = JSON.parse(call.function.arguments || "{}");
-    const result = runTool(call.function.name, args);
+    // MCP 에서 받은 도구면 서버에 실행을 부탁하고, 아니면 이 파일의 runTool 로 직접 실행한다
+    const result = isMcpTool(call.function.name) ? await callMcpTool(call.function.name, args) : runTool(call.function.name, args);
     showTool(call.function.name, args, result); // 결과를 색 입혀 한 줄씩 보여 준다
-    return { role: "tool", tool_call_id: call.id, content: result };
-  });
+    results.push({ role: "tool", tool_call_id: call.id, content: result });
+  }
   return { messages: results };
   // ----- END SOLUTION -----
 }

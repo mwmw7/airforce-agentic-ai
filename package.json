@@ -15,6 +15,8 @@
     "agent": "tsx labs/agent/main.ts",
     "agent:limit": "MAX_STEPS=1 tsx labs/agent/main.ts",
     "agent:live": "tsx labs/agent/main.ts --live",
+    "mcp:weather": "tsx mcp-servers/weather/server.ts",
+    "mcp:inspect": "pnpm dlx @modelcontextprotocol/inspector",
     "studio": "langgraphjs dev --port 2024",
     "graph": "tsx tools/draw-graph.ts",
     "instructor:make-handson": "node tools/make-handson.mjs"
@@ -22,6 +24,7 @@
   "dependencies": {
     "@langchain/core": "^1.2.14",
     "@langchain/langgraph": "^1.4.18",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "@typesafe-ai/sdk": "^0.6.0",
     "dotenv": "^16.4.0",
     "langsmith": "0.10.5",
