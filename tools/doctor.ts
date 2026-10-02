@@ -1,7 +1,7 @@
 /**
  * tools/doctor.ts — [실습 0-1] 환경 점검
  *   pnpm setup:check
- * Node 버전, .env, 모드별 연결(LLM / Jev / Hindsight) 을 확인하고 어떤 실습이 바로 가능한지 알려줍니다.
+ * Node 버전, .env, 모드별 연결(LLM / Jev / LangSmith) 을 확인하고 실습이 바로 가능한지 알려줍니다.
  */
 import "dotenv/config";
 import fs from "node:fs";
@@ -34,21 +34,6 @@ const jevMode = process.env.JEV_MODE ?? "local";
 if (jevMode === "local") warn("JEV_MODE=local — 규칙 기반 로컬 판정기. 실제 Jev 는 강사 측 OPENROUTER_API_KEY 필요");
 else process.env.OPENROUTER_API_KEY ? ok("JEV_MODE=openrouter, 키 있음") : bad("JEV_MODE=openrouter 인데 OPENROUTER_API_KEY 없음");
 
-// Hindsight
-const memMode = process.env.MEMORY_MODE ?? "file";
-if (memMode === "file") warn("MEMORY_MODE=file — .hindsight/*.json 저장. Hindsight 서버는 docker 로 실행 후 hindsight 로 변경");
-else {
-  try {
-    const r = await fetch(process.env.HINDSIGHT_BASE_URL ?? "http://localhost:8888");
-    ok(`Hindsight 응답 ${r.status} (${process.env.HINDSIGHT_BASE_URL})`);
-  } catch { bad("Hindsight 서버에 연결할 수 없음 — docker 실행 여부 확인 또는 MEMORY_MODE=file"); }
-}
-
-// 웹 검색
-const searchMode = process.env.SEARCH_MODE ?? "mock";
-if (searchMode === "mock") warn("SEARCH_MODE=mock — data/web/ 의 가상 검색 결과 사용. 실제 검색은 SEARCH_MODE=tavily + TAVILY_API_KEY");
-else process.env.TAVILY_API_KEY ? ok("SEARCH_MODE=tavily, 키 있음") : bad("SEARCH_MODE=tavily 인데 TAVILY_API_KEY 없음");
-
 // LangSmith 트레이싱 (선택)
 if (process.env.LANGSMITH_TRACING === "true") {
   process.env.LANGSMITH_API_KEY
@@ -57,11 +42,12 @@ if (process.env.LANGSMITH_TRACING === "true") {
 } else warn("LANGSMITH_TRACING 꺼짐 — traces/*.jsonl 에만 기록. 켜려면 .env 에 LANGSMITH_TRACING=true + LANGSMITH_API_KEY");
 
 // 데이터
-["data/api/tracks.json", "data/alerts/scenario-1.json", "data/doctrine/v2-2026-rules.md"].forEach((f) => fs.existsSync(f) ? ok(f) : bad(`${f} 없음`));
+["data/api/radar-screen.json", "data/api/weather.json"].forEach((f) => fs.existsSync(f) ? ok(f) : bad(`${f} 없음`));
 
 console.log(`
 다음 단계
-  pnpm loop:run                    # [실습 0] Agent 루프
-  pnpm scramble:inspect            # [실습 2-2] MCP 서버를 Inspector 로 열어보기
-  pnpm scramble:run --scenario 1   # [실습 2] 스크램블 판단 보조 Agent
+  pnpm agent              # 보고 한 줄 → agent ⇄ tools → judge
+  pnpm agent --watch      # 단계마다 들어간 값·나온 값 보기
+  pnpm agent:live         # 브라우저(localhost:3030)에서 실시간 보기
+  pnpm studio             # LangGraph Studio (LangSmith 키 필요)
 `);

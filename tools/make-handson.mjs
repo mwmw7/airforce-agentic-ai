@@ -23,7 +23,7 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const CHECK = process.argv.includes("--check");
-const DIRS = ["src", "labs", "mcp-servers"];
+const DIRS = ["src", "labs"];
 
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

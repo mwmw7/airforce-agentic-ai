@@ -1,5 +1,5 @@
 /**
- * [실습 0] LangGraph 로 만드는 가장 작은 Agent (1일차 · 40분)
+ * labs/agent/main.ts — LangGraph 로 만드는 가장 작은 Agent. 여기서 출발해 한 단계씩 기능을 붙여 나간다
  *
  * 관제실에 짧은 보고 한 줄이 들어온다. "서울 상공에 정체불명 비행체가 떠 있어요"
  * Agent 는 도구로 사실을 확인하고(LLM), 판정 모델이 의견을 내고(Jev), 최종 결정은 코드가 한다.
@@ -17,13 +17,14 @@
  *   · 출격처럼 큰 결정은 코드도 모델도 아닌 사람이 한다 (approve 에서 멈추고 묻는다)
  *   · 모델이 늦으면(LLM_TIMEOUT_SEC) 끊고 사람에게 묻는다. 실행 전체도 RUN_TIMEOUT_SEC 를 넘으면 끊는다
  *
- * 실행:  pnpm loop:run                          보고 1번
- *        pnpm loop:run 3                        보고 3번
- *        pnpm loop:run "한강에 오리 풍선이 떠요"   내가 쓴 보고
- *        pnpm loop:limit                        MAX_STEPS=1 로 강제 중단 → 멈춘 이유가 내 코드에서 나오는지 확인
- *        pnpm loop:run --watch                  단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부)
- *        LLM_MOCK_SLOW=1 pnpm loop:run          모델이 늦는 상황 시연 → 사람에게 묻는 화면이 뜬다
- *        pnpm loop:live                         브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
+ * 실행:  pnpm agent                           보고 1번
+ *        pnpm agent 3                         보고 3번
+ *        pnpm agent "한강에 오리 풍선이 떠요"    내가 쓴 보고
+ *        pnpm agent:limit                     MAX_STEPS=1 로 강제 중단 → 멈춘 이유가 내 코드에서 나오는지 확인
+ *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부)
+ *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 사람에게 묻는 화면이 뜬다
+ *        pnpm agent:live                      브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
+ *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" })
  */
 import { readFileSync } from "node:fs";
 import readline from "node:readline/promises";
@@ -124,7 +125,7 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   const last = state.messages.at(-1);
   const calls = last?.role === "assistant" ? (last.tool_calls ?? []) : [];
 
-  // ===== TODO 0-2: 도구를 실행하고 결과를 모델에게 돌려주기 =====
+  // ===== TODO 1: 도구를 실행하고 결과를 모델에게 돌려주기 =====
   // calls 를 하나씩 runTool(이름, 입력값) 으로 실행하고,
   // 결과를 { role: "tool", tool_call_id: call.id, content: 결과 } 모양으로 만들어 { messages } 로 반환하세요.
   //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 풀어서 넘깁니다 (예: {"어디":"잠실 위"})
@@ -204,7 +205,7 @@ function route(state: S): "tools" | "judge" | "stop" | "askHuman" {
   const last = state.messages.at(-1);
   const wantsTool = last?.role === "assistant" && (last.tool_calls?.length ?? 0) > 0;
 
-  // ===== TODO 0-3: 강제로 멈추는 건 모델이 아니라 내 코드다 =====
+  // ===== TODO 2: 강제로 멈추는 건 모델이 아니라 내 코드다 =====
   // · 모델이 도구를 원하지 않으면 → "judge" (사실 확인 끝, 판정으로)
   // · 도구를 원하는데 이미 MAX_STEPS 만큼 모델을 불렀으면(state.steps >= MAX_STEPS) → "stop"
   // · 그 외 → "tools"
@@ -243,7 +244,7 @@ export const graph = new StateGraph(LoopState)
 
 // ── 6. 실행: 보고 하나를 넣고 돌린다 ──
 // 이 파일을 직접 실행할 때만 돈다 (pnpm graph 가 import 할 때는 그림만 그린다)
-if (process.argv[1]?.endsWith("agent.ts")) {
+if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   /** 사람에게 묻는다. 터미널 입력과 브라우저 버튼(--live) 중 먼저 온 답을 쓴다 */
@@ -299,8 +300,8 @@ if (process.argv[1]?.endsWith("agent.ts")) {
         return result;
       }
       if (e?.lc_error_code !== "GRAPH_RECURSION_LIMIT") throw e;
-      // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (TODO 0-2 · 0-3 이 비어 있으면 이렇게 된다)
-      console.error("\n[중단] 반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. TODO 0-2 · 0-3 을 확인하세요.");
+      // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (TODO 1 · 2 이 비어 있으면 이렇게 된다)
+      console.error("\n[중단] 반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. TODO 1 · 2 을 확인하세요.");
       process.exit(1);
     }
 

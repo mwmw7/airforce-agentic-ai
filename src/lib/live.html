@@ -208,7 +208,7 @@
   function listen() {
     const es = new EventSource("/events");
     es.onopen = () => { if ($("status").textContent === "연결 안 됨" || $("status").textContent === "연결됨") setStatus("연결됨 · 실행을 기다립니다", ""); };
-    es.onerror = () => setStatus("연결 안 됨 — 터미널에서 pnpm loop:live 가 돌고 있는지, 주소·포트가 맞는지 확인", "human");
+    es.onerror = () => setStatus("연결 안 됨 — 터미널에서 pnpm agent:live 가 돌고 있는지, 주소·포트가 맞는지 확인", "human");
     es.onmessage = (m) => { queue.push(JSON.parse(m.data)); play(); };
   }
 

@@ -3,8 +3,7 @@
   "node_version": "22",
   "dependencies": ["."],
   "graphs": {
-    "lab0_loop": "./labs/lab0-loop/agent.ts:graph",
-    "lab2_scramble": "./labs/lab2-scramble/graph.ts:buildGraph"
+    "agent": "./labs/agent/main.ts:graph"
   },
   "env": ".env"
 }

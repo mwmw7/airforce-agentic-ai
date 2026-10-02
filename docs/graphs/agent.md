@@ -1,4 +1,4 @@
-# 실습 0 — 보고 → agent ⇄ tools → judge
+# 내 에이전트 — 보고 → agent ⇄ tools → judge
 
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
