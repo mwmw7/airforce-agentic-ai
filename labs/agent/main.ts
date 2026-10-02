@@ -33,6 +33,7 @@ import { chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type T
 import { askJev } from "../../src/lib/jev.js";
 import { showDebug, showTool } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
+import { searchDocs } from "./search-docs.js";
 
 // 모델을 최대 몇 번까지 부를지. 이 숫자를 넘으면 내 코드가 멈춘다
 const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
@@ -56,6 +57,9 @@ const tools: Tool[] = [
   { type: "function", function: { name: "look_weather", description: "지금 날씨(하늘·구름·바람·시야·비행 가능 여부)를 한 번 본다. (교육용 합성 자료)", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "look_closer", description: "레이더 화면에서 한 자리만 확대해 자세히 본다. 수상한 게 있으면 꼭 써 보라. (교육용 합성 자료)",
       parameters: { type: "object", properties: { 어디: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["어디"] } } },
+  // RAG: 규정집은 모델이 외우고 있지 않다. 필요할 때 찾아서(search-docs.ts) 대화에 넣어 준다
+  { type: "function", function: { name: "look_rulebook", description: "관제실 규정집에서 지금 상황과 관련된 규정을 찾아본다. 판단 전에 꼭 한 번 보라. (교육용 합성 자료)",
+      parameters: { type: "object", properties: { 질문: { type: "string", description: "지금 상황을 한 문장으로. 예: 무전 응답 없는 풍선이 공항 쪽으로 간다" } }, required: ["질문"] } } },
 ];
 
 // 모델이 고른 도구 이름과 입력값을 받아 실제로 실행한다
@@ -68,6 +72,10 @@ function runTool(name: string, args: Record<string, unknown>): string {
     const where = String(args.어디 ?? "");
     const row = rows.find((r) => where.includes(r.어디.split(" ")[0]));                       // "잠실 위" → "잠실" 로 찾는다
     return row ? JSON.stringify({ 어디: row.어디, 뭐가: row.뭐가, 자세히: row.자세히 }) : JSON.stringify({ 결과: `레이더에 '${where}' 자리는 없음` });
+  }
+  if (name === "look_rulebook") {
+    const found = searchDocs(String(args.질문 ?? ""));
+    return JSON.stringify({ 규정: found.length ? found : ["관련 규정 없음"] });
   }
   return JSON.stringify({ error: `모르는 도구: ${name}` });
 }
@@ -89,7 +97,7 @@ interface Judgment { action: string; probabilities: Record<string, number>; conf
 
 /** agent: 모델을 한 번 부른다. 답변이든 도구 요청이든 모델의 말로 기록에 남긴다 */
 // 모델에게 주는 역할 설명 (대화의 첫 줄). 그래프 안에서 넣어야 터미널·Studio 어디서 돌려도 같다
-const SYSTEM = "너는 관제실 보조다. 보고를 받으면 레이더를 봐라. 한 번에 하나만 잡히니 보고와 관련된 게 나올 때까지 몇 번 더 봐도 된다. 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 확인된 사실만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
+const SYSTEM = "너는 관제실 보조다. 보고를 받으면 레이더를 봐라. 한 번에 하나만 잡히니 보고와 관련된 게 나올 때까지 몇 번 더 봐도 된다. 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 판단 전에 look_rulebook 으로 관련 규정을 한 번 찾아보라. 확인된 사실과 관련 규정만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
 
 async function agentNode(state: S): Promise<Partial<S>> {
   const step = state.steps + 1;
