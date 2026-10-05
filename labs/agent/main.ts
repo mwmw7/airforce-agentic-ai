@@ -34,8 +34,8 @@ import readline from "node:readline/promises";
 import { Annotation, Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
-import { askJev } from "../../src/lib/jev.js";
-import { showDebug, showTool } from "../../src/lib/show.js";
+import { askJev, JEV_MODE } from "../../src/lib/jev.js";
+import { bold, dim, log, showDebug, showTool } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
 import { searchDocs } from "./search-docs.js";
 import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
@@ -121,7 +121,7 @@ async function agentNode(state: S): Promise<Partial<S>> {
   const opening: Msg[] = state.messages.length ? [] : [{ role: "system", content: SYSTEM }, { role: "user", content: state.report }];
   const history = [...state.messages, ...opening];
   // 매번 묻는 건 같다: "도구를 더 쓸래, 아니면 지금까지 본 걸로 사실을 정리할래?" — 둘 중 하나를 모델이 고른다
-  console.log(`\n── 모델 호출 ${step}회째 (${LLM_MODE === "mock" ? "가짜 모델 mock" : LLM_MODEL}) · 도구를 더 쓸지, 사실을 정리할지 묻는다 ──`);
+  const started = Date.now();
   let reply;
   try {
     reply = await chat(history, await allTools(), { label: `loop.step${step}` });
@@ -130,9 +130,10 @@ async function agentNode(state: S): Promise<Partial<S>> {
     // 늦었다 → 여기서 정하지 않고 이유만 적는다. 다음에 뭘 할지는 사람에게 묻는다 (askHuman)
     return { steps: 1, stuck: `${LLM_MODE === "mock" ? "가짜 모델" : LLM_MODEL} 이 ${LLM_TIMEOUT_SEC}초 안에 답하지 않았습니다 (${step}회째 호출)` };
   }
-  console.log(reply.toolCalls.length
-    ? `   모델의 선택: 도구 쓰기 → ${reply.toolCalls.map((c) => c.name).join(", ")}`
-    : `   모델의 선택: 사실 정리 (도구 안 씀, 답을 썼다)`);
+  const took = dim(`${Date.now() - started}ms${reply.usage ? ` · ${reply.usage.prompt_tokens + reply.usage.completion_tokens} 토큰` : ""}`);
+  log("llm", reply.toolCalls.length
+    ? `${step}회째 → 도구 쓰기: ${bold(reply.toolCalls.map((c) => c.name).join(", "))}  ${took}`
+    : `${step}회째 → 사실 정리 (도구 안 씀)  ${took}`);
 
   const assistant: Msg = reply.toolCalls.length
     ? {
@@ -164,12 +165,13 @@ async function rememberNode(state: S): Promise<Partial<S>> {
   await createBank();
   const found = await findSameCase(state.report);
   if (!found || found.score < SAME_CASE) {
-    console.log(`[기억 판단] 같은 사례 없음 (가장 비슷한 것 일치도 ${(found?.score ?? 0).toFixed(2)} < ${SAME_CASE}) → Jev 에게 묻는다`);
+    log("memory", `${dim(`[${MEMORY_MODE}]`)} 같은 사례 없음 ${dim(`(가장 비슷한 것 일치도 ${(found?.score ?? 0).toFixed(2)} < ${SAME_CASE})`)} → Jev 에게 묻는다`);
     return { memory: null };
   }
   const c = found.case;
   const when = new Date(found.time).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
-  console.log(`[기억 판단] ${when} 같은 사례 (일치도 ${found.score.toFixed(2)}) → ${c.action} · ${c.decision} — Jev 생략`);
+  log("memory", `${dim(`[${MEMORY_MODE}]`)} ${bold("같은 사례 찾음")} ${dim(`(일치도 ${found.score.toFixed(2)})`)} → ${bold(c.action)} · Jev 생략`,
+    [`${dim("그때")} ${when}  ${dim("보고")} ${c.report}`, `${dim("그때 결정")} ${c.decision} ${dim(`(확신 ${Math.round(c.confidence * 100)}%)`)}`]);
   return {
     memory: { report: c.report, time: when, score: found.score },
     judgment: { action: c.action, probabilities: { [c.action]: c.confidence }, confidence: c.confidence, danger: 0, unknown: 0, decision: `${c.decision} (기억: ${when} 같은 사례)` },
@@ -191,7 +193,7 @@ const DANGER = ["전혀 안 위험함, 심심한 하루", "조금 신경 쓰임"
 async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
   // 장기 기억: 비슷한 보고가 전에 있었나? 있으면 Jev 에게 past 로 같이 보여 준다 (어제 판단을 오늘 기억한다)
   const past = await recall(state.report);
-  console.log(past.length ? `[기억] 떠오른 것 ${past.length}건 (${MEMORY_MODE}):\n${past.map((p) => "   · " + p).join("\n")}` : `[기억] 비슷한 보고 없음 (${MEMORY_MODE})`);
+  log("memory", `${dim(`[${MEMORY_MODE}]`)} ${past.length ? `비슷한 기억 ${past.length}건 → Jev 에게 참고로 보낸다` : "비슷한 기억 없음"}`, past);
 
   const res = await askJev({ report: state.report, facts: state.facts, past }, {
     action: { type: "choice", instructions: "report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?", criteria: {
@@ -205,6 +207,7 @@ async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Par
   const { action, danger, unknown } = res.answers;
   const confidence = action.confidence ?? 0;
   const noul = unknown.noul ?? 0;
+  log("jev", `${dim(`[${JEV_MODE}]`)} ${bold(String(action.choice))} ${dim(`(확신 ${Math.round(confidence * 100)}%)`)} · 위험도 ${Math.round(danger.score ?? 0)}단계 ${dim(DANGER[Math.round(danger.score ?? 0)])} · 정체불명 ${Math.round(noul * 100)}%`);
 
   // 여기부터는 코드가 결정한다. Jev 는 의견만 주고, 규칙은 우리가 정한다
   let decision: string;
@@ -252,7 +255,7 @@ const afterJudge = (state: S): "approve" | typeof END => (state.judgment.action 
 async function stopNode(state: S): Promise<Partial<S>> {
   const why = state.humanChoice === "stop" ? "담당자가 그만하라고 했습니다" : `모델을 이미 ${MAX_STEPS}번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다`;
   const stopped = `[중단] ${why}.`;
-  console.log(stopped);
+  log("stop", why);
   return { facts: stopped };
 }
 
@@ -305,14 +308,15 @@ if (process.argv[1]?.endsWith("main.ts")) {
 
   /** 사람에게 묻는다. 터미널 입력과 브라우저 버튼(--live) 중 먼저 온 답을 쓴다 */
   async function askPerson(question: { 문제: string; 고르기: string }): Promise<string> {
-    console.log(`\n[담당자 확인] ${question.문제}`);
+    const [q, facts] = question.문제.split(/\. 사실: /);
+    log("human", bold(q), facts ? [`${dim("사실")} ${facts}`] : []);
     send("waiting", { question: question.문제, choices: question.고르기 });
     const ac = new AbortController();
-    const fromTerminal = rl.question(`${question.고르기} > `, { signal: ac.signal }).catch(() => new Promise<string>(() => {})); // 취소되면 그냥 조용히
+    const fromTerminal = rl.question(`         ${dim("│")} ${question.고르기} > `, { signal: ac.signal }).catch(() => new Promise<string>(() => {})); // 취소되면 그냥 조용히
     const fromPage = LIVE ? waitAnswerFromPage() : new Promise<string>(() => {});
     const answer = (await Promise.race([fromTerminal, fromPage])).trim().toLowerCase() || "skip";
     ac.abort();
-    console.log(`   → ${answer}`);
+    log("human", `답: ${bold(answer)}`);
     send("answered", { answer });
     return answer;
   }
@@ -325,11 +329,14 @@ if (process.argv[1]?.endsWith("main.ts")) {
     const config = { configurable: { thread_id: threadId }, recursionLimit: MAX_STEPS * 2 + 5, runName: `loop.round-${round}` };
     if (resumeId) {
       report = (await graph.getState(config)).values.report ?? "";
-      if (!report) { console.error(`[오류] 실행번호 ${resumeId} 의 저장 기록이 없습니다 (checkpoints.sqlite)`); process.exit(1); }
-      console.log(`\n[이어가기] 실행번호 ${resumeId} 의 멈춘 곳부터`);
+      if (!report) { log("stop", `실행번호 ${resumeId} 의 저장 기록이 없습니다 (checkpoints.sqlite)`); process.exit(1); }
+      log("setup", `이어가기 — 실행번호 ${resumeId} 의 멈춘 곳부터`);
     }
-    console.log(`\n[보고] ${report}`);
-    console.log(`[설정] 모델 호출 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 호출 · 실행번호 ${threadId} (멈추면 pnpm agent --resume ${threadId})`);
+    console.log(dim("\n" + "─".repeat(72)));
+    log("report", bold(report));
+    log("setup", `모델 ${LLM_MODE === "mock" ? "mock" : `${LLM_MODEL} (${LLM_MODE})`} · Jev ${JEV_MODE} · 기억 ${MEMORY_MODE}`, [
+      dim(`모델 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 · 실행번호 ${threadId} (멈추면 pnpm agent --resume ${threadId})`),
+    ]);
     send("run_start", { round, report });
 
     const input = { report };  // 대화의 첫 줄(역할 설명 + 보고)은 agent 노드가 스스로 연다
@@ -365,26 +372,21 @@ if (process.argv[1]?.endsWith("main.ts")) {
     } catch (e: any) {
       if (e?.name === "RunTimeout") {
         const msg = `[중단] ${e.message}. 내 코드가 끊었습니다 (모델 호출 ${result.steps ?? 0}회까지 진행).`;
-        console.error(`\n${msg}`);
+        log("stop", msg);
         send("stopped", { message: msg });
         return result;
       }
       if (e?.lc_error_code !== "GRAPH_RECURSION_LIMIT") throw e;
       // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (TODO 1 · 2 이 비어 있으면 이렇게 된다)
-      console.error("\n[중단] 반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. TODO 1 · 2 을 확인하세요.");
+      log("stop", "반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. TODO 1 · 2 을 확인하세요.");
       process.exit(1);
     }
 
     const j = result.judgment;
-    const who = LLM_MODE === "mock" ? "가짜 모델(mock)" : `${LLM_MODEL} (${LLM_MODE})`;
-    console.log(`\n[확인] ${who} 을 총 ${result.steps}회 불러서 정리한 사실:\n${result.facts}`);
-    if (j && result.memory) {
-      console.log(`[기억] ${result.memory.time} 같은 사례 (일치도 ${result.memory.score.toFixed(2)}) → ${j.action} (그때 확신 ${Math.round(j.confidence * 100)}%) · Jev 생략`);
-      console.log(`[결정] ${j.decision}`);
-    } else if (j) {
-      console.log(`[Jev]  의견 ${j.action} (확신 ${Math.round(j.confidence * 100)}%) · 위험도 ${j.danger}단계 - ${DANGER[j.danger]} · 정체불명 ${Math.round(j.unknown * 100)}%`);
-      console.log(`[결정] ${j.decision}`);
-    } else console.log("[결정] 없음 — 사실 확인이 끝나기 전에 멈췄습니다");
+    const who = LLM_MODE === "mock" ? "가짜 모델(mock)" : LLM_MODEL;
+    const by = !j ? "" : result.memory ? "기억으로 판단 · Jev 생략" : `Jev ${j.action} ${Math.round(j.confidence * 100)}% + 코드 규칙`;
+    log("decide", bold(j?.decision ?? "없음 — 사실 확인이 끝나기 전에 멈췄습니다") + (by ? `  ${dim("← " + by)}` : ""),
+      [`${dim(`사실 (${who} ${result.steps}회 호출)`)} ${result.facts}`]);
     send("run_end", { decision: j?.decision ?? "없음 — 사실 확인이 끝나기 전에 멈췄습니다", facts: result.facts });
     return result;
   }
@@ -395,7 +397,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
     for (let round = 1; ; round++) {
       process.env.LLM_MOCK_SLOW = Math.random() < 0.25 ? "once" : "";
       await runOnce(REPORTS[Math.floor(Math.random() * REPORTS.length)], round);
-      console.log("\n   … 5초 뒤 다음 보고 …");
+      log("setup", dim("5초 뒤 다음 보고"));
       send("round_wait", { sec: 5 });
       await new Promise((r) => setTimeout(r, 5000));
     }

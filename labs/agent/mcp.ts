@@ -9,6 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { traceable } from "langsmith/traceable";
 import type { Tool } from "../../src/lib/llm.js";
+import { log } from "../../src/lib/show.js";
 
 export const MCP_WEATHER_URL = process.env.MCP_WEATHER_URL ?? "http://localhost:3333/mcp";
 
@@ -24,7 +25,7 @@ export async function connectMcp(url = MCP_WEATHER_URL): Promise<Client | null> 
     client = c;
     return c;
   } catch {
-    console.log(`[MCP] 날씨 서버 연결 실패 (${url}) — 다른 터미널에서 pnpm mcp:weather 를 먼저 켜세요. 날씨 없이 계속합니다.`);
+    log("mcp", `날씨 서버 연결 실패 (${url}) — 다른 터미널에서 pnpm mcp:weather 를 먼저 켜세요. 날씨 없이 계속합니다.`);
     return null;
   }
 }

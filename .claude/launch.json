@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "weather-mcp",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["mcp:weather"],
+      "port": 3333
+    },
+    {
+      "name": "agent-live",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["agent:live"],
+      "port": 3030
+    },
+    {
+      "name": "hindsight-ui",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "@vectorize-io/hindsight-control-plane", "--port", "9999", "--api-url", "http://localhost:8888"],
+      "port": 9999
+    }
+  ]
+}
