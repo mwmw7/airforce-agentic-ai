@@ -39,7 +39,7 @@ import { bold, dim, log, showDebug, showTool } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
 import { searchDocs } from "./search-docs.js";
 import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
-import { type Case, createBank, findSameCase, MEMORY_MODE, recall, retain } from "../../src/lib/memory.js";
+import { type Case, createBank, findSameCase, MEMORY_MODE, recall, retain, showMemoryWork } from "../../src/lib/memory.js";
 
 // 모델을 최대 몇 번까지 부를지. 이 숫자를 넘으면 내 코드가 멈춘다
 const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
@@ -193,7 +193,6 @@ const DANGER = ["전혀 안 위험함, 심심한 하루", "조금 신경 쓰임"
 async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
   // 장기 기억: 비슷한 보고가 전에 있었나? 있으면 Jev 에게 past 로 같이 보여 준다 (어제 판단을 오늘 기억한다)
   const past = await recall(state.report);
-  log("memory", `${dim(`[${MEMORY_MODE}]`)} ${past.length ? `비슷한 기억 ${past.length}건 → Jev 에게 참고로 보낸다` : "비슷한 기억 없음"}`, past);
 
   const res = await askJev({ report: state.report, facts: state.facts, past }, {
     action: { type: "choice", instructions: "report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?", criteria: {
@@ -207,15 +206,15 @@ async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Par
   const { action, danger, unknown } = res.answers;
   const confidence = action.confidence ?? 0;
   const noul = unknown.noul ?? 0;
-  log("jev", `${dim(`[${JEV_MODE}]`)} ${bold(String(action.choice))} ${dim(`(확신 ${Math.round(confidence * 100)}%)`)} · 위험도 ${Math.round(danger.score ?? 0)}단계 ${dim(DANGER[Math.round(danger.score ?? 0)])} · 정체불명 ${Math.round(noul * 100)}%`);
 
   // 여기부터는 코드가 결정한다. Jev 는 의견만 주고, 규칙은 우리가 정한다
-  let decision: string;
-  if (confidence < 0.2) decision = "Jev 도 헷갈려함 → 사람이 한 번 더 확인";
-  else if (action.choice === "scramble") decision = "출격 준비! (최종 버튼은 지휘관이)";
-  else if (action.choice === "watch" && noul > 0.5) decision = "정체부터 알아보기 (레이더 확대, 무전 재시도)";
-  else if (action.choice === "watch") decision = "일단 지켜보기";
-  else decision = "별일 아님. 커피나 한 잔";
+  let decision: string, rule: string;
+  if (confidence < 0.2) [decision, rule] = ["Jev 도 헷갈려함 → 사람이 한 번 더 확인", "확신 < 20%"];
+  else if (action.choice === "scramble") [decision, rule] = ["출격 준비! (최종 버튼은 지휘관이)", "scramble"];
+  else if (action.choice === "watch" && noul > 0.5) [decision, rule] = ["정체부터 알아보기 (레이더 확대, 무전 재시도)", "watch + 정체불명 > 50%"];
+  else if (action.choice === "watch") [decision, rule] = ["일단 지켜보기", "watch"];
+  else [decision, rule] = ["별일 아님. 커피나 한 잔", "ignore"];
+  log("rule", `${dim("Jev 는 의견, 결정은 코드 규칙")} · 조건 ${bold(rule)} → ${decision}`);
 
   const judgment = { action: action.choice ?? "?", probabilities: action.probabilities ?? {}, confidence, danger: Math.round(danger.score ?? 0), unknown: noul, decision };
   // 이번 판단을 기억에 남긴다. 다음에 같은 보고가 오면 remember 가 이걸 꺼내 Jev 없이 판단한다
@@ -387,6 +386,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
     const by = !j ? "" : result.memory ? "기억으로 판단 · Jev 생략" : `Jev ${j.action} ${Math.round(j.confidence * 100)}% + 코드 규칙`;
     log("decide", bold(j?.decision ?? "없음 — 사실 확인이 끝나기 전에 멈췄습니다") + (by ? `  ${dim("← " + by)}` : ""),
       [`${dim(`사실 (${who} ${result.steps}회 호출)`)} ${result.facts}`]);
+    await showMemoryWork(); // Hindsight 가 뒤에서 한 일(사실 추출 · 링크 · consolidation)을 숫자로
     send("run_end", { decision: j?.decision ?? "없음 — 사실 확인이 끝나기 전에 멈췄습니다", facts: result.facts });
     return result;
   }

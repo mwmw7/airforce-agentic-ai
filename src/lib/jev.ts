@@ -14,11 +14,14 @@
  *   실제 폐쇄망에서는 local 자리에 자체 분류 모델을 꽂으면 됩니다. 부르는 법(askJev)은 같습니다.
  *
  * API 형식 출처: https://openrouter.ai/docs/guides/community/jev-tutorial
+ *
+ * 콘솔의 JEV 줄: 어디로 보냈나(typesafe/openrouter/local) · 보낸 근거(state) · 질문마다 유형과 답(확률 막대)
  */
 import "dotenv/config";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { traceable } from "langsmith/traceable";
 import { trace } from "./trace.js";
+import { bold, dim, log } from "./show.js";
 
 export type JevQuestion =
   | { type: "noul"; instructions: string; criteria: { true: string; false: string } }
@@ -56,12 +59,35 @@ export const askJev = traceable(async function askJev(state: Record<string, unkn
       : localJudge(state, questions);
     const result: JevResult = { answers, provider: JEV_MODE, ms: Date.now() - started };
     t.end({ answers, ms: result.ms });
+    showJev(state, questions, answers, result.ms);
     return result;
   } catch (e) {
     t.error(e);
     throw e;
   }
 }, { name: "jev.ask", run_type: "tool" });
+
+/** Jev 가 한 일을 한눈에: 보낸 근거 → 질문 하나마다 유형 · 질문 · 답(확률 막대) */
+function showJev(state: Record<string, unknown>, questions: Record<string, JevQuestion>, answers: Record<string, JevAnswer>, ms: number) {
+  const bar = (p = 0) => `${"█".repeat(Math.round(p * 10))}${dim("░".repeat(10 - Math.round(p * 10)))} ${String(Math.round(p * 100)).padStart(3)}%`;
+  const where = JEV_MODE === "local" ? "local 규칙 판정기" : `${JEV_MODE} · ${process.env.JEV_MODEL ?? "jev-latest"}`;
+  const sent = Object.entries(state).map(([k, v]) => (Array.isArray(v) ? `${k}(${v.length}건)` : `${k}(${String(v ?? "").length}자)`)).join(" · ");
+  const lines = [`${dim("보낸 근거 state")} ${sent}`];
+  Object.entries(questions).forEach(([key, q], i) => {
+    const a = answers[key] ?? {};
+    lines.push(`${"①②③④⑤"[i] ?? "-"} ${bold(key.padEnd(8))} ${dim(q.type.padEnd(6))} ${q.instructions}`);
+    if (q.type === "choice") {
+      for (const [k, p] of Object.entries(a.probabilities ?? {}).sort((x, y) => y[1] - x[1]))
+        lines.push(`     ${k === a.choice ? bold("▶ " + k.padEnd(9)) : "  " + k.padEnd(9)} ${bar(p)}${k === a.choice ? `  ${dim("확신")} ${Math.round((a.confidence ?? 0) * 100)}%` : ""}`);
+    } else if (q.type === "score") {
+      const max = q.criteria.length - 1, lv = Math.round(a.score ?? 0);
+      lines.push(`     → ${(a.score ?? 0).toFixed(2)} / ${max}  ${"■".repeat(lv + 1)}${dim("□".repeat(max - lv))}  ${q.criteria[lv] ?? ""}`);
+    } else {
+      lines.push(`     → ${(a.noul ?? 0) >= 0.5 ? bold("예") : "아니오"} ${dim("(예일 확률)")} ${bar(a.noul)}`);
+    }
+  });
+  log("jev", `${dim(`[${JEV_MODE}]`)} ${bold("System One 판정")} · ${where} · 질문 ${Object.keys(questions).length}개 한 번에 · ${ms}ms`, lines);
+}
 
 /** TypeSafe 공식 SDK: 질문 모양이 우리 JevQuestion 과 같아서 그대로 넘긴다. 키는 SDK 가 TYPESAFE_API_KEY 에서 읽는다 */
 async function viaTypeSafe(state: Record<string, unknown>, questions: Record<string, JevQuestion>) {
