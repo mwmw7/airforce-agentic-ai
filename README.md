@@ -74,21 +74,23 @@ Studio 의 Input 에는 보고 한 줄만 넣습니다.
 
 ## 2. 내 에이전트 — 한눈에
 
-관제실에 보고 한 줄이 들어오면, 모델이 도구로 사실을 확인하고, 지난 기억을 떠올린 뒤 판정 모델이 의견을 내고, 최종 결정은 코드와 사람이 합니다.
+관제실에 보고 한 줄이 들어오면, 모델이 도구로 사실을 확인하고, 전에 똑같은 보고를 판단한 기억이 있으면 그 판단을 그대로 쓰고(Jev 생략), 없으면 판정 모델이 의견을 냅니다. 최종 결정은 코드와 사람이 합니다.
 
 ```
 START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
-                ├─ 다 확인했다     ─▶ judge ─┬─ 출격 아님 ─▶ END          (기억 recall → Jev 판정 → 코드가 결정 → 기억 retain)
-                │                           └─ 출격!   ─▶ approve ─▶ END  (멈추고 사람이 승인/반려)
+                ├─ 다 확인했다     ─▶ remember ─┬─ 같은 사례 기억 있음 ─▶ (출격이면 approve) ─▶ END  (Jev 생략)
+                │                              └─ 없음 ─▶ judge ─┬─ 출격 아님 ─▶ END          (Jev 판정 → 코드가 결정 → 기억 retain)
+                │                                                └─ 출격!   ─▶ approve ─▶ END  (멈추고 사람이 승인/반려)
                 ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤)
-                └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → judge / stop → stop
+                └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → remember / stop → stop
 ```
 
 | 단계 (노드) | 하는 일 | 배우는 것 |
 |---|---|---|
 | `agent` | 모델에게 "도구를 더 쓸래, 사실을 정리할래?" 묻기 | Agent Loop · Tool Calling |
 | `tools` | 모델이 고른 도구를 **내 코드가** 실행. 로컬 도구(레이더 보기·확대·규정집)와 MCP 도구(날씨)가 한 목록에 섞여 있다 | 모델은 부르겠다고 말할 뿐, 실행은 내 코드 |
-| `judge` | 지난 기억을 떠올리고(recall) Jev 에게 3가지 질문(출격/감시/무시 · 위험도 · 정체불명 확률), 끝나면 기억에 남김(retain) | 판정 모델 · 장기 기억 |
+| `remember` | 기억에서 같은 사례 찾기(`findSameCase`). 일치도 0.9 이상이면 그때의 판정을 그대로 쓰고 Jev 를 건너뜀. 출격이면 그래도 사람 승인 | 장기 기억으로 판단하기 |
+| `judge` | 비슷한 기억을 참고로(recall) Jev 에게 3가지 질문(출격/감시/무시 · 위험도 · 정체불명 확률), 끝나면 기억에 남김(retain) | 판정 모델 · 장기 기억 |
 | `approve` | 출격이면 멈추고 사람에게 승인/반려 묻기 | Human-in-the-Loop (`interrupt`) |
 | `askHuman` | 모델이 늦으면 멈추고 retry / skip / stop 묻기 | 시간 초과 · 사람 개입 |
 | `stop` | MAX_STEPS 를 넘기면 강제 종료 | Harness — 멈추는 건 코드 |
@@ -144,7 +146,7 @@ pnpm setup:check             # 환경 점검
 
 Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weather http://localhost:3333/mcp`
 
-기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "비슷한 보고 없음", 한 번 더 돌리면 "떠오른 것 N건" 과 함께 확신이 오릅니다.
+기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "같은 사례 없음 → Jev 에게 묻는다", 한 번 더 돌리면 "기억 판단 … Jev 생략" 으로 Jev 없이 판단합니다. 첫 번째에 출격을 **반려(n)** 하면 두 번째엔 "감시" 로 떠오릅니다 — 사람의 결정이 기억을 고칩니다. `pnpm agent:live` 에서는 remember 노드 아래 기억 카드(그때 보고 · 일치도 · 그때 확신)로 보입니다. Hindsight 모드의 그래프는 `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` (localhost:9999) 에서 그림으로 봅니다.
 
 ---
 

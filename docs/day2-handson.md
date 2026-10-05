@@ -42,7 +42,7 @@
 | Harness · Context Engineering | 최대 호출 수 강제 중단, 판정에는 걸러낸 단서만 전달 |
 | 외부 Tool 연계 (API · 데이터 · 검색) | 문서 검색 · 웹 검색 · 레이더 MCP |
 | MCP | 레이더 MCP 서버 직접 등록 (Claude Code 에도 연결 시연) |
-| Context · Memory · Agentic Retrieval | 승인 문서만 색인하는 검색, Hindsight 기억 |
+| Context · Memory · Agentic Retrieval | 승인 문서만 색인하는 검색, Hindsight 기억 (같은 사례면 기억으로 판단, Jev 생략) |
 | State · Checkpoint · Retry | 단서 누적 State, 저장 후 강제 종료 → 재개 |
 | Task Decomposition · Subagent | 수집 3단계 동시 실행 후 합류 |
 | HITL · 장기 실행 제어 | interrupt 로 승인 · 반려, 이어가기 |
@@ -87,6 +87,7 @@ Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강
 | 구현 | MCP 클라이언트: 접속 → 도구 목록 → 실행 | `labs/agent/mcp.ts` · 빈칸 5 |
 | 구현 | Jev 판정 3질문 (TypeSafe SDK 직접 호출, 키 없으면 로컬 판정기) | `src/lib/jev.ts` |
 | 구현 | 장기 기억 Hindsight: createBank · retain · recall · reflect, 서버 없으면 file 모드 | `src/lib/memory.ts` · 시연 |
+| 구현 | 기억으로 판단: `remember` 노드가 같은 사례(일치도 0.9↑)를 찾으면 그때의 판정(metadata)을 그대로 써 Jev 생략. 사람이 반려하면 다음엔 "감시" 로 떠오름. live 화면에 기억 카드 | `labs/agent/main.ts` · `findSameCase` · 시연 |
 | 구현 | HITL: 출격이면 interrupt 로 승인 · 반려 | `labs/agent/main.ts` approve 노드 |
 | 구현 | Checkpoint: LangGraph SqliteSaver, 강제 종료 후 `--resume` | 〃 · 빈칸 6 |
 | 구현 | 모델 지연 처리: 시간 초과 → retry / skip / stop | 〃 askHuman 노드 |
