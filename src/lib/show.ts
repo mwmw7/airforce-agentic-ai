@@ -9,6 +9,10 @@
  *
  * 켜는 법:  --watch       값을 요약해서 (배열 3개 · 글자 80자까지)
  *           --watch=full  값을 전부
+ *
+ * 콘솔 한 줄은 모두 같은 모양이다:  [꼬리표] 내용  — 꼬리표 색만 보면 누가 한 일인지 안다
+ *   REPORT 보고 · SETUP 설정 · LLM 모델 · TOOL 내 도구 · MCP MCP 도구 · MEMORY 기억(Hindsight/file)
+ *   JEV 판정 모델 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch)
  */
 import { inspect } from "node:util";
 import { send } from "./live.js";
@@ -22,9 +26,29 @@ const bold = (s: string) => paint(1, s);
 const dim = (s: string) => paint(2, s);
 const cyan = (s: string) => paint(36, s);
 const yellow = (s: string) => paint(33, s);
-const magenta = (s: string) => paint(35, s);
 const red = (s: string) => paint(31, s);
 const green = (s: string) => paint(32, s);
+export { bold, dim };
+
+// 꼬리표: [글자, 색 코드(배경;글자)]. 밝은 배경 + 검은 글자, 어두운 배경 + 흰 글자
+const TAGS = {
+  report: ["REPORT", "107;30"], setup: ["SETUP", "100;97"], llm: ["LLM", "105;30"], tool: ["TOOL", "102;30"],
+  mcp: ["MCP", "106;30"], memory: ["MEMORY", "104;30"], jev: ["JEV", "103;30"], human: ["HUMAN", "101;30"],
+  decide: ["DECIDE", "42;97;1"], stop: ["STOP", "41;97;1"], node: ["NODE", "100;97"], live: ["LIVE", "100;97"],
+} as const;
+export type Kind = keyof typeof TAGS;
+
+/** 꼬리표 한 칸 (폭 고정). 색이 없는 환경이면 [LLM   ] 처럼 괄호로 */
+export const tag = (kind: Kind) => {
+  const [label, code] = TAGS[kind];
+  return color ? `\x1b[${code}m ${label.padEnd(6)} \x1b[0m` : `[${label.padEnd(6)}]`;
+};
+
+/** 콘솔 한 줄 + (있으면) 이어지는 줄들. 이어지는 줄은 꼬리표 폭만큼 들여 쓰고 │ 로 묶는다 */
+export function log(kind: Kind, text: string, more: string[] = []) {
+  console.log(`${tag(kind)} ${text}`);
+  for (const m of more) console.log(`         ${dim("│")} ${m}`);
+}
 
 /** 값의 '형태' 를 한 줄로. 예) { alert: {scenario,title,…}, clues: {from,ok,lines}[3], blocked: string[0] } */
 export function shape(v: unknown, depth = 0): string {
@@ -46,7 +70,7 @@ function pretty(v: unknown): string {
     maxStringLength: full ? null : 80,
     breakLength: 110,
     compact: 3,
-  }).replace(/\n/g, "\n    ");
+  }).replace(/\n/g, `\n         ${dim("│")}   `);
 }
 
 const startedAt = new Map<string, number>(); // task id → 시작 시각 (걸린 시간 계산용)
@@ -71,19 +95,19 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
   if (ev.type === "task") {
     const input = p.input as Record<string, unknown>;
     const from = (p.triggers as string[])?.join(", ");
-    console.log(`\n${bold(cyan("▶ " + String(p.name)))}  ${dim("← " + from)}`);
-    console.log(`  ${dim("입력 형태")} ${shape(input)}`);
-    for (const [k, v] of Object.entries(input)) console.log(`  ${yellow(k)} ${pretty(v)}`);
+    log("node", `${bold("▶ " + String(p.name))} ${dim("시작 · ← " + from)}`,
+      [`${dim("입력 형태")} ${shape(input)}`, ...Object.entries(input).map(([k, v]) => `${yellow(k)} ${pretty(v)}`)]);
   }
 
   if (ev.type === "task_result") {
     const ms = Date.now() - (startedAt.get(String(p.id)) ?? Date.now());
     const result = asObject(p.result);
     const interrupts = (p.interrupts as { value: unknown }[]) ?? [];
-    console.log(`${bold(cyan("◀ " + String(p.name)))}  ${dim(ms + "ms")}`);
-    console.log(`  ${dim("출력 형태")} ${shape(result)}`);
-    for (const [k, v] of Object.entries(result)) console.log(`  ${yellow(k)} ${pretty(v)}`);
-    for (const i of interrupts) console.log(`  ${yellow("여기서 멈춤 — 사람에게 보낼 질문")} ${pretty(i.value)}`);
+    log("node", `${bold("◀ " + String(p.name))} ${dim("끝 · " + ms + "ms")}`, [
+      `${dim("출력 형태")} ${shape(result)}`,
+      ...Object.entries(result).map(([k, v]) => `${yellow(k)} ${pretty(v)}`),
+      ...interrupts.map((i) => `${yellow("여기서 멈춤 — 사람에게 보낼 질문")} ${pretty(i.value)}`),
+    ]);
   }
 }
 
@@ -91,29 +115,24 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
 export function showLLM(label: string, sent: unknown, received: unknown, ms: number) {
   send("llm", { label, sent, received, ms });
   if (WATCH === "off") return;
-  console.log(`\n  ${bold(magenta("⇢ LLM " + label))}  ${dim("모델에게 보냄")}`);
-  console.log(`    ${pretty(sent).replace(/\n    /g, "\n      ")}`);
-  console.log(`  ${bold(magenta("⇠ LLM " + label))}  ${dim("모델이 답함 · " + ms + "ms")}`);
-  console.log(`    ${pretty(received).replace(/\n    /g, "\n      ")}`);
+  log("llm", `${dim("[watch]")} ${label} ${dim("모델에게 보냄")}`, [pretty(sent)]);
+  log("llm", `${dim("[watch]")} ${label} ${dim("모델이 답함 · " + ms + "ms")}`, [pretty(received)]);
 }
 
 /** LLM 호출이 실패했을 때 (시간 초과 등). --watch 가 없어도 한 줄은 보여 준다 */
 export function showError(label: string, message: string, ms: number) {
   send("llm_error", { label, message, ms });
-  console.log(`  ${bold(red("⇠ LLM " + label))}  ${red("실패 · " + ms + "ms")}`);
-  console.log(`    ${red(message)}`);
+  log("llm", `${red("실패")} ${label} ${dim(ms + "ms")}`, [red(message)]);
 }
 
-/** 도구 하나의 실행 결과를 보기 좋게. JSON 이면 줄마다 "키: 값" 으로, 아니면 글자 그대로. --watch 가 없어도 보여 준다 */
-export function showTool(name: string, args: Record<string, unknown>, resultText: string) {
+/** 도구 하나의 실행 결과를 보기 좋게. JSON 이면 "키 값 | 키 값" 으로, 아니면 글자 그대로. --watch 가 없어도 보여 준다
+ *  via: 내 코드 안의 도구면 "tool", MCP 서버가 실행했으면 "mcp" (꼬리표 색이 달라진다) */
+export function showTool(name: string, args: Record<string, unknown>, resultText: string, via: "tool" | "mcp" = "tool") {
   send("tool", { name, args, result: resultText });
-  const argText = Object.keys(args).length ? Object.entries(args).map(([k, v]) => `${k}: ${v}`).join(", ") : "";
-  console.log(`  ${bold(green("[도구] " + name))}${dim("(" + argText + ")")}`);
+  const argText = Object.entries(args).map(([k, v]) => `${k}: ${v}`).join(", ");
   let data: unknown;
-  try { data = JSON.parse(resultText); } catch { console.log(`    ${resultText}`); return; }
-  const rows = Array.isArray(data) ? data : [data];
-  for (const row of rows as Record<string, unknown>[]) {
-    const cells = Object.entries(row).filter(([k]) => k !== "_notice").map(([k, v]) => `${cyan(k)} ${String(v)}`);
-    console.log(`    ${dim("·")} ${cells.join(dim("  |  "))}`);
-  }
+  try { data = JSON.parse(resultText); } catch { log(via, `${bold(name)}${dim("(" + argText + ")")}`, [resultText]); return; }
+  const rows = (Array.isArray(data) ? data : [data]) as Record<string, unknown>[];
+  const lines = rows.map((row) => Object.entries(row).filter(([k]) => k !== "_notice").map(([k, v]) => `${cyan(k)} ${String(v)}`).join(dim("  |  ")));
+  log(via, `${bold(name)}${dim("(" + argText + ")")}`, lines);
 }

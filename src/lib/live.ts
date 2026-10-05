@@ -8,6 +8,7 @@
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import { exec } from "node:child_process";
+import { log } from "./show.js";
 
 export const LIVE = process.argv.includes("--live");
 const PORT = Number(process.env.LIVE_PORT ?? 3030);
@@ -39,8 +40,8 @@ export async function startLive(graph: { getGraphAsync(): Promise<{ drawMermaid(
       res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
       for (const line of history) res.write(line);
       clients.add(res);
-      console.log(`[live] 브라우저 연결됨 (지금 ${clients.size}개)`);
-      req.on("close", () => { clients.delete(res); console.log(`[live] 브라우저 끊김 (남은 ${clients.size}개)`); });
+      log("live", `브라우저 연결됨 (지금 ${clients.size}개)`);
+      req.on("close", () => { clients.delete(res); log("live", `브라우저 끊김 (남은 ${clients.size}개)`); });
     } else if (req.url === "/answer" && req.method === "POST") {
       let body = "";
       req.on("data", (d) => (body += d));
@@ -51,16 +52,16 @@ export async function startLive(graph: { getGraphAsync(): Promise<{ drawMermaid(
     }
   }).on("error", (e: NodeJS.ErrnoException) => {
     // 가장 흔한 실수: 이전 pnpm agent:live 가 아직 살아 있어 포트가 잡혀 있음
-    if (e.code === "EADDRINUSE") console.error(`[live] 포트 ${PORT} 가 이미 사용 중입니다. 이전 실행(Ctrl+C 안 한 터미널)을 끄거나 LIVE_PORT=${PORT + 1} 로 다시 실행하세요.`);
-    else console.error(`[live] 서버를 못 띄웠습니다: ${e.message}`);
+    if (e.code === "EADDRINUSE") log("live", `포트 ${PORT} 가 이미 사용 중입니다. 이전 실행(Ctrl+C 안 한 터미널)을 끄거나 LIVE_PORT=${PORT + 1} 로 다시 실행하세요.`);
+    else log("live", `서버를 못 띄웠습니다: ${e.message}`);
     process.exit(1);
   }).listen(PORT);
 
   const url = `http://localhost:${PORT}`;
-  console.log(`[live] 브라우저에서 보기: ${url}  (끝내려면 Ctrl+C)`);
+  log("live", `브라우저에서 보기: ${url}  (끝내려면 Ctrl+C)`);
   const open = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start \"\"" : "xdg-open";
   exec(`${open} ${url}`, () => {}); // 못 열어도 그냥 넘어간다 (주소를 직접 치면 됨)
 
   for (let i = 0; i < 100 && clients.size === 0; i++) await new Promise((r) => setTimeout(r, 100));
-  if (clients.size === 0) console.log(`[live] 브라우저가 아직 안 붙었습니다. ${url} 을 직접 여세요. (SSH 로 접속 중이면 포트 ${PORT} 를 내 PC 로 포워딩해야 합니다)`);
+  if (clients.size === 0) log("live", `브라우저가 아직 안 붙었습니다. ${url} 을 직접 여세요. (SSH 로 접속 중이면 포트 ${PORT} 를 내 PC 로 포워딩해야 합니다)`);
 }
