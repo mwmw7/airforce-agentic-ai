@@ -1,4 +1,4 @@
-# 내 에이전트 — 보고 → agent ⇄ tools → judge
+# 내 에이전트 — 보고 → agent ⇄ tools → remember → judge
 
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
@@ -7,6 +7,7 @@ graph TD;
 	agent(agent)
 	tools(tools)
 	askHuman(askHuman)
+	remember(remember)
 	judge(judge)
 	approve(approve)
 	stop(stop)
@@ -16,12 +17,15 @@ graph TD;
 	stop --> __end__;
 	tools --> agent;
 	agent -.-> tools;
-	agent -.-> judge;
+	agent -.-> remember;
 	agent -.-> stop;
 	agent -.-> askHuman;
 	askHuman -.-> agent;
-	askHuman -.-> judge;
+	askHuman -.-> remember;
 	askHuman -.-> stop;
+	remember -.-> judge;
+	remember -.-> approve;
+	remember -.-> __end__;
 	judge -.-> approve;
 	judge -.-> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2;

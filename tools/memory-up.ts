@@ -20,6 +20,10 @@ const server = new HindsightServer({
     HINDSIGHT_API_LLM_BASE_URL: process.env.LLM_BASE_URL,
     HINDSIGHT_API_LLM_API_KEY: process.env.LLM_API_KEY,
     HINDSIGHT_API_LLM_MODEL: process.env.HINDSIGHT_LLM_MODEL ?? process.env.LLM_MODEL,
+    // 한국어로 기억하기: 기본값은 영어 기준이라 작은 모델은 사실을 영어로 옮겨 적는다 (잠실 → "Jamseong")
+    HINDSIGHT_API_LLM_OUTPUT_LANGUAGE: "Korean",                    // 사실·요약·답을 한국어로
+    HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL: "BAAI/bge-m3",           // 의미 검색도 다국어 모델로 (기본 bge-small-en 은 영어 전용)
+    HINDSIGHT_API_RERANKER_LOCAL_MODEL: "BAAI/bge-reranker-v2-m3", // 순위 매기기도 다국어 모델로
   },
   readyTimeoutMs: 180_000, // 첫 실행은 다운로드 때문에 오래 걸린다
   logger: consoleLogger,

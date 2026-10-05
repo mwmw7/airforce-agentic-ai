@@ -6,7 +6,7 @@
 <title>Agent 루프 실시간 보기</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
-  :root { --bg:#0f1716; --fg:#e6ecea; --muted:#9aaba8; --line:#2a3836; --panel:#182221; --now:#f0a04b; --done:#3fc0b8; --human:#ff7a95; --err:#ff6b6b; --llm:#b48cff; --tool:#7ad37a; }
+  :root { --bg:#0f1716; --fg:#e6ecea; --muted:#9aaba8; --line:#2a3836; --panel:#182221; --now:#f0a04b; --done:#3fc0b8; --human:#ff7a95; --err:#ff6b6b; --llm:#b48cff; --tool:#7ad37a; --mem:#5ab0ff; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font: 14px/1.5 "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif; height:100vh; display:grid; grid-template-rows:auto 1fr; }
 
@@ -46,6 +46,7 @@
   .lines { padding:0 12px 10px; display:grid; gap:4px; }
   .ln { display:grid; grid-template-columns:72px 1fr; gap:10px; align-items:baseline; }
   .ln .k { color:var(--muted); font-size:12px; text-align:right; white-space:nowrap; }
+  .ln.mem .k, .ln.mem .v { color:var(--mem); }
   .ln.llm .k { color:var(--llm); } .ln.tool .k { color:var(--tool); } .ln.jev .k { color:var(--llm); } .ln.human .k { color:var(--human); }
   .ln.end .v { color:var(--done); font-weight:600; } .ln.err .v { color:var(--err); } .ln.human .v { color:var(--human); }
   .ln .v { min-width:0; word-break:break-word; }
@@ -77,9 +78,15 @@
   .meter b.on { background:var(--err); }
   .meter span { color:var(--muted); font-size:12.5px; margin-left:6px; }
   .decide { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); color:var(--done); font-weight:600; }
+  /* 기억 카드: 같은 사례를 찾았을 때 */
+  .memcard { border-left:3px solid var(--mem); padding-left:10px; }
+  .memcard .past { color:var(--muted); font-size:12.5px; margin:4px 0 6px; }
+  .memcard .skip { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:#13283d; color:var(--mem); font-size:12px; font-weight:600; }
+  .bars .bar.mem i { background:var(--mem); }
   /* 그래프 노드 */
   text.badge { fill:#f0a04b; font-size:11px; font-weight:600; }
   text.badge.jev { fill:#b48cff; }
+  text.badge.mem { fill:#5ab0ff; }
   g.node .nodeLabel, g.node .nodeLabel p { color:#15201f !important; font-weight:600; }
   g.node.now rect, g.node.now polygon, g.node.now path { stroke:var(--now) !important; stroke-width:4px !important; filter:drop-shadow(0 0 8px var(--now)); }
   g.node.done rect, g.node.done polygon, g.node.done path { stroke:var(--done) !important; stroke-width:3px !important; }
@@ -154,6 +161,14 @@
       <div class="meter"><span style="margin:0">정체불명 ${pct(j.unknown)}%</span></div>
       <div class="decide">코드 결정: ${esc(j.decision)}</div>`;
   }
+  /** 기억 카드: 그때 보고 · 일치도 막대 · 그때 판정 · Jev 생략 */
+  function memCard(m, j) {
+    return `<div class="memcard"><span class="big">기억으로 판단: ${esc(j.action)}</span><span class="skip">Jev 생략</span>
+      <div class="past">${esc(m.time)} 같은 사례: "${esc(m.report)}"</div>
+      <div class="bars"><span class="lab">일치도</span><span class="bar mem"><i style="width:${pct(m.score)}%"></i></span><span class="pct">${pct(m.score)}%</span>
+      <span class="lab">그때 확신</span><span class="bar"><i style="width:${pct(j.confidence)}%"></i></span><span class="pct">${pct(j.confidence)}%</span></div>
+      <div class="decide">${esc(j.decision)}</div></div>`;
+  }
   const mark = (name, cls) => { const g = nodes[name]; if (!g) return; g.classList.remove("now", "done", "human"); if (cls) g.classList.add(cls); };
   const clearAll = () => Object.keys(nodes).forEach((n) => mark(n, null));
   const setStatus = (text, cls) => { $("status").textContent = text; $("status").className = "badge " + (cls || ""); };
@@ -219,6 +234,7 @@
         case "node_start":
           mark(e.name, "now"); setStatus(`${e.name} 실행 중`, "now"); dbg("▶ " + e.name, "들어간 값", e.input);
           if (e.name === "agent") showNow("agent", `<span class="big">모델에게 묻는 중…</span><div style="color:var(--muted)">도구를 더 쓸래, 사실을 정리할래?</div>`);
+          if (e.name === "remember") showNow("remember", `<span class="big">기억에서 같은 사례 찾는 중…</span><div style="color:var(--muted)">전에 똑같은 보고를 판단한 적이 있나?</div>`);
           if (e.name === "judge") showNow("judge", `<span class="big">Jev 에게 세 질문 보내는 중…</span><div style="color:var(--muted)">뭘 할까 · 얼마나 위험해 · 정체 모르겠어</div>`);
           if (e.name === "askHuman") showNow(e.name, `<span class="big" style="color:var(--human)">사람을 기다리는 중</span>`);
           // approve 는 Jev 카드를 그대로 둔다 — 사람이 그걸 보고 결정한다
@@ -226,6 +242,17 @@
           break;
         case "node_end":
           mark(e.name, e.interrupt ? "human" : "done"); dbg("◀ " + e.name, `나온 값 (${e.ms}ms)`, e.output);
+          if (e.name === "remember" && e.output) {
+            const m = e.output.memory, j = e.output.judgment;
+            if (m) {
+              line("mem", "기억 판단", `${esc(j.action)} <small>(${esc(m.time)} 같은 사례 · 일치도 ${pct(m.score)}%)</small> — Jev 생략`);
+              badge("remember", `기억: ${j.action} ${pct(m.score)}%`, "mem");
+              showNow("remember — 기억이 답했다", memCard(m, j));
+            } else {
+              line("mem", "기억", "같은 사례 없음 → Jev 에게 묻는다");
+              badge("remember", "같은 사례 없음", "mem");
+            }
+          }
           if (e.output?.judgment && e.name === "judge") {
             const j = e.output.judgment;
             line("jev", "Jev 판정", `${esc(j.action)} <small>(확신 ${pct(j.confidence)}%)</small> · 위험도 ${j.danger}단계 · 정체불명 ${pct(j.unknown)}%`);
