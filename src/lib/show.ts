@@ -12,7 +12,7 @@
  *
  * 콘솔 한 줄은 모두 같은 모양이다:  [꼬리표] 내용  — 꼬리표 색만 보면 누가 한 일인지 안다
  *   REPORT 보고 · SETUP 설정 · LLM 모델 · TOOL 내 도구 · MCP MCP 도구 · MEMORY 기억(Hindsight/file)
- *   JEV 판정 모델 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch)
+ *   JEV 판정 모델 · RULE 코드 규칙 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch)
  */
 import { inspect } from "node:util";
 import { send } from "./live.js";
@@ -34,7 +34,7 @@ export { bold, dim };
 const TAGS = {
   report: ["REPORT", "107;30"], setup: ["SETUP", "100;97"], llm: ["LLM", "105;30"], tool: ["TOOL", "102;30"],
   mcp: ["MCP", "106;30"], memory: ["MEMORY", "104;30"], jev: ["JEV", "103;30"], human: ["HUMAN", "101;30"],
-  decide: ["DECIDE", "42;97;1"], stop: ["STOP", "41;97;1"], node: ["NODE", "100;97"], live: ["LIVE", "100;97"],
+  rule: ["RULE", "47;30"], decide: ["DECIDE", "42;97;1"], stop: ["STOP", "41;97;1"], node: ["NODE", "100;97"], live: ["LIVE", "100;97"],
 } as const;
 export type Kind = keyof typeof TAGS;
 
