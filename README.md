@@ -140,6 +140,7 @@ pnpm mcp:weather             # 날씨 MCP 서버 (http://localhost:3333/mcp)
 pnpm mcp:inspect             # MCP Inspector — 화면에서 Streamable HTTP + 위 주소를 넣고 look_weather 를 직접 눌러 본다
 pnpm memory:up               # Hindsight 기억 서버를 내 노트북에 띄운다 (uv 필요, 첫 실행 약 200MB) → .env MEMORY_MODE=hindsight
 pnpm memory:ui               # Hindsight 대시보드 http://localhost:18888 — retain 된 기억(사실·요약·링크)과 서버 작업을 눈으로 본다 (끄기: pnpm memory:ui:stop)
+pnpm memory:reset            # 기억 전부 지우고 처음부터 (현재 MEMORY_MODE 의 저장소 + checkpoints.sqlite). --all 이면 서버 bank 와 파일 둘 다
 pnpm agent --watch=full      # 들어간 값·나온 값을 자르지 않고 전부
 pnpm graph                   # 그래프를 Mermaid 그림으로 (docs/graphs/)
 pnpm typecheck               # 타입 검사
