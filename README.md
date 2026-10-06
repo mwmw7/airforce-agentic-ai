@@ -105,7 +105,7 @@ START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent �
 | `look_radar` 보고에 나온 장소(서울·한강·잠실…)로 레이더 보기 | 로컬 (`main.ts`) | `data/api/radar-screen.json` (8곳, 줄마다 `지역` 열쇠말) |
 | `look_closer` 한 자리 확대 | 로컬 (`main.ts`) | 〃 |
 | `look_rulebook` 규정집 찾아보기 (RAG) | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
-| `look_weather` 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | `data/api/weather.json` |
+| `look_weather` 그 장소의 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | 파일 없음 — 장소·문장 단서로 서버가 만들어 냄 |
 
 ### 보고 4종 (`labs/agent/main.ts` 의 REPORTS)
 
@@ -183,7 +183,7 @@ airforce-agentic-ai/
 │  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 5)
 ├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4)
 ├─ data/                     교육용 합성 자료
-│  ├─ api/                    레이더 화면(radar-screen.json) · 기상(weather.json)
+│  ├─ api/                    레이더 화면(radar-screen.json)
 │  └─ docs/rulebook.md        관제 규정 10줄
 ├─ docs/graphs/              그래프 그림 (pnpm graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
