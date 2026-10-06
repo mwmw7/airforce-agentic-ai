@@ -77,6 +77,7 @@
 | 날씨 서버 끄고 돌리기 | `pnpm mcp:weather` 끈 채로 `pnpm agent` | `[MCP] 연결 실패 … 날씨 없이 계속` — 외부 의존이 죽어도 Agent 는 산다 |
 | 모델이 늦으면 | `LLM_MOCK_SLOW=1 pnpm agent` | 끊고 사람에게 retry / skip / stop 을 묻는다 |
 | 껐다 켜도 이어진다 | 담당자 확인에서 Ctrl+C → `pnpm agent --resume <번호>` | 같은 질문에서 이어짐 (checkpoints.sqlite) |
+| 판정기 바꿔 비교 | `JEV_MODE=local pnpm agent --all` 과 `JEV_MODE=typesafe pnpm agent --all` | 표 두 개 나란히: 규칙 판정기는 전부 scramble, Jev 는 보고마다 다르게 |
 | 모델 바꿔 보기 | `.env` 의 `LLM_MODE` 를 ollama / relay 로 | 같은 보고, 다른 도구 선택·사실 정리 |
 | 실행 기록 트리 | `.env` 에 `LANGSMITH_TRACING=true` | smith.langchain.com 에서 노드 → LLM · Jev · MCP · 기억 호출이 트리로 |
 | 그래프 그림 | `pnpm graph` | `docs/graphs/agent.md` — 선을 바꾸면 그림도 바뀐다 |

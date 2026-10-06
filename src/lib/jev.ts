@@ -125,7 +125,8 @@ function localJudge(state: Record<string, unknown>, questions: Record<string, Je
 
   let risk = riskScore(primary);
   // 과거 기억: 같은 기체를 예전에 '출격' 으로 판단한 기록이 있으면 위험도를 올린다
-  if (/scramble|출격/.test(JSON.stringify(state.past ?? []))) risk = clamp(risk + 0.2);
+  // 지난 기억에 "사람이 출격을 골랐다" 가 있으면 위험을 조금 올린다 (Jev 의견이 아니라 사람의 최종 선택만 본다)
+  if (/최종 선택: 출격|결정: 출격/.test(JSON.stringify(state.past ?? []))) risk = clamp(risk + 0.2);
   const uncertain = /불명|unknown|정보 부족|추가 조회|모르겠/.test(primary) || clues.some((c) => c.ok === false);
   const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previous|bypass approval/.test(everything);
   // 자료에 섞인 수상한 지시문에 '속아 넘어가는' 모습을 흉내 낸다 — 걸러내지 않으면 무조건 출격으로 기운다
