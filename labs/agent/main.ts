@@ -219,9 +219,9 @@ async function rememberNode(state: S): Promise<Partial<S>> {
 const afterRemember = (state: S): "judge" | "approve" => (state.memory ? "approve" : "judge");
 
 /** 판단 한 건을 기억에 맡긴다. 실행번호(thread_id)가 같으면 덮어쓴다 → 사람이 승인하면 그 결과로 고쳐 쓴다 */
-const saveCase = (state: S, config: LangGraphRunnableConfig, decision: string): Promise<void> => retain({
+const saveCase = (state: S, config: LangGraphRunnableConfig, decision: string, extra: Partial<Case> = {}): Promise<void> => retain({
   id: String(config.configurable?.thread_id ?? Date.now()), report: state.report, facts: state.facts,
-  action: state.judgment.action, confidence: state.judgment.confidence, decision,
+  action: state.judgment.action, confidence: state.judgment.confidence, decision, ...extra,
 } satisfies Case);
 
 /** judge: 지난 기억을 떠올리고(recall), Jev 에게 세 가지를 한 번에 묻고, 최종 결정은 코드 규칙으로. 끝나면 이번 판단을 기억에 남긴다(retain) */
@@ -287,8 +287,9 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   const picked = /^(y|yes|출격)/.test(answer) ? "scramble" : /^(w|watch|감시)/.test(answer) ? "watch" : /^(n|no|무시)/.test(answer) ? "ignore" : "watch";
   const label = { scramble: "출격", watch: "감시 강화", ignore: "무시" }[picked];
   const decision = `${label} — 사람이 결정${/^(y|yes|출격|w|watch|감시|n|no|무시)/.test(answer) ? "" : " (답 없음 → 감시)"}`;
-  // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오른다 — 사람이 가르친 셈
-  await saveCase({ ...state, judgment: { ...j, action: picked } }, config, decision);
+  // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 사람이 본 종합 근거(요약)와 최종 선택까지 같이 남긴다
+  // → 다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오르고, "그때 무엇을 보고 그렇게 정했나" 도 기억에 있다 — 사람이 가르친 셈
+  await saveCase({ ...state, judgment: { ...j, action: picked } }, config, decision, { summary: 요약.filter((l) => !l.startsWith("사실")), human: label });
   return { judgment: { ...j, decision } };
 }
 
