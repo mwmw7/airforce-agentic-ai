@@ -84,7 +84,7 @@ function runTool(name: string, args: Record<string, unknown>): string {
     const matched = [...new Set(found.flatMap((r) => r.지역).filter((k) => where.includes(k)))]; // 문장에서 걸린 장소 열쇠말만
     if (found.length) return JSON.stringify({ 지역: matched.join("·"), 잡힌것: found.map(brief) });
     // 그 장소엔 아무것도 없거나 장소를 모르겠다 → 지금 레이더에 잡힌 것 전부를 짧게 (어디 · 뭐가) 보여 준다
-    return JSON.stringify({ 결과: where ? `'${where.slice(0, 20)}' 에 잡힌 것 없음` : "전체 목록", 지금_잡힌_것들: rows.map((r) => `${r.어디}: ${r.뭐가}`) });
+    return JSON.stringify({ 결과: where ? `'${where.slice(0, 20)}' 에 잡힌 것 없음 → 전체 목록` : "장소 없음 → 전체 목록", 지금_잡힌_것들: rows.map((r) => `${r.어디}: ${r.뭐가}`) });
   }
   if (name === "look_closer") {
     const where = String(args.어디 ?? "");
@@ -279,18 +279,23 @@ async function askHumanNode(state: S): Promise<Partial<S>> {
  *  출격 / 감시 / 무시 를 고르게 한다. Agent 는 권고까지, 버튼은 사람이 누른다 (Human-in-the-Loop) */
 async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
   const j = state.judgment;
-  const ev = (name: string, label: string) => (state.evidence[name] ?? []).map((l) => `${label} ${l}`);
+  // 요약은 "## 제목" 과 "- 항목" 두 종류 줄로만 만든다 → 터미널(askPerson)·브라우저(live)·기억(retain) 어디서나 같은 글
+  const section = (title: string, items: string[]) => (items.length ? [`## ${title}`, ...items.map((i) => `- ${i}`)] : []);
+  const ev = (name: string) => state.evidence[name] ?? [];
   const 요약 = [
-    `보고  ${state.report}`,
-    ...ev("look_radar", "레이더"), ...ev("look_closer", "확대  "), ...ev("look_weather", "날씨  "), ...ev("look_rulebook", "규정  "),
-    ...(state.memory
-      ? [`기억  같은 사례 (${state.memory.time}) → 그때 ${j.action}: ${j.decision}`]
-      : state.past.length ? state.past.map((p) => `기억  ${p.replace(/\n/g, " / ").slice(0, 160)}`) : ["기억  비슷한 보고 없음"]),
-    state.memory
-      ? `Jev   생략 (같은 사례 기억으로 판정)`
-      : `Jev   ${j.action} (확신 ${Math.round(j.confidence * 100)}% · 위험도 ${j.danger}단계 · 정체불명 ${Math.round(j.unknown * 100)}%)`,
-    `권고  ${j.decision}`,
-    `사실  ${state.facts}`,
+    ...section("보고", [state.report]),
+    ...section("레이더", ev("look_radar")),
+    ...section("확대해서 본 것", ev("look_closer")),
+    ...section("날씨", ev("look_weather")),
+    ...section("관련 규정", ev("look_rulebook")),
+    ...section("기억", state.memory
+      ? [`같은 사례 (${state.memory.time}) → 그때 ${j.action}: ${j.decision}`]
+      : state.past.length ? state.past.map((p) => p.replace(/\n/g, " / ").slice(0, 160)) : ["비슷한 보고 없음"]),
+    ...section("Jev 판정", [state.memory
+      ? "생략 (같은 사례 기억으로 판정)"
+      : `${j.action} · 확신 ${Math.round(j.confidence * 100)}% · 위험도 ${j.danger}단계 (${DANGER[j.danger]}) · 정체불명 ${Math.round(j.unknown * 100)}%`]),
+    ...section("코드 권고", [j.decision]),
+    ...section("모델이 정리한 사실", [state.facts]),
   ];
   const answer = interrupt({ 문제: "종합 — 담당자가 결정합니다", 요약, 고르기: "y(출격) / w(감시 강화) / n(무시)" }) as string;
   const picked = /^(y|yes|출격)/.test(answer) ? "scramble" : /^(w|watch|감시)/.test(answer) ? "watch" : /^(n|no|무시)/.test(answer) ? "ignore" : "watch";
@@ -298,7 +303,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   const decision = `${label} — 사람이 결정${/^(y|yes|출격|w|watch|감시|n|no|무시)/.test(answer) ? "" : " (답 없음 → 감시)"}`;
   // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 사람이 본 종합 근거(요약)와 최종 선택까지 같이 남긴다
   // → 다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오르고, "그때 무엇을 보고 그렇게 정했나" 도 기억에 있다 — 사람이 가르친 셈
-  await saveCase({ ...state, judgment: { ...j, action: picked } }, config, decision, { summary: 요약.filter((l) => !l.startsWith("사실")), human: label });
+  await saveCase({ ...state, judgment: { ...j, action: picked } }, config, decision, { summary: 요약.slice(0, 요약.indexOf("## 모델이 정리한 사실")), human: label });
   return { judgment: { ...j, decision } };
 }
 
@@ -362,8 +367,19 @@ if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   /** 사람에게 묻는다. 터미널 입력과 브라우저 버튼(--live) 중 먼저 온 답을 쓴다 */
+  /** "## 제목" 은 굵게, "- 항목" 은 들여쓴 점으로, 긴 줄은 접어서 보여 준다 */
+  function pretty(lines: string[]): string[] {
+    const width = 100;
+    const wrap = (text: string, indent: string): string[] => {
+      const out: string[] = [];
+      for (let rest = text; rest.length; rest = rest.slice(width)) out.push((out.length ? indent : "") + rest.slice(0, width));
+      return out;
+    };
+    return lines.flatMap((l) => l.startsWith("## ") ? [bold(l.slice(3))] : l.startsWith("- ") ? wrap(`  · ${l.slice(2)}`, "    ") : wrap(l, ""));
+  }
+
   async function askPerson(question: { 문제: string; 요약?: string[]; 고르기: string }): Promise<string> {
-    log("human", bold(question.문제), question.요약 ?? []);
+    log("human", bold(question.문제), pretty(question.요약 ?? []));
     send("waiting", { question: [question.문제, ...(question.요약 ?? [])].join("\n"), choices: question.고르기 });
     const ac = new AbortController();
     const fromTerminal = rl.question(`         ${dim("│")} ${question.고르기} > `, { signal: ac.signal }).catch(() => new Promise<string>(() => {})); // 취소되면 그냥 조용히
