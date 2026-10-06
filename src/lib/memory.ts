@@ -53,6 +53,12 @@ type Row = { time: string; text: string; case?: Case };
 const FILE = `.hindsight/${BANK}.json`;
 const readFile = (): Row[] => (existsSync(FILE) ? JSON.parse(readFileSync(FILE, "utf8")) : []);
 const words = (t: string) => t.split(/[\s·,.!?()"':→]+/).filter((w) => w.length >= 2);
+/** 두 문장이 얼마나 같은가 (0~1): 겹친 단어 수 ÷ 두 문장의 전체 단어 수. 똑같은 문장이면 1, 전혀 다르면 0 */
+function overlap(a: string, b: string): number {
+  const mine = new Set(words(a)), theirs = new Set(words(b));
+  const same = [...mine].filter((w) => theirs.has(w)).length;
+  return same / Math.max(1, new Set([...mine, ...theirs]).size);
+}
 
 /** 기억 공간 만들기. 이미 있으면 그대로 둔다 (Hindsight 는 createBank 가 그렇게 동작한다) */
 export async function createBank(): Promise<void> {
@@ -116,32 +122,33 @@ export const recall = traceable(async function recall(query: string, topN = 3): 
   return found.map((m) => `${m.time.slice(0, 16).replace("T", " ")} ${m.text}`);
 }, { name: "memory.recall", run_type: "tool" });
 
-/** 전에 똑같은 보고가 있었나? 가장 비슷한 판단 한 건과 일치도(0~1)를 돌려준다. 판단 기록이 없으면 null */
+/** 전에 똑같은 보고가 있었나? 가장 비슷한 판단 한 건과 일치도(0~1)를 돌려준다. 판단 기록이 없으면 null
+ *  "같은 사례" 는 모델 점수가 아니라 코드 규칙으로 정한다: 기억에 붙여 둔 원문 보고(metadata.report)와 지금 보고의 단어 겹침(overlap).
+ *  Hindsight 는 후보를 찾아 주는 역할, 같은지 아닌지는 우리가 센다 → 모델이 한국어에 약해도 엉뚱한 사례를 "같다" 고 하지 않는다 */
 export const findSameCase = traceable(async function findSameCase(report: string): Promise<{ case: Case; time: string; score: number } | null> {
   if (hindsight) {
     // budget "low" = 빠른 검색 (50~100ms). 원래 사실만(observation 제외) — metadata 가 붙어 있는 건 원래 사실이다
     const started = Date.now();
     const { results } = await hindsight.recall(BANK, report, { budget: "low", types: ["world", "experience"], maxTokens: 600 });
-    log("memory", `${mode} ${bold("recall")} · 같은 사례 찾기 ${dim(`(budget low · world/experience · ${Date.now() - started}ms)`)} → ${results.length}건`,
-      results.slice(0, 3).map((r) => `${bar((r as { scores?: { reranker?: number } }).scores?.reranker)} ${dim(`[${r.type}]`)} ${cut(r.text, 60)} ${r.metadata?.action ? dim(`판정 ${r.metadata.action}`) : ""}`));
-    const top = results.find((r) => r.metadata?.action);
-    if (!top?.metadata) return null;
-    const m = top.metadata;
-    const score = (top as { scores?: { reranker?: number } }).scores?.reranker ?? 0; // 질문과 기억을 같이 읽고 매긴 일치도
-    const kase = { id: top.document_id ?? "", report: m.report, facts: "", action: m.action, confidence: Number(m.confidence), decision: m.decision };
-    return { case: kase, time: top.mentioned_at ?? "", score };
+    // 후보마다 원문 보고와의 겹침을 센다 (판단 기록이 붙은 것만)
+    const scored = results
+      .filter((r) => r.metadata?.action && r.metadata.report)
+      .map((r) => ({ r, score: overlap(report, r.metadata!.report) }))
+      .sort((a, b) => b.score - a.score);
+    log("memory", `${mode} ${bold("recall")} · 같은 사례 찾기 ${dim(`(budget low · world/experience · ${Date.now() - started}ms)`)} → 후보 ${results.length}건`,
+      scored.slice(0, 3).map(({ r, score }) => `${bar(score)} ${dim("보고 겹침")} ${cut(r.metadata!.report, 60)} ${dim(`판정 ${r.metadata!.action}`)}`));
+    const top = scored[0];
+    if (!top) return null;
+    const m = top.r.metadata!;
+    const kase = { id: top.r.document_id ?? "", report: m.report, facts: "", action: m.action, confidence: Number(m.confidence), decision: m.decision };
+    return { case: kase, time: top.r.mentioned_at ?? "", score: top.score };
   }
-  // file 모드: 두 보고의 단어가 얼마나 겹치나 (겹친 단어 수 ÷ 두 보고의 전체 단어 수). 똑같은 보고면 1
-  const mine = new Set(words(report));
-  const scored = readFile().filter((r) => r.case).map((r) => {
-    const theirs = new Set(words(r.case!.report));
-    const same = [...mine].filter((w) => theirs.has(w)).length;
-    return { case: r.case!, time: r.time, score: same / new Set([...mine, ...theirs]).size };
-  });
+  // file 모드도 같은 규칙: 저장된 판단 기록의 원문 보고와 겹침
+  const scored = readFile().filter((r) => r.case).map((r) => ({ case: r.case!, time: r.time, score: overlap(report, r.case!.report) }));
   return scored.sort((a, b) => b.score - a.score)[0] ?? null;
 }, { name: "memory.findSameCase", run_type: "tool" });
 
-/** 일치도(reranker 점수 0~1)를 막대와 숫자로. 0.9 이상이면 "같은 사례" */
+/** 점수(0~1)를 막대와 숫자로. 같은 사례 찾기는 보고 겹침, Jev 참고용 recall 은 Hindsight 리랭커 점수. 0.9 이상이면 "같은 사례" */
 function bar(x = 0): string {
   const n = Math.round(x * 10);
   return `${"█".repeat(n)}${dim("░".repeat(10 - n))} ${x.toFixed(2)}`;
