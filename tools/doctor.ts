@@ -59,7 +59,7 @@ if (process.env.LANGSMITH_TRACING === "true") {
 } else warn("LANGSMITH_TRACING 꺼짐 — traces/*.jsonl 에만 기록. 켜려면 .env 에 LANGSMITH_TRACING=true + LANGSMITH_API_KEY");
 
 // 데이터
-["data/api/radar-screen.json", "data/api/weather.json"].forEach((f) => fs.existsSync(f) ? ok(f) : bad(`${f} 없음`));
+["data/api/radar-screen.json", "data/docs/rulebook.md"].forEach((f) => fs.existsSync(f) ? ok(f) : bad(`${f} 없음`));
 
 console.log(`
 다음 단계
