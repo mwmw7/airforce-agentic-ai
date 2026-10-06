@@ -102,10 +102,10 @@ START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent �
 
 | 도구 | 어디서 실행 | 자료 |
 |---|---|---|
-| `look_radar` 보고에 나온 장소(서울·한강·잠실…)로 레이더 보기 | 로컬 (`main.ts`) | `data/api/radar-screen.json` (8곳, 줄마다 `지역` 열쇠말) |
+| `look_radar` 보고에 나온 장소로 레이더 보기 | 로컬 (`main.ts`) | 실제 모델이면 **LLM 이 보고에 맞춰 레이더 화면을 지어냄** (실행마다 한 번, 확대와 앞뒤가 맞음). mock·실패 시 `data/api/radar-screen.json` |
 | `look_closer` 한 자리 확대 | 로컬 (`main.ts`) | 〃 |
 | `look_rulebook` 규정집 찾아보기 (RAG) | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
-| `look_weather` 그 장소의 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | 파일 없음 — 장소·문장 단서로 서버가 만들어 냄 |
+| `look_weather` 그 장소의 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | 서버 안에서 **LLM 이 장소·상황에 맞춰 지어냄**. mock·실패 시 규칙표 |
 
 ### 보고 4종 (`labs/agent/main.ts` 의 REPORTS)
 

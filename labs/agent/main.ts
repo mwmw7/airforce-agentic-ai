@@ -35,7 +35,7 @@ import { readFileSync } from "node:fs";
 import readline from "node:readline/promises";
 import { Annotation, Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
-import { chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
+import { askLLM, chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
 import { askJev, JEV_MODE } from "../../src/lib/jev.js";
 import { blue, bold, cyan, dim, green, log, magenta, red, showDebug, showTool, yellow } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
@@ -76,9 +76,33 @@ const localTools: Tool[] = [
       parameters: { type: "object", properties: { 질문: { type: "string", description: "지금 상황을 한 문장으로. 예: 무전 응답 없는 풍선이 공항 쪽으로 간다" } }, required: ["질문"] } } },
 ];
 
-// 모델이 고른 도구 이름과 입력값을 받아 실제로 실행한다
-function runTool(name: string, args: Record<string, unknown>): string {
-  const rows: RadarRow[] = readJson("radar-screen.json");
+// ── 레이더 화면 만들기: 파일(radar-screen.json)은 mock 모드나 LLM 실패 때의 대체본. 실제 모드에서는 LLM 이 보고에 맞춰 그 자리에서 지어낸다 ──
+//   한 번 지은 화면은 이번 실행 동안 기억해 둔다 → look_closer 가 같은 물체를 확대할 수 있다 (매번 새로 지으면 앞뒤가 안 맞는다)
+let radarScreen: RadarRow[] | null = null;   // 이번 보고에 대해 지은 레이더 화면 (runOnce 시작 때 비운다)
+export const resetRadar = () => { radarScreen = null; };
+async function radarFor(report: string): Promise<RadarRow[]> {
+  if (radarScreen) return radarScreen;
+  const file: RadarRow[] = readJson("radar-screen.json");
+  if (LLM_MODE === "mock") return (radarScreen = file);
+  try {
+    const text = await askLLM({
+      system: "너는 가상 레이더 관측 시스템이다. 받은 보고에 어울리는 '지금 레이더에 잡힌 것들' 을 2~4개 지어내라. 보고의 대상은 반드시 포함하고, 무관한 평범한 항적(여객기·훈련기 등)도 하나쯤 섞어라. " +
+        "답은 설명 없이 JSON 배열 한 줄만. 각 항목 모양: {\"지역\":[\"서울\",\"남산\"],\"어디\":\"서울 남산 위\",\"뭐가\":\"둥근 물체 1개\",\"높이\":\"…\",\"속도\":\"…\",\"무전\":\"…\",\"메모\":\"…\",\"자세히\":\"확대해야 보이는 상세\"}. " +
+        "지역은 보고 속 장소 열쇠말(서울·한강·잠실·김포·인천·동해·부산 … 또는 보고에 나온 지명) 두어 개. 값은 짧은 한국어. (교육용 합성 자료)",
+      user: `보고: ${report}\n이런 모양으로: ${JSON.stringify(file.slice(0, 2).map(({ _notice, ...r }) => r))}`,
+      mockText: "[]",
+    });
+    const rows = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] ?? "[]") as RadarRow[];
+    const ok = rows.filter((r) => Array.isArray(r.지역) && r.어디 && r.뭐가);
+    return (radarScreen = ok.length ? ok : file);   // 모양이 틀리면 파일로
+  } catch {
+    return (radarScreen = file);                      // 늦거나 실패해도 파일로 — 도구는 멈추지 않는다
+  }
+}
+
+// 모델이 고른 도구 이름과 입력값을 받아 실제로 실행한다 (report = 이번 보고, 레이더 화면을 지을 때 쓴다)
+async function runTool(name: string, args: Record<string, unknown>, report: string): Promise<string> {
+  const rows = await radarFor(report);
   if (name === "look_radar") {
     const where = String(args.어디 ?? "");
     const found = rows.filter((r) => inRegion(r, where));
@@ -408,6 +432,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
       dim(`모델 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 · 실행번호 ${threadId} (멈추면 pnpm agent --resume ${threadId})`),
     ]);
     send("run_start", { round, report });
+    resetRadar(); // 보고마다 레이더 화면을 새로 짓는다
 
     const input = { report };  // 대화의 첫 줄(역할 설명 + 보고)은 agent 노드가 스스로 연다
     let result = {} as S;

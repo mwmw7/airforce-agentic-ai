@@ -1,6 +1,7 @@
 /**
  * mcp-servers/weather/server.ts — 날씨를 알려주는 MCP 서버 (Streamable HTTP)
- *   하는 일: "look_weather" 도구 하나를 MCP 로 공개한다. 장소(또는 보고 문장)를 받아 그 상황에 맞는 날씨를 만들어 돌려준다
+ *   하는 일: "look_weather" 도구 하나를 MCP 로 공개한다. 장소(또는 보고 문장)를 받아 그 상황에 맞는 날씨를 LLM 이 지어서 돌려준다
+ *   LLM 은 .env 의 LLM_MODE 그대로 (relay · ollama · cloud). mock 이거나 LLM 이 실패하면 아래 규칙표로 만든다 (키 없이도 돈다)
  *   켜기:   pnpm mcp:weather   → http://localhost:3333/mcp 에서 기다린다 (agent 가 접속해 쓴다. 자동으로 켜지지 않으니 먼저 켤 것)
  *   점검:   pnpm mcp:inspect   → MCP Inspector 화면에서 위 주소를 넣고 도구를 직접 눌러 본다
  *
@@ -14,11 +15,13 @@ import { createServer } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import * as z from "zod/v4";
+import { askLLM, LLM_MODE } from "../../src/lib/llm.js";
 
 const PORT = Number(process.env.MCP_WEATHER_PORT ?? 3333);
 
 // ── 1. 날씨 만들기: 교육용 합성 자료. 파일에서 찾지 않고, 받은 글(장소 · 보고 문장)에 맞춰 그 자리에서 만든다 ──
-//   지역 열쇠말로 기본 날씨를 고르고, 문장 속 단서(밤 · 바람 · 안개 · 비)로 덮어쓴다. 같은 입력이면 늘 같은 답 (무작위 없음)
+//   1-a) LLM 에게 "이 상황에 그럴듯한 날씨를 JSON 으로" 부탁한다 (아래 lookWeather)
+//   1-b) mock 이거나 LLM 이 실패하면 규칙표로 만든다: 지역 열쇠말로 기본 날씨 + 문장 단서(밤 · 바람 · 안개 · 비) 덮어쓰기 (ruleWeather)
 type Weather = { 하늘: string; 구름: string; 바람: string; 시야: string; 비행: string };
 const BY_REGION: [string[], Weather][] = [
   [["서울", "남산", "광화문"], { 하늘: "맑음", 구름: "조금", 바람: "약함", 시야: "멀리까지 잘 보임", 비행: "가능" }],
@@ -29,7 +32,7 @@ const BY_REGION: [string[], Weather][] = [
 ];
 const DEFAULT: Weather = { 하늘: "흐림", 구름: "보통", 바람: "보통", 시야: "보통", 비행: "가능" };
 
-function lookWeather(where: string): string {
+function ruleWeather(where: string): string {
   const base = BY_REGION.find(([keys]) => keys.some((k) => where.includes(k)))?.[1] ?? DEFAULT;
   const w: Weather & { 때?: string } = { ...base };
   // 문장 속 단서로 덮어쓴다
@@ -38,6 +41,26 @@ function lookWeather(where: string): string {
   if (/안개|해무/.test(where)) { w.하늘 = "안개"; w.시야 = "코앞만 보임"; w.비행 = "어려움"; }
   if (/비가|비 오|빗줄기|폭우|소나기|눈이|눈 내|눈보라/.test(where)) { w.하늘 = "비"; w.구름 = "잔뜩"; w.시야 = "짧음"; w.비행 = "주의"; } // "비행체" 의 "비" 에 걸리지 않게 단어로 본다
   return JSON.stringify(w);
+}
+
+/** LLM 에게 날씨를 지어 달라고 한다. 답은 JSON 한 줄이어야 하고, 모양이 틀리거나 실패하면 규칙표로 돌아간다 */
+async function lookWeather(where: string): Promise<string> {
+  const fallback = ruleWeather(where);
+  if (LLM_MODE === "mock") return fallback;
+  try {
+    const text = await askLLM({
+      system: "너는 가상 기상 관측소다. 받은 장소·상황에 어울리는 지금 날씨를 지어내라. 실제 날씨를 알 필요 없다. " +
+        "답은 설명 없이 JSON 객체 한 줄만. 모양은 정확히 {\"하늘\":\"…\",\"구름\":\"…\",\"바람\":\"…\",\"시야\":\"…\",\"비행\":\"…\"} 이고 값은 짧은 한국어 구. 밤이면 시야에 야간을 반영하라. (교육용 합성 자료)",
+      user: `장소·상황: ${where}\n이런 모양으로: ${fallback}`,
+      mockText: fallback,
+    });
+    const json = text.match(/\{[\s\S]*\}/)?.[0] ?? "";                 // 앞뒤 말이 붙어 와도 JSON 부분만 꺼낸다
+    const w = JSON.parse(json) as Record<string, unknown>;
+    if (["하늘", "구름", "바람", "시야", "비행"].every((k) => typeof w[k] === "string")) return JSON.stringify({ ...w, 출처: `LLM(${LLM_MODE})` });
+    return fallback;
+  } catch {
+    return fallback;                                                   // LLM 이 늦거나 틀린 모양이면 규칙표
+  }
 }
 
 // ── 2. 서버 만들기 + 도구 등록 ──
