@@ -233,9 +233,9 @@ const saveCase = (state: S, config: LangGraphRunnableConfig, decision: string, e
   action: state.judgment.action, confidence: state.judgment.confidence, decision, ...extra,
 } satisfies Case);
 
-/** judge: 지난 기억을 떠올리고(recall), Jev 에게 세 가지를 한 번에 묻고, 최종 결정은 코드 규칙으로. 끝나면 이번 판단을 기억에 남긴다(retain) */
+/** judge: 비슷한 기억을 떠올리고(recall), Jev 에게 세 가지를 한 번에 묻고, 코드 규칙으로 권고를 만든다. 기억에 남기는 건 approve 가 한다 */
 const DANGER = ["전혀 안 위험함, 심심한 하루", "조금 신경 쓰임", "꽤 수상함", "비상! 당장 뭔가 해야 함"];
-async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
+async function judgeNode(state: S): Promise<Partial<S>> {
   // 장기 기억: 비슷한 보고가 전에 있었나? 있으면 Jev 에게 past 로 같이 보여 준다 (어제 판단을 오늘 기억한다)
   const past = await recall(state.report);
 
@@ -262,8 +262,7 @@ async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Par
   log("rule", `${dim("Jev 는 의견, 결정은 코드 규칙")} · 조건 ${bold(rule)} → ${decision}`);
 
   const judgment = { action: action.choice ?? "?", probabilities: action.probabilities ?? {}, confidence, danger: Math.round(danger.score ?? 0), unknown: noul, decision };
-  // 이번 판단을 기억에 남긴다. 다음에 같은 보고가 오면 remember 가 이걸 꺼내 Jev 없이 판단한다
-  await saveCase({ ...state, judgment }, config, decision);
+  // 기억에 남기는 건 여기서 하지 않는다. 언제나 다음 단계(approve)에서 사람의 결정까지 합쳐 한 번만 retain 한다 (서버 일을 절반으로)
   return { judgment, past };
 }
 
