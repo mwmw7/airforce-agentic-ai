@@ -132,7 +132,13 @@ export function showTool(name: string, args: Record<string, unknown>, resultText
   const argText = Object.entries(args).map(([k, v]) => `${k}: ${v}`).join(", ");
   let data: unknown;
   try { data = JSON.parse(resultText); } catch { log(via, `${bold(name)}${dim("(" + argText + ")")}`, [resultText]); return; }
+  // 값이 객체 배열이면(예: look_radar 의 잡힌것) 한 줄에 하나씩 풀어서 보여 준다
+  const flat = (v: unknown): string => (Array.isArray(v) && v.some((x) => typeof x === "object") ? "" : typeof v === "object" && v ? JSON.stringify(v) : String(v));
   const rows = (Array.isArray(data) ? data : [data]) as Record<string, unknown>[];
-  const lines = rows.map((row) => Object.entries(row).filter(([k]) => k !== "_notice").map(([k, v]) => `${cyan(k)} ${String(v)}`).join(dim("  |  ")));
+  const lines = rows.flatMap((row) => {
+    const head = Object.entries(row).filter(([k, v]) => k !== "_notice" && flat(v) !== "").map(([k, v]) => `${cyan(k)} ${flat(v)}`).join(dim("  |  "));
+    const nested = Object.entries(row).filter(([, v]) => Array.isArray(v) && v.some((x) => typeof x === "object")) as [string, Record<string, unknown>[]][];
+    return [head, ...nested.flatMap(([, list]) => list.map((item) => "  · " + Object.entries(item).map(([k, v]) => `${cyan(k)} ${String(v)}`).join(dim("  |  "))))].filter(Boolean);
+  });
   log(via, `${bold(name)}${dim("(" + argText + ")")}`, lines);
 }
