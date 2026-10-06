@@ -88,7 +88,7 @@ Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강
 | 구현 | Jev 판정 3질문 (TypeSafe SDK 직접 호출, 키 없으면 로컬 판정기) | `src/lib/jev.ts` |
 | 구현 | 장기 기억 Hindsight: createBank · retain · recall · reflect, 서버 없으면 file 모드 | `src/lib/memory.ts` · 시연 |
 | 구현 | 기억으로 판단: `remember` 노드가 같은 사례(일치도 0.9↑)를 찾으면 그때의 판정(metadata)을 그대로 써 Jev 생략. 사람이 반려하면 다음엔 "감시" 로 떠오름. live 화면에 기억 카드 | `labs/agent/main.ts` · `findSameCase` · 시연 |
-| 구현 | HITL: 출격이면 interrupt 로 승인 · 반려 | `labs/agent/main.ts` approve 노드 |
+| 구현 | HITL: 언제나 마지막에 interrupt — 레이더 · 규정 · 날씨 · 기억 · Jev 를 종합해 보여 주고 사람이 출격 / 감시 / 무시 결정 | `labs/agent/main.ts` approve 노드 |
 | 구현 | Checkpoint: LangGraph SqliteSaver, 강제 종료 후 `--resume` | 〃 · 빈칸 6 |
 | 구현 | 모델 지연 처리: 시간 초과 → retry / skip / stop | 〃 askHuman 노드 |
 | 구현 | 모델 교체 (relay · ollama · cloud · mock) | `src/lib/llm.ts` · `LLM_MODE` |

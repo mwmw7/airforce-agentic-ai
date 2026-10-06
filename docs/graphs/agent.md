@@ -14,6 +14,7 @@ graph TD;
 	__end__([<p>__end__</p>]):::last
 	__start__ --> agent;
 	approve --> __end__;
+	judge --> approve;
 	stop --> __end__;
 	tools --> agent;
 	agent -.-> tools;
@@ -25,9 +26,6 @@ graph TD;
 	askHuman -.-> stop;
 	remember -.-> judge;
 	remember -.-> approve;
-	remember -.-> __end__;
-	judge -.-> approve;
-	judge -.-> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2;
 	classDef first fill-opacity:0;
 	classDef last fill:#bfb6fc;

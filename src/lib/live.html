@@ -277,8 +277,8 @@
         case "tool": line("tool", e.name, cells(e.result)); showNow(`tools — ${e.name} 실행 결과`, `<div style="font-size:13px">${cells(e.result)}</div>`); break;
         case "waiting": {
           setStatus("사람을 기다리는 중", "human");
-          const [q, facts] = e.question.split(/\. 사실: /);
-          $("askQ").textContent = q; $("askFacts").textContent = facts ? "사실: " + facts : "";
+          const [q, ...rest] = e.question.split("\n"); // 첫 줄 = 질문, 나머지 = 종합 요약 (레이더 · 규정 · 기억 · Jev)
+          $("askQ").textContent = q; $("askFacts").textContent = rest.join("\n"); $("askFacts").style.whiteSpace = "pre-line";
           const btns = $("askBtns"); btns.innerHTML = "";
           for (const [, key, desc] of e.choices.matchAll(/(\w+)\(([^)]*)\)/g)) {
             const b = document.createElement("button"); b.textContent = `${key} · ${desc}`;
