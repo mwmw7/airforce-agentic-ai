@@ -59,10 +59,14 @@ const REPORTS = [
 // ── 1. 도구: 설명(모델이 읽는 것) + 실행 함수(내 코드가 돌리는 것) ──
 // 레이더·규정집은 이 파일 안의 로컬 도구. 날씨는 MCP 서버(mcp-servers/weather)에서 받아 온다 → mcp.ts
 const readJson = (file: string) => JSON.parse(readFileSync(new URL(`../../data/api/${file}`, import.meta.url), "utf8"));
-type RadarRow = Record<string, string>;
+type RadarRow = Record<string, string> & { 지역: string[] };
+// 보고 속 장소와 레이더 줄을 맞춰 본다: 줄의 '지역' 열쇠말(서울, 남산 …) 중 하나라도 문장에 들어 있으면 그 지역이다
+const inRegion = (row: RadarRow, text: string): boolean => row.지역.some((k) => text.includes(k));
+const brief = ({ 자세히, _notice, 지역, ...row }: RadarRow) => row; // '자세히' 는 숨긴다 → 확대해야 보인다
 
 const localTools: Tool[] = [
-  { type: "function", function: { name: "look_radar", description: "레이더 화면을 한 번 본다. 한 번에 하나만 잡히므로 찾는 게 안 보이면 다시 봐야 한다. 자세한 건 안 보인다. (교육용 합성 자료)", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "look_radar", description: "레이더에서 한 지역을 본다. 보고에 나온 장소(서울, 한강, 잠실, 김포, 인천, 동해 …)를 넣으면 그 지역에 잡힌 것들만 보여 준다. 장소를 모르면 비워 두면 전체 목록이 나온다. 자세한 건 안 보인다. (교육용 합성 자료)",
+      parameters: { type: "object", properties: { 어디: { type: "string", description: "보고에 나온 장소 또는 보고 문장 그대로. 예: 서울 / 한강 위 풍선" } } } } },
   { type: "function", function: { name: "look_closer", description: "레이더 화면에서 한 자리만 확대해 자세히 본다. 수상한 게 있으면 꼭 써 보라. (교육용 합성 자료)",
       parameters: { type: "object", properties: { 어디: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["어디"] } } },
   // RAG: 규정집은 모델이 외우고 있지 않다. 필요할 때 찾아서(search-docs.ts) 대화에 넣어 준다
@@ -71,13 +75,19 @@ const localTools: Tool[] = [
 ];
 
 // 모델이 고른 도구 이름과 입력값을 받아 실제로 실행한다
-const pickOne = <T>(list: T[]): T => list[Math.floor(Math.random() * list.length)]; // 관측은 볼 때마다 하나씩, 무작위로
 function runTool(name: string, args: Record<string, unknown>): string {
   const rows: RadarRow[] = readJson("radar-screen.json");
-  if (name === "look_radar") { const { 자세히, _notice, ...row } = pickOne(rows); return JSON.stringify(row); }   // '자세히' 는 숨긴다 → 확대해야 보인다
+  if (name === "look_radar") {
+    const where = String(args.어디 ?? "");
+    const found = rows.filter((r) => inRegion(r, where));
+    const matched = [...new Set(found.flatMap((r) => r.지역).filter((k) => where.includes(k)))]; // 문장에서 걸린 장소 열쇠말만
+    if (found.length) return JSON.stringify({ 지역: matched.join("·"), 잡힌것: found.map(brief) });
+    // 그 장소엔 아무것도 없거나 장소를 모르겠다 → 지금 레이더에 잡힌 것 전부를 짧게 (어디 · 뭐가) 보여 준다
+    return JSON.stringify({ 결과: where ? `'${where.slice(0, 20)}' 에 잡힌 것 없음` : "전체 목록", 지금_잡힌_것들: rows.map((r) => `${r.어디}: ${r.뭐가}`) });
+  }
   if (name === "look_closer") {
     const where = String(args.어디 ?? "");
-    const row = rows.find((r) => where.includes(r.어디.split(" ")[0]));                       // "잠실 위" → "잠실" 로 찾는다
+    const row = rows.find((r) => inRegion(r, where));                                        // "잠실 위" → 지역 열쇠말 "잠실" 로 찾는다
     return row ? JSON.stringify({ 어디: row.어디, 뭐가: row.뭐가, 자세히: row.자세히 }) : JSON.stringify({ 결과: `레이더에 '${where}' 자리는 없음` });
   }
   if (name === "look_rulebook") {
@@ -113,7 +123,7 @@ interface Memory { report: string; time: string; score: number }
 
 /** agent: 모델을 한 번 부른다. 답변이든 도구 요청이든 모델의 말로 기록에 남긴다 */
 // 모델에게 주는 역할 설명 (대화의 첫 줄). 그래프 안에서 넣어야 터미널·Studio 어디서 돌려도 같다
-const SYSTEM = "너는 관제실 보조다. 보고를 받으면 레이더를 봐라. 한 번에 하나만 잡히니 보고와 관련된 게 나올 때까지 몇 번 더 봐도 된다. 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 판단 전에 look_rulebook 으로 관련 규정을 한 번 찾아보라. 확인된 사실과 관련 규정만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
+const SYSTEM = "너는 관제실 보조다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 판단 전에 look_rulebook 으로 관련 규정을 한 번 찾아보라. 확인된 사실과 관련 규정만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
 
 async function agentNode(state: S): Promise<Partial<S>> {
   const step = state.steps + 1;

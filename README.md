@@ -101,7 +101,7 @@ START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent �
 
 | 도구 | 어디서 실행 | 자료 |
 |---|---|---|
-| `look_radar` 레이더 한 번 보기 | 로컬 (`main.ts`) | `data/api/radar-screen.json` |
+| `look_radar` 보고에 나온 장소(서울·한강·잠실…)로 레이더 보기 | 로컬 (`main.ts`) | `data/api/radar-screen.json` (8곳, 줄마다 `지역` 열쇠말) |
 | `look_closer` 한 자리 확대 | 로컬 (`main.ts`) | 〃 |
 | `look_rulebook` 규정집 찾아보기 (RAG) | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
 | `look_weather` 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | `data/api/weather.json` |
@@ -110,7 +110,7 @@ START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent �
 
 | # | 보고 | 보는 포인트 |
 |---|---|---|
-| 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | 도구를 여러 번 쓰고 출격 → 사람 승인. **두 번 돌리면 두 번째엔 기억이 떠올라 확신이 오른다** |
+| 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | "서울" 로 레이더를 보면 남산 물체 + 광화문 헬기 두 건 → 확대해서 가려낸다 → 출격 → 사람 승인. **두 번 돌리면 두 번째엔 기억으로 판단** |
 | 2 | 한강 위 거대한 오리 풍선, 김포 쪽으로 | 규정집에 "풍선은 감시" 가 있다 |
 | 3 | 잠실 상공 드론 수십 대 | 허가 여부 확인 |
 | 4 | 옆 부대 훈련기, 예정 코스 정상 | 별일 아님 |
