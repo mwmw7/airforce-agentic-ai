@@ -18,6 +18,7 @@
     "mcp:weather": "tsx mcp-servers/weather/server.ts",
     "mcp:inspect": "pnpm dlx @modelcontextprotocol/inspector",
     "memory:up": "tsx tools/memory-up.ts",
+    "memory:reset": "tsx tools/memory-reset.ts",
     "memory:ui": "uvx hindsight-embed -p airforce-agent ui start --port 18888",
     "memory:ui:stop": "uvx hindsight-embed -p airforce-agent ui stop --port 18888",
     "studio": "langgraphjs dev --port 2024",
