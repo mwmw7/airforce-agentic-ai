@@ -5,9 +5,10 @@
  * Agent 는 도구로 사실을 확인하고(LLM), 판정 모델이 의견을 내고(Jev), 최종 결정은 코드가 한다.
  *
  *   START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
- *                   ├─ 다 확인했다     ─▶ remember ─┬─ 같은 사례 기억 있음 ─▶ (출격이면 approve) ─▶ END  (Jev 생략)
- *                   │                              └─ 없음 ─▶ judge ─┬─ 출격 아님 ─▶ END          (Jev 판정 + 코드가 결정)
- *                   │                                                └─ 출격!   ─▶ approve ─▶ END  (멈추고 사람이 승인/반려)
+ *                   ├─ 다 확인했다     ─▶ remember ─┬─ 같은 사례 기억 있음 ──────────┐  (Jev 생략)
+ *                   │                              └─ 없음 ─▶ judge (Jev 판정) ─────┴─▶ approve ─▶ END
+ *                   │                                  approve = 레이더 · 규정 · 날씨 · 기억 · Jev 를 한눈에 모아 보여 주고
+ *                   │                                            사람이 출격 / 감시 / 무시 를 고른다 (언제나 마지막은 사람)
  *                   ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤)
  *                   └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → remember / stop → stop
  *
@@ -15,7 +16,7 @@
  *   · 모델은 "이 도구를 써 달라" 고 말할 뿐, 실제로 실행하는 건 tools 단계(내 코드)다
  *   · 언제 멈출지(MAX_STEPS)도 모델이 아니라 route 함수(내 코드)가 정한다
  *   · LLM 은 사실을 모으고, Jev 는 판정하고, 결정은 코드가 한다 — 역할이 다르다
- *   · 출격처럼 큰 결정은 코드도 모델도 아닌 사람이 한다 (approve 에서 멈추고 묻는다)
+ *   · 마지막 결정은 코드도 모델도 아닌 사람이 한다 — approve 가 모든 근거를 한 화면에 모아 보여 주고 묻는다 (HITL)
  *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember)
  *   · 모델이 늦으면(LLM_TIMEOUT_SEC) 끊고 사람에게 묻는다. 실행 전체도 RUN_TIMEOUT_SEC 를 넘으면 끊는다
  *
@@ -114,6 +115,12 @@ const LoopState = Annotation.Root({
   stuck: Annotation<string>(),                                                                        // 모델이 늦었을 때 그 이유 (비어 있으면 정상)
   humanChoice: Annotation<string>(),                                                                  // 사람이 고른 것: retry / skip / stop
   memory: Annotation<Memory | null>(),                                                                // remember 가 찾은 같은 사례 (없으면 null → judge 로)
+  past: Annotation<string[]>({ reducer: (_, next) => next, default: () => [] }),                   // judge 가 떠올린 비슷한 기억 (Jev 참고용)
+  // 도구가 돌려준 결과를 이름별로 모아 둔다 (approve 에서 사람에게 한눈에 보여 주려고). 같은 도구를 여러 번 쓰면 뒤에 이어 붙인다
+  evidence: Annotation<Record<string, string[]>>({
+    reducer: (prev, next) => { const out = { ...prev }; for (const [k, v] of Object.entries(next)) out[k] = [...(out[k] ?? []), ...v]; return out; },
+    default: () => ({}),
+  }),
 });
 type S = typeof LoopState.State;
 interface Judgment { action: string; probabilities: Record<string, number>; confidence: number; danger: number; unknown: number; decision: string }
@@ -166,9 +173,9 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 풀어서 넘깁니다 (예: {"어디":"잠실 위"})
   //   · MCP 에서 받은 도구(isMcpTool)면 callMcpTool, 아니면 runTool
   //   · 반환한 messages 는 공유 기록 뒤에 자동으로 이어 붙여집니다
-  // ----- SOLUTION -----
-  //! return { messages: [] };
   const results: Msg[] = [];
+  // ----- SOLUTION -----
+  //! // 여기서 calls 를 돌며 results 에 { role: "tool", tool_call_id, content } 를 넣으세요
   for (const call of calls) {
     const args = JSON.parse(call.function.arguments || "{}");
     // MCP 에서 받은 도구면 서버에 실행을 부탁하고, 아니면 이 파일의 runTool 로 직접 실행한다
@@ -177,8 +184,26 @@ async function toolsNode(state: S): Promise<Partial<S>> {
     showTool(call.function.name, args, result, viaMcp ? "mcp" : "tool"); // 결과를 색 입혀 보여 준다 (TOOL / MCP 꼬리표)
     results.push({ role: "tool", tool_call_id: call.id, content: result });
   }
-  return { messages: results };
   // ----- END SOLUTION -----
+  // 도구 결과를 짧은 글로 바꿔 이름별로 모아 둔다 → 마지막 approve 에서 사람이 한눈에 본다
+  const evidence: Record<string, string[]> = {};
+  results.forEach((m, i) => { (evidence[calls[i].function.name] ??= []).push(...oneLine(String(m.content))); });
+  return { messages: results, evidence };
+}
+
+/** 도구 결과(JSON 글자)를 사람이 읽기 좋은 짧은 줄로. 목록이 있으면 항목마다 한 줄 */
+function oneLine(text: string): string[] {
+  let data: unknown;
+  try { data = JSON.parse(text); } catch { return [text.slice(0, 120)]; }
+  if (typeof data !== "object" || !data) return [String(data)];
+  const lines: string[] = [], plain: string[] = [];
+  for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+    if (k === "_notice") continue;
+    if (Array.isArray(v)) v.forEach((item) => lines.push(typeof item === "object" && item ? Object.values(item as object).join(" · ") : String(item)));
+    else plain.push(`${k} ${v}`);
+  }
+  if (plain.length) lines.unshift(plain.join(" · "));
+  return lines.map((l) => l.slice(0, 120));
 }
 
 /** remember: 전에 똑같은 보고가 있었나? 있으면 그때의 판정을 그대로 쓰고 Jev 를 건너뛴다 (장기 기억으로 판단하기) */
@@ -199,9 +224,8 @@ async function rememberNode(state: S): Promise<Partial<S>> {
   };
 }
 
-// remember 다음: 기억으로 판정했으면 출격만 사람에게, 아니면 judge(Jev)로
-const afterRemember = (state: S): "judge" | "approve" | typeof END =>
-  !state.memory ? "judge" : state.judgment.action === "scramble" ? "approve" : END;
+// remember 다음: 같은 사례 기억이 있으면 Jev 를 건너뛰고 바로 사람에게(approve), 없으면 judge(Jev)로
+const afterRemember = (state: S): "judge" | "approve" => (state.memory ? "approve" : "judge");
 
 /** 판단 한 건을 기억에 맡긴다. 실행번호(thread_id)가 같으면 덮어쓴다 → 사람이 승인하면 그 결과로 고쳐 쓴다 */
 const saveCase = (state: S, config: LangGraphRunnableConfig, decision: string): Promise<void> => retain({
@@ -240,7 +264,7 @@ async function judgeNode(state: S, config: LangGraphRunnableConfig): Promise<Par
   const judgment = { action: action.choice ?? "?", probabilities: action.probabilities ?? {}, confidence, danger: Math.round(danger.score ?? 0), unknown: noul, decision };
   // 이번 판단을 기억에 남긴다. 다음에 같은 보고가 오면 remember 가 이걸 꺼내 Jev 없이 판단한다
   await saveCase({ ...state, judgment }, config, decision);
-  return { judgment };
+  return { judgment, past };
 }
 
 /** askHuman: 모델이 늦었을 때 그래프를 멈추고 사람에게 묻는다 (Human-in-the-Loop) */
@@ -251,25 +275,31 @@ async function askHumanNode(state: S): Promise<Partial<S>> {
   return { humanChoice: answer, stuck: "", facts };
 }
 
-/** approve: Jev 가 출격이라고 하면 멈추고 사람에게 승인을 받는다. Agent 는 권고까지, 출격 버튼은 사람이 누른다 */
+/** approve: 언제나 마지막은 사람. 지금까지 모은 근거(레이더 · 확대 · 날씨 · 규정 · 기억 · Jev)를 한눈에 보여 주고
+ *  출격 / 감시 / 무시 를 고르게 한다. Agent 는 권고까지, 버튼은 사람이 누른다 (Human-in-the-Loop) */
 async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
   const j = state.judgment;
-  const who = state.memory
-    ? `기억(${state.memory.time} 같은 사례)이 출격을 권고했습니다 (그때 확신 ${Math.round(j.confidence * 100)}%)`
-    : `Jev 가 출격을 권고했습니다 (확신 ${Math.round(j.confidence * 100)}% · 위험도 ${j.danger}단계)`;
-  const answer = interrupt({
-    문제: `${who}. 사실: ${state.facts}`,
-    고르기: "y(출격 승인) / n(반려, 감시 유지)",
-  }) as string;
-  const approved = /^(y|yes|승인)/.test(answer);
-  const decision = approved ? "출격 승인 — 사람이 결정" : "출격 반려, 감시 유지 — 사람이 결정";
-  // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 반려했으면 다음엔 "감시" 로 떠오른다 — 사람이 가르친 셈
-  await saveCase({ ...state, judgment: { ...j, action: approved ? "scramble" : "watch" } }, config, decision);
+  const ev = (name: string, label: string) => (state.evidence[name] ?? []).map((l) => `${label} ${l}`);
+  const 요약 = [
+    `보고  ${state.report}`,
+    ...ev("look_radar", "레이더"), ...ev("look_closer", "확대  "), ...ev("look_weather", "날씨  "), ...ev("look_rulebook", "규정  "),
+    ...(state.memory
+      ? [`기억  같은 사례 (${state.memory.time}) → 그때 ${j.action}: ${j.decision}`]
+      : state.past.length ? state.past.map((p) => `기억  ${p.replace(/\n/g, " / ").slice(0, 160)}`) : ["기억  비슷한 보고 없음"]),
+    state.memory
+      ? `Jev   생략 (같은 사례 기억으로 판정)`
+      : `Jev   ${j.action} (확신 ${Math.round(j.confidence * 100)}% · 위험도 ${j.danger}단계 · 정체불명 ${Math.round(j.unknown * 100)}%)`,
+    `권고  ${j.decision}`,
+    `사실  ${state.facts}`,
+  ];
+  const answer = interrupt({ 문제: "종합 — 담당자가 결정합니다", 요약, 고르기: "y(출격) / w(감시 강화) / n(무시)" }) as string;
+  const picked = /^(y|yes|출격)/.test(answer) ? "scramble" : /^(w|watch|감시)/.test(answer) ? "watch" : /^(n|no|무시)/.test(answer) ? "ignore" : "watch";
+  const label = { scramble: "출격", watch: "감시 강화", ignore: "무시" }[picked];
+  const decision = `${label} — 사람이 결정${/^(y|yes|출격|w|watch|감시|n|no|무시)/.test(answer) ? "" : " (답 없음 → 감시)"}`;
+  // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오른다 — 사람이 가르친 셈
+  await saveCase({ ...state, judgment: { ...j, action: picked } }, config, decision);
   return { judgment: { ...j, decision } };
 }
-
-// judge 다음: 출격이면 사람에게, 아니면 끝
-const afterJudge = (state: S): "approve" | typeof END => (state.judgment.action === "scramble" ? "approve" : END);
 
 /** stop: 내 코드가 반복을 끊을 때 들르는 단계 */
 async function stopNode(state: S): Promise<Partial<S>> {
@@ -317,8 +347,8 @@ export const graph = new StateGraph(LoopState)
   .addConditionalEdges("agent", route, ["tools", "remember", "stop", "askHuman"])
   .addEdge("tools", "agent")
   .addConditionalEdges("askHuman", afterHuman, ["agent", "remember", "stop"])
-  .addConditionalEdges("remember", afterRemember, ["judge", "approve", END])
-  .addConditionalEdges("judge", afterJudge, ["approve", END])
+  .addConditionalEdges("remember", afterRemember, ["judge", "approve"])
+  .addEdge("judge", "approve")   // Jev 가 뭐라 하든 마지막은 사람
   .addEdge("approve", END)
   .addEdge("stop", END)
   // 멈췄다 이어가려면 진행 상황(checkpoint)을 저장할 곳이 필요하다. LangGraph 가 주는 SqliteSaver 를 꽂으면
@@ -331,10 +361,9 @@ if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   /** 사람에게 묻는다. 터미널 입력과 브라우저 버튼(--live) 중 먼저 온 답을 쓴다 */
-  async function askPerson(question: { 문제: string; 고르기: string }): Promise<string> {
-    const [q, facts] = question.문제.split(/\. 사실: /);
-    log("human", bold(q), facts ? [`${dim("사실")} ${facts}`] : []);
-    send("waiting", { question: question.문제, choices: question.고르기 });
+  async function askPerson(question: { 문제: string; 요약?: string[]; 고르기: string }): Promise<string> {
+    log("human", bold(question.문제), question.요약 ?? []);
+    send("waiting", { question: [question.문제, ...(question.요약 ?? [])].join("\n"), choices: question.고르기 });
     const ac = new AbortController();
     const fromTerminal = rl.question(`         ${dim("│")} ${question.고르기} > `, { signal: ac.signal }).catch(() => new Promise<string>(() => {})); // 취소되면 그냥 조용히
     const fromPage = LIVE ? waitAnswerFromPage() : new Promise<string>(() => {});
@@ -377,7 +406,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
       if (!resumeId) await run(input); // 이어가기면 처음부터 돌리지 않는다. 저장된 멈춘 곳(아래 interrupt)부터
       for (;;) {
         // 그래프가 interrupt() 에서 멈춰 있으면 그 질문이 state.tasks 에 들어 있다. 없으면 끝까지 돈 것
-        const question = (await graph.getState(config)).tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as { 문제: string; 고르기: string } | undefined;
+        const question = (await graph.getState(config)).tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as { 문제: string; 요약?: string[]; 고르기: string } | undefined;
         if (!question) break;
         // ===== TODO 6: 사람의 답으로 멈춘 곳부터 이어가기 =====
         // askPerson(question) 으로 답을 받고, run(new Command({ resume: 답 })) 으로 그래프를 다시 돌리세요.
