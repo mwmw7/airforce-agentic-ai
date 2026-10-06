@@ -18,6 +18,8 @@
     "mcp:weather": "tsx mcp-servers/weather/server.ts",
     "mcp:inspect": "pnpm dlx @modelcontextprotocol/inspector",
     "memory:up": "tsx tools/memory-up.ts",
+    "memory:ui": "uvx hindsight-embed -p airforce-agent ui start --port 18888",
+    "memory:ui:stop": "uvx hindsight-embed -p airforce-agent ui stop --port 18888",
     "studio": "langgraphjs dev --port 2024",
     "graph": "tsx tools/draw-graph.ts",
     "instructor:make-handson": "node tools/make-handson.mjs"
