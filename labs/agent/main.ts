@@ -28,7 +28,7 @@
  *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 사람에게 묻는 화면이 뜬다
  *        pnpm agent:live                      브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
  *        pnpm agent --resume <실행번호>       담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (checkpoints.sqlite)
- *        pnpm agent --all [--answer w]        보고 4종을 차례로 돌리고 표로 정리 (담당자 답은 자동). JEV_MODE 바꿔 두 번 돌려 비교
+ *        pnpm agent --all                     보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 답한다 (--answer w 를 주면 자동). JEV_MODE 바꿔 두 번 돌려 비교
  *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" })
  */
 import { readFileSync } from "node:fs";
@@ -374,8 +374,8 @@ if (process.argv[1]?.endsWith("main.ts")) {
     });
   }
 
-  // --answer w 처럼 답을 미리 정해 두면 묻지 않고 바로 그 답을 쓴다 (--all 로 여러 건 돌릴 때)
-  const AUTO = process.argv.includes("--answer") ? process.argv[process.argv.indexOf("--answer") + 1] : process.argv.includes("--all") ? "w" : "";
+  // --answer w 처럼 답을 미리 정해 두면 묻지 않고 바로 그 답을 쓴다. 안 주면 --all 이라도 건마다 사람에게 묻는다
+  const AUTO = process.argv.includes("--answer") ? process.argv[process.argv.indexOf("--answer") + 1] : "";
 
   async function askPerson(question: { 문제: string; 요약?: string[]; 고르기: string }): Promise<string> {
     log("human", bold(question.문제), pretty(question.요약 ?? []));
@@ -473,7 +473,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
       await new Promise((r) => setTimeout(r, 5000));
     }
   } else if (process.argv.includes("--all")) {
-    // 보고 4종을 차례로 돌리고 표 하나로 정리한다. 담당자 답은 --answer (기본 w). 같은 명령을 JEV_MODE 만 바꿔 두 번 돌려 비교하는 용도
+    // 보고 4종을 차례로 돌리고 표 하나로 정리한다. 건마다 담당자(사람)에게 묻는다. --answer w 를 주면 자동 답. JEV_MODE 만 바꿔 두 번 돌려 비교하는 용도
     const rows: Record<string, string>[] = [];
     for (let i = 0; i < REPORTS.length; i++) {
       const r = await runOnce(REPORTS[i], i + 1);
@@ -487,7 +487,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
         결정: j?.decision.replace(" — 사람이 결정", "") ?? "없음",
       });
     }
-    log("decide", `${bold("보고 4종 결과")} ${dim(`(모델 ${LLM_MODE} · 판정 ${JEV_MODE} · 기억 ${MEMORY_MODE} · 담당자 답 ${AUTO})`)}`);
+    log("decide", `${bold("보고 4종 결과")} ${dim(`(모델 ${LLM_MODE} · 판정 ${JEV_MODE} · 기억 ${MEMORY_MODE} · 담당자 답 ${AUTO || "사람이 직접"})`)}`);
     console.table(rows);
     rl.close();
   } else if (process.argv.includes("--resume")) {
