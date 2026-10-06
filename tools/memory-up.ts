@@ -25,11 +25,15 @@ const server = new HindsightServer({
     HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL: "BAAI/bge-m3",           // 의미 검색도 다국어 모델로 (기본 bge-small-en 은 영어 전용)
     HINDSIGHT_API_RERANKER_LOCAL_MODEL: "BAAI/bge-reranker-v2-m3", // 순위 매기기도 다국어 모델로
   },
-  readyTimeoutMs: 180_000, // 첫 실행은 다운로드 때문에 오래 걸린다
+  readyTimeoutMs: 900_000, // 첫 실행은 다운로드(다국어 모델 약 3GB) 때문에 오래 걸린다
   logger: consoleLogger,
 });
 
 console.log(`[Hindsight] 데몬을 켜는 중… (처음이면 몇 분 걸립니다)`);
+// 주의: 같은 포트에 데몬이 이미 떠 있으면 그걸 그대로 쓴다 → 위 설정(다국어 모델 등)이 적용되지 않는다.
+//       다른 설정으로 켜려면 먼저 끈다: uvx hindsight-embed -p airforce-agent daemon stop (또는 -p default)
+const already = await fetch(`http://127.0.0.1:${port}/health`).then((r) => r.ok).catch(() => false);
+if (already) console.log(`[Hindsight] 포트 ${port} 에 데몬이 이미 떠 있어 그대로 씁니다. 설정을 바꿨다면 먼저 끄세요: uvx hindsight-embed -p airforce-agent daemon stop`);
 await server.start();
 console.log(`[Hindsight] 준비됨 → ${server.getBaseUrl()}  (.env: MEMORY_MODE=hindsight, HINDSIGHT_BASE_URL=${server.getBaseUrl()})`);
 console.log(`[Hindsight] Ctrl+C 로 끕니다`);
