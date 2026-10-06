@@ -71,7 +71,8 @@ export const askLLM = traceable(async function askLLM(input: { system: string; u
   try {
     const started = Date.now();
     const messages: Msg[] = [{ role: "system", content: input.system }, { role: "user", content: input.user }];
-    const reply = LLM_MODE === "mock" ? { content: input.mockText, toolCalls: [] } : await realChat(messages);
+    // ollama 의 생각하는 모델(qwen3 계열)은 도구 없이 글을 쓰라고 하면 생각만 하다 시간을 다 쓴다 → ollama 전용 API 로 생각을 끄고 부른다
+    const reply = LLM_MODE === "mock" ? { content: input.mockText, toolCalls: [] } : LLM_MODE === "ollama" ? await ollamaWrite(messages) : await realChat(messages);
     t.end({ preview: reply.content.slice(0, 120), usage: reply.usage });
     showLLM("글 쓰기 (도구 없음, 문장만)", { mode: LLM_MODE, model: LLM_MODEL, messages }, { content: reply.content, usage: reply.usage }, Date.now() - started);
     return reply.content;
@@ -97,6 +98,18 @@ async function realChat(messages: Msg[], tools?: Tool[]): Promise<ChatResult> {
     toolCalls: (m.tool_calls ?? []).map((c) => ({ id: c.id, name: c.function.name, args: safeJson(c.function.arguments) })),
     usage: res.usage ? { prompt_tokens: res.usage.prompt_tokens, completion_tokens: res.usage.completion_tokens } : undefined,
   };
+}
+
+/** ollama 전용 API(/api/chat)로 글만 받는다. think:false 로 숨은 생각을 끄면 1~2초에 답한다 (OpenAI 호환 주소로는 이 옵션이 안 먹는다) */
+async function ollamaWrite(messages: Msg[]): Promise<ChatResult> {
+  const base = (process.env.LLM_BASE_URL ?? "http://localhost:11434/v1").replace(/\/v1\/?$/, "");
+  const res = await fetch(`${base}/api/chat`, {
+    method: "POST", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(LLM_TIMEOUT_SEC * 1000),
+    body: JSON.stringify({ model: LLM_MODEL, think: false, stream: false, options: { temperature: 0.3 }, messages }),
+  });
+  if (!res.ok) throw new Error(`ollama ${res.status}: ${await res.text()}`);
+  const json = (await res.json()) as { message: { content: string }; prompt_eval_count?: number; eval_count?: number };
+  return { content: json.message.content.replace(/<think>[\s\S]*?<\/think>/g, "").trim(), toolCalls: [], usage: { prompt_tokens: json.prompt_eval_count ?? 0, completion_tokens: json.eval_count ?? 0 } };
 }
 
 export function safeJson(s: string): Record<string, unknown> {

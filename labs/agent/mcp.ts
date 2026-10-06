@@ -61,8 +61,13 @@ export const callMcpTool = traceable(async function callMcpTool(name: string, ar
   // c.callTool({ name, arguments: args }) 를 부르면 result.content 에 [{ type: "text", text }] 가 옵니다. text 만 모아 돌려주세요.
   // ----- SOLUTION -----
   //! return JSON.stringify({ error: "TODO 5 미구현" });
-  const result = await c.callTool({ name, arguments: args });
-  const content = result.content as { type: string; text?: string }[];
-  return content.filter((x) => x.type === "text").map((x) => x.text ?? "").join("\n");
+  try {
+    const result = await c.callTool({ name, arguments: args }, undefined, { timeout: 120_000 }); // 서버가 LLM 을 부르면 몇십 초 걸릴 수 있다
+    const content = result.content as { type: string; text?: string }[];
+    return content.filter((x) => x.type === "text").map((x) => x.text ?? "").join("\n");
+  } catch (e) {
+    // 서버가 늦거나 죽어도 agent 는 멈추지 않는다. 결과 대신 사정을 돌려주면 모델이 "날씨 없이" 정리한다
+    return JSON.stringify({ error: `MCP 도구 ${name} 실패: ${(e as Error).message}` });
+  }
   // ----- END SOLUTION -----
 }, { name: "mcp.call", run_type: "tool" });
