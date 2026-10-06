@@ -26,7 +26,11 @@ const MISSION = "관제실 보조. 들어온 보고와 그때 내린 결정을 �
 const RETAIN_MISSION = "관제실 보고의 위치, 물체 종류, 움직임, 무전 여부와 그때의 판정·확신도·사람의 최종 결정을 뽑아라. 진행 안내 문구는 버려라.";
 
 /** 판단 한 건: 보고 원문 + 그때의 판정. Hindsight 에는 metadata 로 붙여 두어, 꺼낼 때 문장을 해석할 필요가 없다 */
-export interface Case { id: string; report: string; facts: string; action: string; confidence: number; decision: string }
+export interface Case {
+  id: string; report: string; facts: string; action: string; confidence: number; decision: string;
+  summary?: string[]; // approve 에서 사람이 본 종합 근거 (레이더 · 확대 · 날씨 · 규정 · 기억 · Jev)
+  human?: string;     // 사람의 최종 선택 (출격 / 감시 강화 / 무시)
+}
 
 const BASE_URL = process.env.HINDSIGHT_BASE_URL ?? "http://localhost:8888";
 const hindsight = MEMORY_MODE === "hindsight" ? new HindsightClient({ baseUrl: BASE_URL }) : null;
@@ -77,9 +81,16 @@ export async function createBank(): Promise<void> {
 /** 기억 맡기기: 판단 한 건을 넣는다. 같은 id(실행번호)로 다시 넣으면 덮어쓴다 (사람이 승인한 뒤 결과를 고쳐 쓸 때) */
 export const retain = traceable(async function retain(c: Case): Promise<void> {
   // 요약하지 않고 원문 그대로 넣는다. Hindsight 가 여기서 사실·엔티티·관계(그래프)를 뽑는다
-  const text = `보고: ${c.report}\n확인한 사실: ${c.facts}\n판정: ${c.action} (확신 ${Math.round(c.confidence * 100)}%). 결정: ${c.decision}`;
+  // 사람이 결정한 뒤(approve)라면 그때 본 종합 근거와 사람의 선택까지 함께 남긴다 → 다음에 "왜 그렇게 했나" 까지 떠오른다
+  const text = [
+    `보고: ${c.report}`,
+    `확인한 사실: ${c.facts}`,
+    ...(c.summary ? [`종합 근거:`, ...c.summary.map((l) => `- ${l}`)] : []),
+    `판정: ${c.action} (확신 ${Math.round(c.confidence * 100)}%). 결정: ${c.decision}`,
+    ...(c.human ? [`사람(담당자)의 최종 선택: ${c.human}`] : []),
+  ].join("\n");
   retainedDocs.push(c.id);
-  const meta = { report: c.report, action: c.action, confidence: String(c.confidence), decision: c.decision };
+  const meta = { report: c.report, action: c.action, confidence: String(c.confidence), decision: c.decision, ...(c.human ? { human: c.human } : {}) };
   if (hindsight) {
     // async: true → 서버가 뒤에서 정리하게 두고 바로 돌아온다 (기억 정리에 서버 LLM 이 몇 초 걸리므로 판단을 기다리게 하지 않는다)
     const res = await hindsight.retain(BANK, text, {
