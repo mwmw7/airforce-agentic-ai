@@ -36,7 +36,7 @@ import { Annotation, Command, END, interrupt, type LangGraphRunnableConfig, STAR
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
 import { askJev, JEV_MODE } from "../../src/lib/jev.js";
-import { bold, dim, log, showDebug, showTool } from "../../src/lib/show.js";
+import { blue, bold, cyan, dim, green, log, magenta, red, showDebug, showTool, yellow } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
 import { searchDocs } from "./search-docs.js";
 import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
@@ -367,15 +367,24 @@ if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   /** 사람에게 묻는다. 터미널 입력과 브라우저 버튼(--live) 중 먼저 온 답을 쓴다 */
-  /** "## 제목" 은 굵게, "- 항목" 은 들여쓴 점으로, 긴 줄은 접어서 보여 준다 */
+  /** "## 제목" 은 출처별 색으로 굵게(도구는 초록, MCP 는 하늘색, 기억은 파랑, Jev 는 노랑, 모델은 보라), "- 항목" 은 들여쓴 점, 긴 줄은 접는다.
+   *  판정 낱말(scramble · watch · ignore)은 빨강 · 노랑 · 초록 */
   function pretty(lines: string[]): string[] {
     const width = 100;
-    const wrap = (text: string, indent: string): string[] => {
-      const out: string[] = [];
-      for (let rest = text; rest.length; rest = rest.slice(width)) out.push((out.length ? indent : "") + rest.slice(0, width));
-      return out;
+    const titleColor: Record<string, (s: string) => string> = {
+      "보고": (t) => bold(t), "레이더": green, "확대해서 본 것": green, "날씨": cyan, "관련 규정": green,
+      "기억": blue, "Jev 판정": yellow, "코드 권고": (t) => bold(t), "모델이 정리한 사실": magenta,
     };
-    return lines.flatMap((l) => l.startsWith("## ") ? [bold(l.slice(3))] : l.startsWith("- ") ? wrap(`  · ${l.slice(2)}`, "    ") : wrap(l, ""));
+    const verdict = (t: string) => t.replace(/\bscramble\b|출격/g, (m) => red(bold(m))).replace(/\bwatch\b|감시 강화|감시/g, (m) => yellow(m)).replace(/\bignore\b|무시/g, (m) => green(m));
+    // 먼저 글자 수로 접고(색 코드가 잘리지 않게), 그 다음에 색을 입힌다
+    const wrap = (text: string): string[] => { const out: string[] = []; for (let rest = text; rest.length; rest = rest.slice(width)) out.push(rest.slice(0, width)); return out; };
+    let current = "";
+    return lines.flatMap((l) => {
+      if (l.startsWith("## ")) { current = l.slice(3); return [(titleColor[current] ?? bold)(bold(current))]; }
+      const item = l.startsWith("- ") ? l.slice(2) : l;
+      const colorize = current === "Jev 판정" || current === "코드 권고" || current === "기억";
+      return wrap(item).map((piece, i) => (i ? "    " : `  ${dim("·")} `) + (colorize ? verdict(piece) : piece));
+    });
   }
 
   async function askPerson(question: { 문제: string; 요약?: string[]; 고르기: string }): Promise<string> {

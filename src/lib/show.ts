@@ -28,7 +28,9 @@ const cyan = (s: string) => paint(36, s);
 const yellow = (s: string) => paint(33, s);
 const red = (s: string) => paint(31, s);
 const green = (s: string) => paint(32, s);
-export { bold, dim };
+const blue = (s: string) => paint(34, s);
+const magenta = (s: string) => paint(35, s);
+export { bold, dim, cyan, yellow, red, green, blue, magenta };
 
 // 꼬리표: [글자, 색 코드(배경;글자)]. 밝은 배경 + 검은 글자, 어두운 배경 + 흰 글자
 const TAGS = {
