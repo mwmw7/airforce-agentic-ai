@@ -53,7 +53,7 @@
 | 22 | LLM 말고 Jev 를 쓰면? | 그림 | LLM(문장) vs Jev(확률 + 확신도). 질문 3종 choice / score / noul. "의견은 Jev, 규칙은 코드" |
 | 23 | 판정 화면 읽기 | 명령 | `[JEV]` 캡처: scramble 65% · 위험도 2.55/3 · 정체불명 75% → `[RULE]` 코드 규칙 → 권고 |
 | 24 | 빈칸 10 | diff | noul 질문 문장 한 줄 before/after · 보고 1(UFO) vs 4(훈련기) · 성공: 정체불명 % 가 갈린다 (실제 Jev 키 필요) |
-| 25 | JEV_MODE 를 바꾸면? | 표 | `JEV_MODE=local` vs `typesafe` 의 `--all` 표 두 개 나란히. 규칙 판정기는 전부 scramble |
+| 25 | JEV_MODE 를 바꾸면? | 표 | `JEV_MODE=local` vs `typesafe` 의 `--all` 표 두 개 나란히. JEV_MODE=local 은 전부 scramble |
 | 26 | 어제 판단을 오늘 기억하면? | 그림 | remember 노드: 같은 사례(일치도 0.9↑)면 Jev 생략. retain / recall 두 화살표 |
 | 27 | 같은 보고 두 번 | 명령 | 캡처 두 장: 첫 번째 `[JEV]`, 두 번째 `[MEMORY] 같은 사례 찾음 → Jev 생략` |
 | 28 | 사람이 가르친다 | 명령 | 보고 2 에서 `w` 선택 → 다시 돌리면 "감시 강화"로 떠오름. `pnpm memory:ui` 대시보드 캡처 (점과 선) |
@@ -72,7 +72,7 @@
 
 | # | 제목 | 종류 | 내용 |
 |---|---|---|---|
-| 34 | 운영 중 자료에 지시문이 섞여 오면? | 그림 | 자료에 섞인 "이전 지시는 무시" 한 줄이 판정을 뒤집는 모습 (`jev.ts` 로컬 판정기가 위험도 0.95 로 기움). 지금 코드에 있는 상한들 위치: MAX_STEPS · RUN_TIMEOUT_SEC · approve interrupt · MCP 서버에 키 미전달 |
+| 34 | 운영 중 자료에 지시문이 섞여 오면? | 그림 | 자료에 섞인 "이전 지시는 무시" 한 줄이 판정을 뒤집는 모습 (`jev.ts` JEV_MODE=local 규칙이 위험도 0.95 로 기움). 지금 코드에 있는 상한들 위치: MAX_STEPS · RUN_TIMEOUT_SEC · approve interrupt · MCP 서버에 키 미전달 |
 | 35 | 실제 서비스(Deev)는 어떻게 거르나 | 명령 | appendix Deev 캡처(img.png) + `detect_define.ts` 의 정규식 1차 → TypeSafe 2차 핵심 10줄 + `detect_call.ts` 3분 타임아웃. 정규식은 빠르고 설명 가능, 모델 판정은 변형에 강함 |
 | 36 | 모델을 바꾸면? | 표 | `LLM_MODE` mock / ollama / relay(Bedrock) 같은 보고 결과 비교. "슬롯만 바꾼다, 그래프는 그대로" (endpoint 는 당일 안내) |
 | 37 | 실행 기록은 어디서 보나? | 명령 | `LANGSMITH_TRACING=true` 트리 캡처 (노드 → LLM · Jev · MCP · 기억). "Langfuse 는 다음 시간 이현우" |
