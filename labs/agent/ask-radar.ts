@@ -20,7 +20,7 @@
 import { readFileSync } from "node:fs";
 import { Annotation, END, interrupt, START, StateGraph } from "@langchain/langgraph";
 import { askLLM, chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
-import { bold, dim, log, showTool } from "../../src/lib/show.js";
+import { bold, dim, enterSub, leaveSub, log, showTool } from "../../src/lib/show.js";
 import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
 import { MainState } from "./state.js";
 
@@ -108,6 +108,7 @@ const SYSTEM = "너는 관제실의 레이더 담당이다. 보고를 받으면 
 
 /** agent: 모델을 한 번 부른다. 답변이든 도구 요청이든 모델의 말로 기록에 남긴다 */
 async function agentNode(state: S): Promise<Partial<S>> {
+  enterSub("askRadar", "레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다");
   const step = state.steps + 1;
   // 첫 호출이면 대화를 연다: 역할 설명 + 보고 한 줄. (입력에 report 만 있어도 돌아간다 — Studio 에서 { "report": "..." } 만 넣으면 됨)
   const opening: Msg[] = state.messages.length ? [] : [{ role: "system", content: SYSTEM }, { role: "user", content: state.report }];
@@ -183,6 +184,7 @@ export function oneLine(text: string): string[] {
 
 /** askHuman: 모델이 늦었을 때 그래프를 멈추고 사람에게 묻는다 (Human-in-the-Loop). 부하 안의 interrupt 도 부모의 실행번호로 저장·재개된다 */
 async function askHumanNode(state: S): Promise<Partial<S>> {
+  enterSub("askRadar", "레이더 부하 Agent (Subagent) — 이어가기"); // Ctrl+C 뒤 --resume 으로 여기부터 다시 올 수 있다
   // interrupt(질문) 에서 그래프가 멈추고 질문이 실행부(main.ts)로 전달된다. 사람이 답하면 이 함수가 다시 돌고, 이번엔 interrupt 가 그 답을 돌려준다
   const answer = interrupt({ 문제: state.stuck, 고르기: "retry(다시 부르기) / skip(사실 없이 판정으로) / stop(그만)" }) as string;
   const facts = answer === "skip" ? `(모델 답 없음 — 담당자가 건너뛰어 사실 없이 판정. 이유: ${state.stuck})` : state.facts;
@@ -193,6 +195,7 @@ async function askHumanNode(state: S): Promise<Partial<S>> {
 async function stopNode(state: S): Promise<Partial<S>> {
   const why = state.humanChoice === "stop" ? "담당자가 그만하라고 했습니다" : `모델을 이미 ${MAX_STEPS}번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다`;
   log("stop", `${why}. 레이더 부하만 끝내고 부모는 계속 갑니다`);
+  leaveSub("강제 중단");
   return { facts: `[중단] ${why}.` };
 }
 
@@ -208,7 +211,7 @@ function route(state: S): "tools" | typeof END | "stop" | "askHuman" {
   // · 그 외 → "tools"
   // ----- SOLUTION -----
   //! return wantsTool ? "tools" : END; // ← 이대로면 모델이 도구를 계속 원하는 한 끝나지 않습니다
-  if (!wantsTool) return END;
+  if (!wantsTool) { leaveSub(`모델 ${state.steps}회 호출, 사실 정리 완료 → 부모에게`); return END; }
   if (state.steps >= MAX_STEPS) return "stop";
   return "tools";
   // ----- END SOLUTION -----
@@ -218,6 +221,7 @@ function route(state: S): "tools" | typeof END | "stop" | "askHuman" {
 function afterHuman(state: S): "agent" | typeof END | "stop" {
   if (state.humanChoice === "retry") return "agent";
   if (state.humanChoice === "stop") return "stop";
+  leaveSub("담당자가 skip → 사실 없이 부모에게");
   return END;
 }
 

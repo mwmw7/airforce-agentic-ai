@@ -93,7 +93,7 @@
 | 할 것 | 명령 | 보는 포인트 |
 |---|---|---|
 | 노드마다 칠판이 어떻게 바뀌나 | `pnpm agent 1 --watch` | agent 가 `steps: 1` 을 내놓아도 칠판은 1, 2, 3 으로 늘어난다 (reducer) |
-| Worker 와 Subagent 의 차이 | `pnpm agent 1 --watch` | searchDocs 는 한 줄에 끝, askRadar 는 `askRadar › agent/tools` 가 여러 줄. 부하 칠판엔 messages 가 길게, 부모(remember 입력)엔 facts · evidence · steps 만 (Context 분리) |
+| Worker 와 Subagent 의 차이 | `pnpm agent 1` (watch 없이도) | `[SUB] ┏━ askRadar` 띠가 열리고 닫힐 때까지 모든 줄 앞에 보라색 ┃ — 그 사이가 부하의 일. searchDocs 는 띠 밖에서 한 줄에 끝, 띠 안에는 `askRadar › agent/tools` 가 여러 줄. 부하 칠판엔 messages 가 길게, 부모(remember 입력)엔 facts · evidence · steps 만 (Context 분리) |
 | 부하가 멈춰도 부모는 산다 | `pnpm agent:limit` | 부하만 `[STOP]`, 부모는 규정집 결과만 들고 판정 → 담당자 화면까지 간다 |
 | 같은 보고를 두 번 | `pnpm agent 2` 두 번 | 두 번째는 `같은 사례 찾음 → Jev 생략`, 종합 화면 "기억" 줄에 그때 결정 |
 | 사람이 가르친다 | 보고 2 에서 `w` 선택 후 다시 보고 2 | 기억이 "감시 강화" 로 떠오른다 |

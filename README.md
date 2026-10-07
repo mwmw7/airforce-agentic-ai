@@ -90,7 +90,7 @@ askRadar 안 (labs/agent/ask-radar.ts):
                   └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → END / stop → stop
 ```
 
-Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐입니다. `--watch` 로 보면 searchDocs 는 한 줄에 끝나고 askRadar 는 `askRadar › agent`, `askRadar › tools` 가 여러 줄 찍힙니다.
+Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐입니다. 터미널에서는 부하가 도는 동안 `[SUB] ┏━ askRadar` 띠가 열리고, 그 사이 모든 줄 앞에 보라색 `┃` 가 붙었다가 `┗━ askRadar 끝` 에서 닫힙니다. searchDocs 는 띠 밖에서 한 줄에 끝나고, `--watch` 면 띠 안에 `askRadar › agent`, `askRadar › tools` 가 여러 줄 찍힙니다.
 
 | 단계 (노드) | 하는 일 | 배우는 것 |
 |---|---|---|
