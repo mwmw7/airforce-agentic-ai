@@ -369,11 +369,11 @@ add(5, '실제 서비스(Deev)는 어떻게 거르나',
                '',
                '// appendix/detect_call.ts — 사용자 입력 4곳을 한 번에 검사, 걸리면 요청 거절',
                "const safety = await this.detector.detect([{ name: 'userPrompt', content }, { name: 'userPersona', … }]);",
-               'if (safety.detected) return { ok: false, errorCode: ERROR_CODE.DvPromptInjectionDetected.code };']),
-         '<div class="placeholder img">appendix/img.png<br/><span>Deev 캐릭터 챗 화면</span></div>' +
+               'if (safety.detected) return { ok: false, errorCode: ERROR_CODE.DvPromptInjectionDetected.code };']) +
          bullets(['정규식: 빠르고, 왜 걸렸는지 설명된다',
                   '모델 판정: 말을 바꿔 써도 잡는다',
-                  '둘을 겹쳐 쓰고, 키가 없을 때의 동작도 정해 둔다']), ratio='r64'), 'cmd')
+                  '둘을 겹쳐 쓰고, 키가 없을 때의 동작도 정해 둔다']),
+         '<figure class="shot"><img src="../../appendix/img.png" alt="Deev 캐릭터 챗 화면"><figcaption>Deev 캐릭터 챗 화면 — 사용자 입력 · 페르소나 · 메모 · 재생성 지시 네 곳을 모두 검사한다</figcaption></figure>', ratio='r64'), 'cmd')
 add(5, '모델을 바꾸면?',
     cols(term(pick('02_run1_first.txt', [r'^\[SETUP \] 모델', r'^┃ \[LLM', r'^\[DECIDE'], limit=6)) + small('LLM_MODE=mock — 정해진 순서로 도구를 하나씩'),
          term(pick('13_ollama.txt', [r'^\[SETUP \] 모델', r'^┃ \[LLM', r'^\[DECIDE'], limit=6)) + small('LLM_MODE=ollama — 노트북 qwen3.5. 확대까지 2번만 보고 사실 정리, 호출마다 5 ~ 10초')) +
@@ -465,6 +465,7 @@ table.tbl.plain td{border:none;padding:8px 18px 8px 0;font-size:26px}table.tbl.p
 .placeholder{border:1px dashed var(--line);border-radius:6px;padding:40px 24px;color:var(--muted);text-align:center;font-size:22px;line-height:1.5}
 .placeholder span{font-size:18px}.placeholder.img{min-height:420px;display:flex;flex-direction:column;justify-content:center}
 .placeholder.slot{text-align:left;padding:14px 18px;font-size:19px}
+figure.shot{display:flex;flex-direction:column;align-items:center;gap:10px}figure.shot img{max-height:640px;max-width:100%;border-radius:8px;border:1px solid var(--line)}figure.shot figcaption{font-size:18px;color:var(--muted);text-align:center;line-height:1.4}
 pre.mermaid{background:transparent;border:none;padding:0;display:flex;justify-content:center;align-items:flex-start;color:transparent;width:100%}
 pre.mermaid svg{width:100% !important;max-width:none !important;height:auto;max-height:560px}
 pre.mermaid .nodeLabel,pre.mermaid .edgeLabel,pre.mermaid .cluster-label{color:#E7ECF2}

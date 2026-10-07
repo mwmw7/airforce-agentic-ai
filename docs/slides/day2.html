@@ -56,6 +56,7 @@ table.tbl.plain td{border:none;padding:8px 18px 8px 0;font-size:26px}table.tbl.p
 .placeholder{border:1px dashed var(--line);border-radius:6px;padding:40px 24px;color:var(--muted);text-align:center;font-size:22px;line-height:1.5}
 .placeholder span{font-size:18px}.placeholder.img{min-height:420px;display:flex;flex-direction:column;justify-content:center}
 .placeholder.slot{text-align:left;padding:14px 18px;font-size:19px}
+figure.shot{display:flex;flex-direction:column;align-items:center;gap:10px}figure.shot img{max-height:640px;max-width:100%;border-radius:8px;border:1px solid var(--line)}figure.shot figcaption{font-size:18px;color:var(--muted);text-align:center;line-height:1.4}
 pre.mermaid{background:transparent;border:none;padding:0;display:flex;justify-content:center;align-items:flex-start;color:transparent;width:100%}
 pre.mermaid svg{width:100% !important;max-width:none !important;height:auto;max-height:560px}
 pre.mermaid .nodeLabel,pre.mermaid .edgeLabel,pre.mermaid .cluster-label{color:#E7ECF2}
@@ -468,7 +469,7 @@ public async detect(inputs): Promise&lt;InjectionCheckResult&gt; {
 
 // appendix/detect_call.ts — 사용자 입력 4곳을 한 번에 검사, 걸리면 요청 거…
 const safety = await this.detector.detect([{ name: &#x27;userPrompt&#x27;, content }, …
-if (safety.detected) return { ok: false, errorCode: ERROR_CODE.DvPromptInjec…</pre></div><div><div class="placeholder img">appendix/img.png<br/><span>Deev 캐릭터 챗 화면</span></div><ul class="list"><li>정규식: 빠르고, 왜 걸렸는지 설명된다</li><li>모델 판정: 말을 바꿔 써도 잡는다</li><li>둘을 겹쳐 쓰고, 키가 없을 때의 동작도 정해 둔다</li></ul></div></div></div>
+if (safety.detected) return { ok: false, errorCode: ERROR_CODE.DvPromptInjec…</pre><ul class="list"><li>정규식: 빠르고, 왜 걸렸는지 설명된다</li><li>모델 판정: 말을 바꿔 써도 잡는다</li><li>둘을 겹쳐 쓰고, 키가 없을 때의 동작도 정해 둔다</li></ul></div><div><figure class="shot"><img src="../../appendix/img.png" alt="Deev 캐릭터 챗 화면"><figcaption>Deev 캐릭터 챗 화면 — 사용자 입력 · 페르소나 · 메모 · 재생성 지시 네 곳을 모두 검사한다</figcaption></figure></div></div></div>
   <footer><span class="blk b5">운영</span><span class="num">35 / 38</span></footer>
 </section>
 <section class="slide k-cmd" data-i="35" data-block="5">
