@@ -1,0 +1,631 @@
+
+────────────────────────────────────────────────────────────────────────
+[REPORT] 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!
+[SETUP ] 모델 mock · Jev local · 기억 file
+         │ 모델 한 번 60초 · 실행 전체 180초 · 최대 8회 · 실행번호 loop-1-1791371741917 (멈추면 pnpm agent --resume loop-1-1791371741917)
+[TOOL  ] search_docs(보고 그대로)
+         │ 7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.
+         │ 1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.
+         │ 2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.
+[NODE  ] ▶ searchDocs 시작 · ← branch:to:searchDocs
+         │ 입력 형태 { report: string, steps: number, past: [], evidence: {} }
+         │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+         │ steps 0
+         │ past []
+         │ evidence {}
+[NODE  ] ◀ searchDocs 끝 · 1ms
+         │ 출력 형태 { evidence: {search_docs} }
+         │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ]
+         │   }
+[NODE  ] ▶ askRadar 시작 · ← branch:to:askRadar
+         │ 입력 형태 { report: string, steps: number, past: [], evidence: {search_docs} }
+         │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+         │ steps 0
+         │ past []
+         │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ]
+         │   }
+[SUB   ] ┏━ askRadar 레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, past: [], evidence: {search_docs}, messages: [] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 0
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ]
+         │   }
+┃          │ messages []
+┃ [MCP   ] 날씨 서버 연결 OK — 도구 1개 받음: look_weather
+┃ [LLM   ] [watch] radar.step1 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' }
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step1 모델이 답함 · 0ms
+┃          │ {
+         │     content: '',
+         │     toolCalls: [
+         │       {
+         │         id: 'call_mock_1',
+         │         name: 'look_radar',
+         │         args: { '어디': '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' }
+         │       }
+         │     ]
+         │   }
+┃ [LLM   ] 1회째 → 도구 쓰기: look_radar  46ms
+┃ [NODE  ] ◀ askRadar › agent 끝 · 38ms
+┃          │ 출력 형태 { messages: {role,content}[3], steps: number, facts: string }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃          │ steps 1
+┃          │ facts ''
+┃ [TOOL  ] look_radar(어디: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!)
+┃          │ 지역 서울
+┃          │   · 어디 서울 남산 위  |  뭐가 둥근 물체 1개  |  높이 아주 높음 (구름보다 훨씬 위)  |  속도 멈춰 있음  |  무전 불러도 조용함  |  메모 레이더에 잡혔다 말았다 함
+┃          │   · 어디 서울 광화문 위  |  뭐가 헬기 1대  |  높이 낮음  |  속도 느림 (맴돌고 있음)  |  무전 정상  |  메모 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음
+┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs}, messages: {role,content}[3] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 1
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃ [NODE  ] ◀ askRadar › tools 끝 · 1ms
+┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_radar} }
+┃          │ messages [
+         │     {
+         │       role: 'tool',
+         │       tool_call_id: 'call_mock_1',
+         │       content: '{"지역":"서울","잡힌것":[{"어디":"서울 남산 위","뭐가":"둥근 물체 1개","높이":"아주 높음 (구름보다 훨씬 위)","속도":'... 152 more characters
+         │     }
+         │   ]
+┃          │ evidence {
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ]
+         │   }
+┃ [LLM   ] [watch] radar.step2 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │       { role: 'assistant', content: null, tool_calls: [ [Object] ] },
+         │       ... 1 more item
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step2 모델이 답함 · 0ms
+┃          │ {
+         │     content: '',
+         │     toolCalls: [
+         │       {
+         │         id: 'call_mock_2',
+         │         name: 'look_closer',
+         │         args: { '어디': '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' }
+         │       }
+         │     ]
+         │   }
+┃ [LLM   ] 2회째 → 도구 쓰기: look_closer  1ms
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar}, messages: {role,content}[4] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 1
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 1 more item
+         │   ]
+┃ [NODE  ] ◀ askRadar › agent 끝 · 0ms
+┃          │ 출력 형태 { messages: {role,content,tool_calls}[1], steps: number, facts: string }
+┃          │ messages [
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_2', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃          │ steps 1
+┃          │ facts ''
+┃ [TOOL  ] look_closer(어디: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!)
+┃          │ 어디 서울 남산 위  |  뭐가 둥근 물체 1개  |  자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로 희미한 빛이 깜빡임
+┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar}, messages: {role,content}[5] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 2
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 2 more items
+         │   ]
+┃ [NODE  ] ◀ askRadar › tools 끝 · 1ms
+┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_closer} }
+┃          │ messages [
+         │     {
+         │       role: 'tool',
+         │       tool_call_id: 'call_mock_2',
+         │       content: '{"어디":"서울 남산 위","뭐가":"둥근 물체 1개","자세히":"확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시'... 21 more characters
+         │     }
+         │   ]
+┃          │ evidence {
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ]
+         │   }
+┃ [LLM   ] [watch] radar.step3 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │       { role: 'assistant', content: null, tool_calls: [ [Object] ] },
+         │       ... 3 more items
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step3 모델이 답함 · 1ms
+┃          │ {
+         │     content: '',
+         │     toolCalls: [
+         │       {
+         │         id: 'call_mock_3',
+         │         name: 'look_weather',
+         │         args: { '어디': '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' }
+         │       }
+         │     ]
+         │   }
+┃ [LLM   ] 3회째 → 도구 쓰기: look_weather  1ms
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar,look_closer}, messages: {role,content}[6] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 2
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 3 more items
+         │   ]
+┃ [NODE  ] ◀ askRadar › agent 끝 · 1ms
+┃          │ 출력 형태 { messages: {role,content,tool_calls}[1], steps: number, facts: string }
+┃          │ messages [
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_3', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃          │ steps 1
+┃          │ facts ''
+┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar,look_closer}, messages: {role,content}[7] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 3
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 4 more items
+         │   ]
+┃ [MCP   ] look_weather(어디: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!)
+┃          │ 하늘 청명한 밤  |  구름 없음  |  바람 거세게 불어옴  |  시야 먼지 낀 먼 거리  |  비행 제한됨  |  출처 LLM(ollama)
+┃ [NODE  ] ◀ askRadar › tools 끝 · 1782ms
+┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_weather} }
+┃          │ messages [
+         │     {
+         │       role: 'tool',
+         │       tool_call_id: 'call_mock_3',
+         │       content: '{"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비행":"제한됨","출처":"LLM(oll'... 6 more characters
+         │     }
+         │   ]
+┃          │ evidence { look_weather: [ '하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)' ] }
+┃ [LLM   ] [watch] radar.step4 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │       { role: 'assistant', content: null, tool_calls: [ [Object] ] },
+         │       ... 5 more items
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step4 모델이 답함 · 0ms
+┃          │ {
+         │     content: '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters,
+         │     toolCalls: []
+         │   }
+┃ [LLM   ] 4회째 → 사실 정리 (도구 안 씀)  1ms
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar,look_closer,look_weather}, messages: {role,content}[8] }
+┃          │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+┃          │ steps 3
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ],
+         │     look_weather: [ '하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)' ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 5 more items
+         │   ]
+[SUB   ] ┗━ askRadar 끝 · 모델 4회 호출, 사실 정리 완료 → 부모에게
+[NODE  ] ◀ askRadar › agent 끝 · 1ms
+         │ 출력 형태 { messages: {role,content}[1], steps: number, facts: string }
+         │ messages [
+         │     {
+         │       role: 'assistant',
+         │       content: '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters
+         │     }
+         │   ]
+         │ steps 1
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters
+[NODE  ] ◀ askRadar 끝 · 1844ms
+         │ 출력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar,look_closer,look_weather} }
+         │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters
+         │ past []
+         │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.'
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ],
+         │     look_weather: [ '하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)' ]
+         │   }
+[MEMORY] [file] 같은 사례 찾음 (일치도 1.00) → watch · Jev 생략
+         │ 그때 10. 7. PM 08:15  보고 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!
+         │ 그때 결정 감시 강화 — 사람이 결정 (확신 42%)
+[NODE  ] ▶ remember 시작 · ← branch:to:remember
+         │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {search_docs,look_radar,look_closer,look_weather} }
+         │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters
+         │ past []
+         │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.',
+         │       ... 3 more items
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ],
+         │     look_weather: [ '하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)' ]
+         │   }
+[NODE  ] ◀ remember 끝 · 1ms
+         │ 출력 형태 { memory: {report,time,score}, judgment: {action,probabilities,confidence,danger,…} }
+         │ memory {
+         │     report: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!',
+         │     time: '10. 7. PM 08:15',
+         │     score: 1
+         │   }
+         │ judgment {
+         │     action: 'watch',
+         │     probabilities: { watch: 0.423 },
+         │     confidence: 0.423,
+         │     danger: 0,
+         │     unknown: 0,
+         │     decision: '감시 강화 — 사람이 결정 (기억: 10. 7. PM 08:15 같은 사례)'
+         │   }
+[NODE  ] ▶ approve 시작 · ← branch:to:approve
+         │ 입력 형태 { report: string, steps: number, facts: string, judgment: {action,probabilities,confidence,danger,…}, memory: {report,time,score}, past: [], evidence: {search_docs,look_radar,look_closer,look_weather} }
+         │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters
+         │ judgment {
+         │     action: 'watch',
+         │     probabilities: { watch: 0.423 },
+         │     confidence: 0.423,
+         │     danger: 0,
+         │     unknown: 0,
+         │     decision: '감시 강화 — 사람이 결정 (기억: 10. 7. PM 08:15 같은 사례)'
+         │   }
+         │ memory {
+         │     report: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!',
+         │     time: '10. 7. PM 08:15',
+         │     score: 1
+         │   }
+         │ past []
+         │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.',
+         │       ... 3 more items
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ],
+         │     look_weather: [ '하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)' ]
+         │   }
+[NODE  ] ◀ approve 끝 · 0ms
+         │ 출력 형태 {  }
+         │ 여기서 멈춤 — 사람에게 보낼 질문 {
+         │     '문제': '종합 — 담당자가 결정합니다',
+         │     '요약': [
+         │       '## 보고',
+         │       '- 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!',
+         │       '## 레이더',
+         │       ... 22 more items
+         │     ],
+         │     '고르기': 'y(출격) / w(감시 강화) / n(무시)'
+         │   }
+[HUMAN ] 종합 — 담당자가 결정합니다
+         │ 보고
+         │   · 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!
+         │ 레이더
+         │   · 지역 서울
+         │   · 서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함
+         │   · 서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음
+         │ 확대해서 본 것
+         │   · 어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로 희미한 빛이 깜빡임
+         │ 날씨
+         │   · 하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)
+         │ 관련 규정
+         │   · 7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.
+         │   · 1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.
+         │   · 2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.
+         │   · 7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.
+         │   · 1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.
+         │   · 2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.
+         │ 기억
+         │   · 같은 사례 (10. 7. PM 08:15) → 그때 watch: 감시 강화 — 사람이 결정 (기억: 10. 7. PM 08:15 같은 사례)
+         │ Jev 판정
+         │   · 생략 (같은 사례 기억으로 판정)
+         │ 코드 권고
+         │   · 감시 강화 — 사람이 결정 (기억: 10. 7. PM 08:15 같은 사례)
+         │ 모델이 정리한 사실
+         │   · [mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비행":"제한됨","출처":"LLM(o
+         │     llama)"}
+         │ y(출격) / w(감시 강화) / n(무시) > [HUMAN ] 답: w
+[MEMORY] [file] retain → .hindsight/control-room.json 에 1건 (실행번호 loop-1-1791371741917 · 같은 번호는 덮어씀)
+         │ 원문 보고: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요! / 확인한 사실: [mock] 도구 결…
+[NODE  ] ▶ approve 시작 · ← branch:to:approve
+         │ 입력 형태 { report: string, steps: number, facts: string, judgment: {action,probabilities,confidence,danger,…}, memory: {report,time,score}, past: [], evidence: {search_docs,look_radar,look_closer,look_weather} }
+         │ report '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비'... 28 more characters
+         │ judgment {
+         │     action: 'watch',
+         │     probabilities: { watch: 0.423 },
+         │     confidence: 0.423,
+         │     danger: 0,
+         │     unknown: 0,
+         │     decision: '감시 강화 — 사람이 결정 (기억: 10. 7. PM 08:15 같은 사례)'
+         │   }
+         │ memory {
+         │     report: '서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!',
+         │     time: '10. 7. PM 08:15',
+         │     score: 1
+         │   }
+         │ past []
+         │ evidence {
+         │     search_docs: [
+         │       '7. 시민 제보가 많아도 레이더로 먼저 확인한다. 제보 수는 위험도의 근거가 아니다.',
+         │       '1. 무전에 대답이 없고 움직이지 않는 비행체는 출격을 검토한다.',
+         │       '2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.',
+         │       ... 3 more items
+         │     ],
+         │     look_radar: [
+         │       '지역 서울',
+         │       '서울 남산 위 · 둥근 물체 1개 · 아주 높음 (구름보다 훨씬 위) · 멈춰 있음 · 불러도 조용함 · 레이더에 잡혔다 말았다 함',
+         │       '서울 광화문 위 · 헬기 1대 · 낮음 · 느림 (맴돌고 있음) · 정상 · 방송사 취재 헬기로 신고된 것과 시간·위치가 맞음'
+         │     ],
+         │     look_closer: [
+         │       '어디 서울 남산 위 · 뭐가 둥근 물체 1개 · 자세히 확대해 보니 금속처럼 반짝임. 조금 전 갑자기 옆으로 훌쩍 이동했다가 다시 멈춤. 아래로'... 11 more characters
+         │     ],
+         │     look_weather: [ '하늘 청명한 밤 · 구름 없음 · 바람 거세게 불어옴 · 시야 먼지 낀 먼 거리 · 비행 제한됨 · 출처 LLM(ollama)' ]
+         │   }
+[NODE  ] ◀ approve 끝 · 1ms
+         │ 출력 형태 { judgment: {action,probabilities,confidence,danger,…} }
+         │ judgment {
+         │     action: 'watch',
+         │     probabilities: { watch: 0.423 },
+         │     confidence: 0.423,
+         │     danger: 0,
+         │     unknown: 0,
+         │     decision: '감시 강화 — 사람이 결정'
+         │   }
+[DECIDE] 감시 강화 — 사람이 결정  ← 기억으로 판단 · Jev 생략
+         │ 사실 (가짜 모델(mock) 4회 호출) [mock] 도구 결과를 확인했습니다: {"하늘":"청명한 밤","구름":"없음","바람":"거세게 불어옴","시야":"먼지 낀 먼 거리","비행":"제한됨","출처":"LLM(ollama)"}

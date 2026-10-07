@@ -117,4 +117,4 @@
 | 2 RAG · MCP · Subagent | 3, 4, 5, 7, 8, **11** | Inspector, 서버 끄고 켜기, Worker vs Subagent `--watch` |
 | 3 Jev · Hindsight | **10** | 같은 보고 두 번, 대시보드, 사람이 가르친다 |
 | 4 HITL · Checkpoint | 9 | Ctrl+C → `--resume` |
-| 5 Guardrail · 운영 | — | Deev 사례(appendix), `LLM_MODE` 비교, LangSmith |
+| 5 운영 | — | Deev 사례(appendix), `LLM_MODE` 비교, LangSmith |

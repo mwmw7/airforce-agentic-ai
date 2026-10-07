@@ -202,11 +202,13 @@ airforce-agentic-ai/
 │  └─ docs/rulebook.md        관제 규정 10줄
 ├─ docs/graphs/              그래프 그림 (pnpm graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
+├─ docs/slides/day2.html     2일차 강의 슬라이드 (38장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
+├─ docs/slides-plan.md       슬라이드 장 단위 계획
 ├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
 ├─ .hindsight/               file 모드 기억 (git 에 안 올라감)
 ├─ traces/                   실행 기록
 ├─ langgraph.json            LangGraph Studio 설정 (pnpm studio)
-└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · draw-graph(그림) · memory-up(Hindsight 띄우기)
+└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
 ```
 
 ---

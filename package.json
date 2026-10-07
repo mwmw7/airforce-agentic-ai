@@ -23,7 +23,8 @@
     "memory:ui:stop": "uvx hindsight-embed -p airforce-agent ui stop --port 18888",
     "studio": "langgraphjs dev --port 2024",
     "graph": "tsx tools/draw-graph.ts",
-    "instructor:make-handson": "node tools/make-handson.mjs"
+    "instructor:make-handson": "node tools/make-handson.mjs",
+    "slides": "python3 tools/make-slides.py"
   },
   "dependencies": {
     "@langchain/core": "^1.2.14",
