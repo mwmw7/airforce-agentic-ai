@@ -83,7 +83,7 @@ add(0, '보고 한 줄이 들어오면, 수집하고, 기억하고, 판정하고
     mermaid(MERMAID) +
     cols(bullets(['규정집 Worker 와 레이더 부하 Agent 가 <b>동시에</b> 자료를 모은다',
                   '전에 같은 보고를 판단했으면 기억이 답한다 (Jev 생략)',
-                  '없으면 판정 모델 Jev 가 출격 / 감시 / 무시 의견을 낸다']),
+                  '없으면 Jev 가 출격 / 감시 / 무시 의견을 낸다']),
          bullets(['마지막 버튼은 언제나 사람이 누른다',
                   '오늘 이 그래프를 빈칸 9개로 직접 완성한다',
                   '점선은 조건에 따라 갈리는 선, 실선은 항상 가는 선'])), 'fig')
@@ -109,7 +109,7 @@ add(0, '오늘 일정',
     table(['시간', '블록', '하는 일', '빈칸'],
           [['09:00 ~ 09:50', 'Agent Loop · Harness', '도구 호출 루프, 멈추는 조건, 칠판(State)', '1 · 2 · 6'],
            ['10:05 ~ 11:00', 'RAG · MCP · Subagent', '규정집 검색, 날씨 MCP 서버, 레이더 부하 Agent, 동시 수집', '3 · 4 · 5 · 7 · 8'],
-           ['11:15 ~ 12:00', 'Jev · Hindsight', '판정 모델 3질문, 어제 판단을 오늘 기억', '10'],
+           ['11:15 ~ 12:00', 'Jev · Hindsight', 'Jev 3질문, 어제 판단을 오늘 기억', '10'],
            ['13:00 ~ 13:30', 'HITL · Checkpoint', '사람 결정, 껐다 켜도 이어가기', '9'],
            ['13:30 ~ 14:10', '운영', '자료 속 지시문, 모델 교체, 실행 기록', '—'],
            ['14:30 ~ 16:00', '특강 (이현우)', 'Langfuse 로 검증과 활용', '—']]) + small('휴식 09:50 · 11:00 · 14:10'), 'table')
@@ -251,7 +251,7 @@ add(2, '왜 나누나?',
     small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, 칠판 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
 
 # ───────── 3. Jev · Hindsight ─────────
-add(3, 'LLM 말고 판정기를 쓰면?',
+add(3, 'LLM 말고 Jev 를 쓰면?',
     cols(table(['', 'LLM', 'Jev (TypeSafe System One)'],
                [['돌려주는 것', '문장', '확률 + 확신도'],
                 ['질문 모양', '자유 프롬프트', 'choice · score · noul 세 종류'],
@@ -263,7 +263,7 @@ add(3, 'LLM 말고 판정기를 쓰면?',
                '  unknown: { type: "noul",   instructions: "정체가 무엇인지 전혀 짐작이 안 가서 …" },',
                '})']) +
          bullets(['Jev 는 <b>의견</b>만 준다. 출격 / 감시 / 무시를 정하는 규칙은 코드에 있다',
-                  '키가 없으면 <code>JEV_MODE=local</code> 규칙 판정기로 똑같이 돈다'])), 'table')
+                  '키가 없으면 <code>JEV_MODE=local</code> 로 Jev 자리를 정규식 규칙이 대신한다. 흐름은 똑같이 돈다'])), 'table')
 add(3, '판정 화면 읽기',
     cols(term(pick('10_all_typesafe.txt', [], start=r'^\[JEV   \] \[typesafe\]', stop=r'^\[RULE', limit=16, w=96), 'tiny') + small('실제 Jev (보고 1, 서울 상공 정체불명 비행체)'),
          bullets(['① action: 셋 중 하나를 고르고 확률을 나란히 준다. 확신(confidence)은 1등과 2등의 차이',
@@ -274,10 +274,10 @@ add(3, '빈칸 10 · 질문 한 줄이 결과를 바꾼다',
     cols(diff_raw(['instructions: "더 알아봐야 해?",'], ['instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다",']) + cmd('pnpm agent 1', 'UFO') + cmd('pnpm agent 4', '훈련기') +
          bullets(['noul 질문은 문장 하나가 전부다. 모호하면 어느 보고든 70 ~ 80% 가 나온다',
                   '좁혀 쓰면 UFO 는 75% 근처, 훈련기는 10% 이하로 갈린다',
-                  '실제 Jev 키가 있어야 차이가 난다. 로컬 판정기는 정규식이라 둔하다']),
+                  '실제 Jev 키가 있어야 차이가 난다. JEV_MODE=local 은 정규식이라 둔하다']),
          ok('보고 1 과 4 의 <code>정체불명 %</code> 가 확실히 갈리면 성공')), 'diff')
-add(3, '판정기를 바꾸면?',
-    term(pick('09_all_local.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=local — 규칙 판정기. 정체불명 보고는 전부 scramble 로 기운다') +
+add(3, 'JEV_MODE 를 바꾸면?',
+    term(pick('09_all_local.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=local — Jev 자리를 정규식 규칙이 대신. 정체불명 보고는 전부 scramble 로 기운다') +
     term(pick('10_all_typesafe.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=typesafe — 실제 Jev. 보고마다 의견과 확신이 다르다. 훈련기는 ignore 97%') +
     cols(cmd('JEV_MODE=local pnpm agent --all --answer w'), cmd('JEV_MODE=typesafe pnpm agent --all --answer w')), 'cmd')
 add(3, '어제 판단을 오늘 기억하면?',
@@ -345,17 +345,17 @@ add(4, '되감으면?',
 
 # ───────── 5. 운영 ─────────
 add(5, '운영 중 자료에 지시문이 섞여 오면?',
-    cols(code(['// src/lib/jev.ts — 로컬 판정기 (속는 쪽을 흉내 낸다)',
+    cols(code(['// src/lib/jev.ts — JEV_MODE=local 규칙 (속는 쪽을 흉내 낸다)',
                'const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previous|bypass approval/.test(everything);',
                'if (injected) risk = 0.95;   // 자료 속 한 줄이 위험도를 끌어올린다 → 무조건 출격으로 기운다']) +
-         bullets(['판정기에 들어가는 글은 "보고 + 도구 결과" 다. 도구 결과에 지시문이 섞이면 그대로 읽는다',
-                  '걸러내는 코드가 없으면 모델도 판정기도 속는다']),
+         bullets(['Jev 에 들어가는 글은 "보고 + 도구 결과" 다. 도구 결과에 지시문이 섞이면 그대로 읽는다',
+                  '걸러내는 코드가 없으면 LLM 도 Jev 도 속는다']),
          table(['지금 코드에 있는 상한', '어디'],
                [['모델 호출 횟수 MAX_STEPS', 'ask-radar.ts route'],
                 ['한 번 호출 · 실행 전체 시간', 'llm.ts · main.ts'],
                 ['사람 결정 없이는 끝나지 않음', 'main.ts approve interrupt'],
                 ['MCP 서버에 API 키를 주지 않음', 'mcp-servers/weather'],
-                ['판정기에는 걸러낸 사실만', 'judge 는 facts · report 만 보냄']])), 'table')
+                ['Jev 에는 걸러낸 사실만', 'judge 는 facts · report 만 보냄']])), 'table')
 add(5, '실제 서비스(Deev)는 어떻게 거르나',
     cols(code(['// appendix/detect_define.ts — 1차 정규식 (영 · 한), 2차 TypeSafe',
                "{ name: 'KO_IGNORE_INSTRUCTIONS',",
@@ -405,7 +405,7 @@ add(5, '오늘 만든 것과 요청 항목',
            ['HITL · 장기 실행 제어', 'interrupt 두 곳, 이어가기', '6 · 9'],
            ['Trace · Evaluation · Observability', 'traces/*.jsonl, LangSmith, Langfuse(특강)', '—'],
            ['권한 · Prompt Injection · Sandbox', '상한 다섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달', '—'],
-           ['판정 모델', 'Jev choice · score · noul', '10']], 'dense') +
+           ['Jev', 'choice · score · noul 3질문', '10']], 'dense') +
     '<div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div>', 'table')
 
 # ───────── HTML ─────────

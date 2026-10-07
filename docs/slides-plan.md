@@ -50,10 +50,10 @@
 
 | # | 제목 | 종류 | 내용 |
 |---|---|---|---|
-| 22 | LLM 말고 판정기를 쓰면? | 그림 | LLM(문장) vs Jev(확률 + 확신도). 질문 3종 choice / score / noul. "의견은 Jev, 규칙은 코드" |
+| 22 | LLM 말고 Jev 를 쓰면? | 그림 | LLM(문장) vs Jev(확률 + 확신도). 질문 3종 choice / score / noul. "의견은 Jev, 규칙은 코드" |
 | 23 | 판정 화면 읽기 | 명령 | `[JEV]` 캡처: scramble 65% · 위험도 2.55/3 · 정체불명 75% → `[RULE]` 코드 규칙 → 권고 |
 | 24 | 빈칸 10 | diff | noul 질문 문장 한 줄 before/after · 보고 1(UFO) vs 4(훈련기) · 성공: 정체불명 % 가 갈린다 (실제 Jev 키 필요) |
-| 25 | 판정기를 바꾸면? | 표 | `JEV_MODE=local` vs `typesafe` 의 `--all` 표 두 개 나란히. 규칙 판정기는 전부 scramble |
+| 25 | JEV_MODE 를 바꾸면? | 표 | `JEV_MODE=local` vs `typesafe` 의 `--all` 표 두 개 나란히. 규칙 판정기는 전부 scramble |
 | 26 | 어제 판단을 오늘 기억하면? | 그림 | remember 노드: 같은 사례(일치도 0.9↑)면 Jev 생략. retain / recall 두 화살표 |
 | 27 | 같은 보고 두 번 | 명령 | 캡처 두 장: 첫 번째 `[JEV]`, 두 번째 `[MEMORY] 같은 사례 찾음 → Jev 생략` |
 | 28 | 사람이 가르친다 | 명령 | 보고 2 에서 `w` 선택 → 다시 돌리면 "감시 강화"로 떠오름. `pnpm memory:ui` 대시보드 캡처 (점과 선) |

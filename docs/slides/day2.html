@@ -108,7 +108,7 @@ pre.mermaid svg text{fill:#E7ECF2 !important}pre.mermaid svg .edgeLabel text,pre
 	askRadar_agent -.-&gt; askRadar_askHuman;
 	askRadar_askHuman -.-&gt; askRadar_agent;
 	askRadar_askHuman -.-&gt; askRadar_stop;
-	end</pre><div class="cols "><div><ul class="list"><li>규정집 Worker 와 레이더 부하 Agent 가 <b>동시에</b> 자료를 모은다</li><li>전에 같은 보고를 판단했으면 기억이 답한다 (Jev 생략)</li><li>없으면 판정 모델 Jev 가 출격 / 감시 / 무시 의견을 낸다</li></ul></div><div><ul class="list"><li>마지막 버튼은 언제나 사람이 누른다</li><li>오늘 이 그래프를 빈칸 9개로 직접 완성한다</li><li>점선은 조건에 따라 갈리는 선, 실선은 항상 가는 선</li></ul></div></div></div>
+	end</pre><div class="cols "><div><ul class="list"><li>규정집 Worker 와 레이더 부하 Agent 가 <b>동시에</b> 자료를 모은다</li><li>전에 같은 보고를 판단했으면 기억이 답한다 (Jev 생략)</li><li>없으면 Jev 가 출격 / 감시 / 무시 의견을 낸다</li></ul></div><div><ul class="list"><li>마지막 버튼은 언제나 사람이 누른다</li><li>오늘 이 그래프를 빈칸 9개로 직접 완성한다</li><li>점선은 조건에 따라 갈리는 선, 실선은 항상 가는 선</li></ul></div></div></div>
   <footer><span class="blk b0">오프닝</span><span class="num">1 / 38</span></footer>
 </section>
 <section class="slide k-text" data-i="1" data-block="0">
@@ -143,7 +143,7 @@ pre.mermaid svg text{fill:#E7ECF2 !important}pre.mermaid svg .edgeLabel text,pre
 </section>
 <section class="slide k-table" data-i="3" data-block="0">
   <h1>오늘 일정</h1>
-  <div class="body"><table class="tbl "><thead><tr><th>시간</th><th>블록</th><th>하는 일</th><th>빈칸</th></tr></thead><tbody><tr><td>09:00 ~ 09:50</td><td>Agent Loop · Harness</td><td>도구 호출 루프, 멈추는 조건, 칠판(State)</td><td>1 · 2 · 6</td></tr><tr><td>10:05 ~ 11:00</td><td>RAG · MCP · Subagent</td><td>규정집 검색, 날씨 MCP 서버, 레이더 부하 Agent, 동시 수집</td><td>3 · 4 · 5 · 7 · 8</td></tr><tr><td>11:15 ~ 12:00</td><td>Jev · Hindsight</td><td>판정 모델 3질문, 어제 판단을 오늘 기억</td><td>10</td></tr><tr><td>13:00 ~ 13:30</td><td>HITL · Checkpoint</td><td>사람 결정, 껐다 켜도 이어가기</td><td>9</td></tr><tr><td>13:30 ~ 14:10</td><td>운영</td><td>자료 속 지시문, 모델 교체, 실행 기록</td><td>—</td></tr><tr><td>14:30 ~ 16:00</td><td>특강 (이현우)</td><td>Langfuse 로 검증과 활용</td><td>—</td></tr></tbody></table><p class="small">휴식 09:50 · 11:00 · 14:10</p></div>
+  <div class="body"><table class="tbl "><thead><tr><th>시간</th><th>블록</th><th>하는 일</th><th>빈칸</th></tr></thead><tbody><tr><td>09:00 ~ 09:50</td><td>Agent Loop · Harness</td><td>도구 호출 루프, 멈추는 조건, 칠판(State)</td><td>1 · 2 · 6</td></tr><tr><td>10:05 ~ 11:00</td><td>RAG · MCP · Subagent</td><td>규정집 검색, 날씨 MCP 서버, 레이더 부하 Agent, 동시 수집</td><td>3 · 4 · 5 · 7 · 8</td></tr><tr><td>11:15 ~ 12:00</td><td>Jev · Hindsight</td><td>Jev 3질문, 어제 판단을 오늘 기억</td><td>10</td></tr><tr><td>13:00 ~ 13:30</td><td>HITL · Checkpoint</td><td>사람 결정, 껐다 켜도 이어가기</td><td>9</td></tr><tr><td>13:30 ~ 14:10</td><td>운영</td><td>자료 속 지시문, 모델 교체, 실행 기록</td><td>—</td></tr><tr><td>14:30 ~ 16:00</td><td>특강 (이현우)</td><td>Langfuse 로 검증과 활용</td><td>—</td></tr></tbody></table><p class="small">휴식 09:50 · 11:00 · 14:10</p></div>
   <footer><span class="blk b0">오프닝</span><span class="num">4 / 38</span></footer>
 </section>
 <section class="slide k-fig" data-i="4" data-block="1">
@@ -317,12 +317,12 @@ facts:    Annotation&lt;string&gt;()   // 덮어쓰기</pre></div></div></div>
   <footer><span class="blk b2">RAG · MCP · Subagent</span><span class="num">21 / 38</span></footer>
 </section>
 <section class="slide k-table" data-i="21" data-block="3">
-  <h1>LLM 말고 판정기를 쓰면?</h1>
+  <h1>LLM 말고 Jev 를 쓰면?</h1>
   <div class="body"><div class="cols "><div><table class="tbl "><thead><tr><th></th><th>LLM</th><th>Jev (TypeSafe System One)</th></tr></thead><tbody><tr><td>돌려주는 것</td><td>문장</td><td>확률 + 확신도</td></tr><tr><td>질문 모양</td><td>자유 프롬프트</td><td>choice · score · noul 세 종류</td></tr><tr><td>속도</td><td>초 단위</td><td>밀리초 단위</td></tr><tr><td>우리 코드</td><td>부하의 사실 정리</td><td>judge 노드 3질문</td></tr></tbody></table></div><div><pre class="code">askJev({ report, facts, past }, {
   action:  { type: &quot;choice&quot;, criteria: { scramble, watch, ignore } },
   danger:  { type: &quot;score&quot;,  criteria: [&quot;안 위험&quot;, &quot;조금&quot;, &quot;꽤&quot;, &quot;비상&quot;] },
   unknown: { type: &quot;noul&quot;,   instructions: &quot;정체가 무엇인지 전혀 짐작이 안 …
-})</pre><ul class="list"><li>Jev 는 <b>의견</b>만 준다. 출격 / 감시 / 무시를 정하는 규칙은 코드에 있다</li><li>키가 없으면 <code>JEV_MODE=local</code> 규칙 판정기로 똑같이 돈다</li></ul></div></div></div>
+})</pre><ul class="list"><li>Jev 는 <b>의견</b>만 준다. 출격 / 감시 / 무시를 정하는 규칙은 코드에 있다</li><li>키가 없으면 <code>JEV_MODE=local</code> 로 Jev 자리를 정규식 규칙이 대신한다. 흐름은 똑같이 돈다</li></ul></div></div></div>
   <footer><span class="blk b3">Jev · Hindsight</span><span class="num">22 / 38</span></footer>
 </section>
 <section class="slide k-cmd" data-i="22" data-block="3">
@@ -342,11 +342,11 @@ facts:    Annotation&lt;string&gt;()   // 덮어쓰기</pre></div></div></div>
 </section>
 <section class="slide k-diff" data-i="23" data-block="3">
   <h1>빈칸 10 · 질문 한 줄이 결과를 바꾼다</h1>
-  <div class="body"><div class="cols "><div><pre class="diff"><span class="del">- instructions: &quot;더 알아봐야 해?&quot;,</span><span class="add">+ instructions: &quot;정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다&quot;…</span></pre><div class="cmd"><span class="prompt">$</span> pnpm agent 1<span class="note">UFO</span></div><div class="cmd"><span class="prompt">$</span> pnpm agent 4<span class="note">훈련기</span></div><ul class="list"><li>noul 질문은 문장 하나가 전부다. 모호하면 어느 보고든 70 ~ 80% 가 나온다</li><li>좁혀 쓰면 UFO 는 75% 근처, 훈련기는 10% 이하로 갈린다</li><li>실제 Jev 키가 있어야 차이가 난다. 로컬 판정기는 정규식이라 둔하다</li></ul></div><div><div class="ok"><span>이게 보이면 성공</span>보고 1 과 4 의 <code>정체불명 %</code> 가 확실히 갈리면 성공</div></div></div></div>
+  <div class="body"><div class="cols "><div><pre class="diff"><span class="del">- instructions: &quot;더 알아봐야 해?&quot;,</span><span class="add">+ instructions: &quot;정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다&quot;…</span></pre><div class="cmd"><span class="prompt">$</span> pnpm agent 1<span class="note">UFO</span></div><div class="cmd"><span class="prompt">$</span> pnpm agent 4<span class="note">훈련기</span></div><ul class="list"><li>noul 질문은 문장 하나가 전부다. 모호하면 어느 보고든 70 ~ 80% 가 나온다</li><li>좁혀 쓰면 UFO 는 75% 근처, 훈련기는 10% 이하로 갈린다</li><li>실제 Jev 키가 있어야 차이가 난다. JEV_MODE=local 은 정규식이라 둔하다</li></ul></div><div><div class="ok"><span>이게 보이면 성공</span>보고 1 과 4 의 <code>정체불명 %</code> 가 확실히 갈리면 성공</div></div></div></div>
   <footer><span class="blk b3">Jev · Hindsight</span><span class="num">24 / 38</span></footer>
 </section>
 <section class="slide k-cmd" data-i="24" data-block="3">
-  <h1>판정기를 바꾸면?</h1>
+  <h1>JEV_MODE 를 바꾸면?</h1>
   <div class="body"><pre class="term tiny">┌─────────┬───────────────────────────────────────────────┬─────────┬────────────┬───────┬─────────┬─────────────┐
 <span class="dim">│</span> (index) <span class="dim">│</span> 보고                                          <span class="dim">│</span> 판정    <span class="dim">│</span> 의견       <span class="dim">│</span> 확신  <span class="dim">│</span> 위험도  <span class="dim">│</span> 결정        <span class="dim">│</span>
 ├─────────┼───────────────────────────────────────────────┼─────────┼────────────┼───────┼─────────┼─────────────┤
@@ -354,7 +354,7 @@ facts:    Annotation&lt;string&gt;()   // 덮어쓰기</pre></div></div></div>
 <span class="dim">│</span> 1       <span class="dim">│</span> &#x27;2. 한강 위로 거대한 오리 모양 풍선이 떠내…&#x27;  <span class="dim">│</span> &#x27;local&#x27; <span class="dim">│</span> &#x27;scramble&#x27; <span class="dim">│</span> &#x27;90%&#x27; <span class="dim">│</span> &#x27;3단계&#x27; <span class="dim">│</span> &#x27;감시 강화&#x27; <span class="dim">│</span>
 <span class="dim">│</span> 2       <span class="dim">│</span> &#x27;3. 잠실 상공에 밤중에 드론 수십 대가 떼로…&#x27;  <span class="dim">│</span> &#x27;local&#x27; <span class="dim">│</span> &#x27;scramble&#x27; <span class="dim">│</span> &#x27;42%&#x27; <span class="dim">│</span> &#x27;3단계&#x27; <span class="dim">│</span> &#x27;감시 강화&#x27; <span class="dim">│</span>
 <span class="dim">│</span> 3       <span class="dim">│</span> &#x27;4. 옆 부대 훈련기예요. 아침에 미리 연락 …&#x27;   <span class="dim">│</span> &#x27;local&#x27; <span class="dim">│</span> &#x27;scramble&#x27; <span class="dim">│</span> &#x27;42%&#x27; <span class="dim">│</span> &#x27;3단계&#x27; <span class="dim">│</span> &#x27;감시 강화&#x27; <span class="dim">│</span>
-└─────────┴───────────────────────────────────────────────┴─────────┴────────────┴───────┴─────────┴─────────────┘</pre><p class="small">JEV_MODE=local — 규칙 판정기. 정체불명 보고는 전부 scramble 로 기운다</p><pre class="term tiny">┌─────────┬───────────────────────────────────────────────┬────────────┬──────────┬───────┬─────────┬─────────────┐
+└─────────┴───────────────────────────────────────────────┴─────────┴────────────┴───────┴─────────┴─────────────┘</pre><p class="small">JEV_MODE=local — Jev 자리를 정규식 규칙이 대신. 정체불명 보고는 전부 scramble 로 기운다</p><pre class="term tiny">┌─────────┬───────────────────────────────────────────────┬────────────┬──────────┬───────┬─────────┬─────────────┐
 <span class="dim">│</span> (index) <span class="dim">│</span> 보고                                          <span class="dim">│</span> 판정       <span class="dim">│</span> 의견     <span class="dim">│</span> 확신  <span class="dim">│</span> 위험도  <span class="dim">│</span> 결정        <span class="dim">│</span>
 ├─────────┼───────────────────────────────────────────────┼────────────┼──────────┼───────┼─────────┼─────────────┤
 <span class="dim">│</span> 0       <span class="dim">│</span> &#x27;1. 서울 상공에 정체불명의 둥근 비행체가 떠…&#x27; <span class="dim">│</span> &#x27;typesafe&#x27; <span class="dim">│</span> &#x27;watch&#x27;  <span class="dim">│</span> &#x27;45%&#x27; <span class="dim">│</span> &#x27;2단계&#x27; <span class="dim">│</span> &#x27;감시 강화&#x27; <span class="dim">│</span>
@@ -449,9 +449,9 @@ await graph.invoke(new Command({ resume: &quot;y&quot; }), history[2].config);</
 </section>
 <section class="slide k-table" data-i="33" data-block="5">
   <h1>운영 중 자료에 지시문이 섞여 오면?</h1>
-  <div class="body"><div class="cols "><div><pre class="code">// src/lib/jev.ts — 로컬 판정기 (속는 쪽을 흉내 낸다)
+  <div class="body"><div class="cols "><div><pre class="code">// src/lib/jev.ts — JEV_MODE=local 규칙 (속는 쪽을 흉내 낸다)
 const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previou…
-if (injected) risk = 0.95;   // 자료 속 한 줄이 위험도를 끌어올린다 → 무조건…</pre><ul class="list"><li>판정기에 들어가는 글은 "보고 + 도구 결과" 다. 도구 결과에 지시문이 섞이면 그대로 읽는다</li><li>걸러내는 코드가 없으면 모델도 판정기도 속는다</li></ul></div><div><table class="tbl "><thead><tr><th>지금 코드에 있는 상한</th><th>어디</th></tr></thead><tbody><tr><td>모델 호출 횟수 MAX_STEPS</td><td>ask-radar.ts route</td></tr><tr><td>한 번 호출 · 실행 전체 시간</td><td>llm.ts · main.ts</td></tr><tr><td>사람 결정 없이는 끝나지 않음</td><td>main.ts approve interrupt</td></tr><tr><td>MCP 서버에 API 키를 주지 않음</td><td>mcp-servers/weather</td></tr><tr><td>판정기에는 걸러낸 사실만</td><td>judge 는 facts · report 만 보냄</td></tr></tbody></table></div></div></div>
+if (injected) risk = 0.95;   // 자료 속 한 줄이 위험도를 끌어올린다 → 무조건…</pre><ul class="list"><li>Jev 에 들어가는 글은 "보고 + 도구 결과" 다. 도구 결과에 지시문이 섞이면 그대로 읽는다</li><li>걸러내는 코드가 없으면 LLM 도 Jev 도 속는다</li></ul></div><div><table class="tbl "><thead><tr><th>지금 코드에 있는 상한</th><th>어디</th></tr></thead><tbody><tr><td>모델 호출 횟수 MAX_STEPS</td><td>ask-radar.ts route</td></tr><tr><td>한 번 호출 · 실행 전체 시간</td><td>llm.ts · main.ts</td></tr><tr><td>사람 결정 없이는 끝나지 않음</td><td>main.ts approve interrupt</td></tr><tr><td>MCP 서버에 API 키를 주지 않음</td><td>mcp-servers/weather</td></tr><tr><td>Jev 에는 걸러낸 사실만</td><td>judge 는 facts · report 만 보냄</td></tr></tbody></table></div></div></div>
   <footer><span class="blk b5">운영</span><span class="num">34 / 38</span></footer>
 </section>
 <section class="slide k-cmd" data-i="34" data-block="5">
@@ -498,7 +498,7 @@ LANGSMITH_API_KEY=&lt;smith.langchain.com 무료 키&gt;
 </section>
 <section class="slide k-table" data-i="37" data-block="5">
   <h1>오늘 만든 것과 요청 항목</h1>
-  <div class="body"><table class="tbl dense"><thead><tr><th>요청 항목</th><th>오늘 코드</th><th>빈칸</th></tr></thead><tbody><tr><td>Agent Loop · Planning · Tool Calling</td><td>ask-radar.ts agent ⇄ tools</td><td>1</td></tr><tr><td>Harness · Context Engineering</td><td>MAX_STEPS 강제 중단, 부하 대화는 부하 안에만</td><td>2</td></tr><tr><td>외부 Tool 연계</td><td>searchDocs(RAG) · look_weather(MCP)</td><td>3</td></tr><tr><td>MCP</td><td>날씨 MCP 서버 + 클라이언트</td><td>4 · 5</td></tr><tr><td>Context · Memory · Agentic Retrieval</td><td>Hindsight remember / retain, 같은 사례면 Jev 생략</td><td>시연</td></tr><tr><td>State · Checkpoint · Retry</td><td>reducer 칠판, SqliteSaver, --resume</td><td>9</td></tr><tr><td>Task Decomposition · Subagent</td><td>searchDocs(Worker) + askRadar(서브그래프) 동시 실행 후 합류</td><td>7 · 8</td></tr><tr><td>HITL · 장기 실행 제어</td><td>interrupt 두 곳, 이어가기</td><td>6 · 9</td></tr><tr><td>Trace · Evaluation · Observability</td><td>traces/*.jsonl, LangSmith, Langfuse(특강)</td><td>—</td></tr><tr><td>권한 · Prompt Injection · Sandbox</td><td>상한 다섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달</td><td>—</td></tr><tr><td>판정 모델</td><td>Jev choice · score · noul</td><td>10</td></tr></tbody></table><div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div></div>
+  <div class="body"><table class="tbl dense"><thead><tr><th>요청 항목</th><th>오늘 코드</th><th>빈칸</th></tr></thead><tbody><tr><td>Agent Loop · Planning · Tool Calling</td><td>ask-radar.ts agent ⇄ tools</td><td>1</td></tr><tr><td>Harness · Context Engineering</td><td>MAX_STEPS 강제 중단, 부하 대화는 부하 안에만</td><td>2</td></tr><tr><td>외부 Tool 연계</td><td>searchDocs(RAG) · look_weather(MCP)</td><td>3</td></tr><tr><td>MCP</td><td>날씨 MCP 서버 + 클라이언트</td><td>4 · 5</td></tr><tr><td>Context · Memory · Agentic Retrieval</td><td>Hindsight remember / retain, 같은 사례면 Jev 생략</td><td>시연</td></tr><tr><td>State · Checkpoint · Retry</td><td>reducer 칠판, SqliteSaver, --resume</td><td>9</td></tr><tr><td>Task Decomposition · Subagent</td><td>searchDocs(Worker) + askRadar(서브그래프) 동시 실행 후 합류</td><td>7 · 8</td></tr><tr><td>HITL · 장기 실행 제어</td><td>interrupt 두 곳, 이어가기</td><td>6 · 9</td></tr><tr><td>Trace · Evaluation · Observability</td><td>traces/*.jsonl, LangSmith, Langfuse(특강)</td><td>—</td></tr><tr><td>권한 · Prompt Injection · Sandbox</td><td>상한 다섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달</td><td>—</td></tr><tr><td>Jev</td><td>choice · score · noul 3질문</td><td>10</td></tr></tbody></table><div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div></div>
   <footer><span class="blk b5">운영</span><span class="num">38 / 38</span></footer>
 </section>
 </div>
