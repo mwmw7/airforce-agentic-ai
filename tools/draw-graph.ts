@@ -7,12 +7,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { graph as agentGraph } from "../labs/agent/main.js";
 
 const drawings = [
-  { file: "agent.md", title: "내 에이전트 — 보고 → agent ⇄ tools → remember → judge", app: agentGraph },
+  { file: "agent.md", title: "내 에이전트 — 보고 → [규정집 Worker ‖ 레이더 Subagent] → remember → judge → approve", app: agentGraph },
 ];
 
 mkdirSync("docs/graphs", { recursive: true });
 for (const { file, title, app } of drawings) {
-  const mermaid = (await app.getGraphAsync()).drawMermaid(); // 그래프 구조 → Mermaid 글자
+  const mermaid = (await app.getGraphAsync({ xray: true })).drawMermaid(); // 그래프 구조 → Mermaid 글자. xray: 부하(서브그래프) 안까지 펼쳐 그린다
   writeFileSync(`docs/graphs/${file}`, `# ${title}\n\n\`\`\`mermaid\n${mermaid}\n\`\`\`\n`);
   console.log(`[그림] docs/graphs/${file}`);
 }

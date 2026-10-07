@@ -1,50 +1,46 @@
 /**
- * labs/agent/main.ts — LangGraph 로 만드는 가장 작은 Agent. 여기서 출발해 한 단계씩 기능을 붙여 나간다
+ * labs/agent/main.ts — 관제실 Agent 의 부모 그래프. 보고 한 줄 → 자료 수집(동시) → 기억 → 판정 → 사람 결정
  *
  * 관제실에 짧은 보고 한 줄이 들어온다. "서울 상공에 정체불명 비행체가 떠 있어요"
- * Agent 는 도구로 사실을 확인하고(LLM), 판정 모델이 의견을 내고(Jev), 최종 결정은 코드가 한다.
+ * 규정집 Worker 와 레이더 부하 Agent 가 동시에 자료를 모으고, 판정 모델이 의견을 내고, 최종 결정은 사람이 한다.
  *
- *   START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
- *                   ├─ 다 확인했다     ─▶ remember ─┬─ 같은 사례 기억 있음 ──────────┐  (Jev 생략)
- *                   │                              └─ 없음 ─▶ judge (Jev 판정) ─────┴─▶ approve ─▶ END
- *                   │                                  approve = 레이더 · 규정 · 날씨 · 기억 · Jev 를 한눈에 모아 보여 주고
- *                   │                                            사람이 출격 / 감시 / 무시 를 고른다 (언제나 마지막은 사람)
- *                   ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤)
- *                   └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → remember / stop → stop
+ *            ┌─▶ searchDocs (Worker: 함수 하나, 규정집 찾기)              ─┐
+ *   START ───┤                                                           ├─▶ remember ─┬─ 같은 사례 기억 있음 ──────┐ (Jev 생략)
+ *            └─▶ askRadar   (Subagent: ask-radar.ts 의 agent ⇄ tools 루프) ─┘            └─ 없음 ─▶ judge (Jev) ───┴─▶ approve ─▶ END
+ *                                                                                              approve = 레이더 · 규정 · 날씨 · 기억 · Jev 를 한눈에 모아 보여 주고
+ *                                                                                                        사람이 출격 / 감시 / 무시 를 고른다 (언제나 마지막은 사람)
  *
  * 꼭 볼 것
- *   · 모델은 "이 도구를 써 달라" 고 말할 뿐, 실제로 실행하는 건 tools 단계(내 코드)다
- *   · 언제 멈출지(MAX_STEPS)도 모델이 아니라 route 함수(내 코드)가 정한다
- *   · LLM 은 사실을 모으고, Jev 는 판정하고, 결정은 코드가 한다 — 역할이 다르다
- *   · 마지막 결정은 코드도 모델도 아닌 사람이 한다 — approve 가 모든 근거를 한 화면에 모아 보여 주고 묻는다 (HITL)
+ *   · Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐 (TODO 7)
+ *   · 같은 출발점에 선을 두 개 걸면 LangGraph 가 같은 단계에서 동시에 돌리고, 출발점을 배열로 묶은 선이 "둘 다 끝나면" 합류다 (TODO 8)
+ *   · 부하의 긴 대화(messages)는 부하 칠판에만 남고, 부모 칠판에는 facts · evidence · steps 만 돌아온다 — 팀장 칠판은 결론만 (state.ts)
+ *   · LLM 은 사실을 모으고(부하), Jev 는 판정하고, 결정은 코드가 하고, 마지막 버튼은 사람이 누른다 — 역할이 다르다
  *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember)
- *   · 모델이 늦으면(LLM_TIMEOUT_SEC) 끊고 사람에게 묻는다. 실행 전체도 RUN_TIMEOUT_SEC 를 넘으면 끊는다
+ *   · 실행 전체가 RUN_TIMEOUT_SEC 를 넘으면 끊는다. 부하 안에서 모델이 늦으면 부하가 사람에게 묻는다 (ask-radar.ts)
  *
  * 실행:  pnpm agent                           보고 1번
  *        pnpm agent 3                         보고 3번
  *        pnpm agent "한강에 오리 풍선이 떠요"    내가 쓴 보고
- *        pnpm agent:limit                     MAX_STEPS=1 로 강제 중단 → 멈춘 이유가 내 코드에서 나오는지 확인
- *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부)
- *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 사람에게 묻는 화면이 뜬다
+ *        pnpm agent:limit                     MAX_STEPS=1 로 부하를 강제 중단 → 부하만 멈추고 부모는 규정집만으로 판정까지 간다
+ *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부). 부하 안의 단계는 askRadar › agent 처럼 찍힌다
+ *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 부하 안에서 사람에게 묻는 화면이 뜬다
  *        pnpm agent:live                      브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
  *        pnpm agent --resume <실행번호>       담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (checkpoints.sqlite)
  *        pnpm agent --all                     보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 답한다 (--answer w 를 주면 자동). JEV_MODE 바꿔 두 번 돌려 비교
- *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" })
+ *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). 부하는 접힌 노드로 보인다
  */
-import { readFileSync } from "node:fs";
 import readline from "node:readline/promises";
-import { Annotation, Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
+import { Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
-import { askLLM, chat, isTimeout, LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC, type Msg, type Tool } from "../../src/lib/llm.js";
-import { askJev, JEV_MODE } from "../../src/lib/jev.js";
-import { blue, bold, cyan, dim, green, log, magenta, red, showDebug, showTool, yellow } from "../../src/lib/show.js";
+import { LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC } from "../../src/lib/llm.js";
+import { JEV_MODE, askJev } from "../../src/lib/jev.js";
+import { blue, bold, cyan, dim, green, log, magenta, red, showDebug, yellow } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
-import { searchDocs } from "./search-docs.js";
-import { callMcpTool, isMcpTool, listMcpTools } from "./mcp.js";
 import { type Case, createBank, findSameCase, MEMORY_MODE, recall, retain, showMemoryWork } from "../../src/lib/memory.js";
+import { type Main as S, MainState } from "./state.js";
+import { searchDocsNode } from "./search-docs.js";
+import { MAX_STEPS, radarAgent, resetRadar } from "./ask-radar.js";
 
-// 모델을 최대 몇 번까지 부를지. 이 숫자를 넘으면 내 코드가 멈춘다
-const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
 // 실행 전체가 이 시간을 넘으면 끊는다 (호출 하나는 빨라도 여러 번 돌면 길어진다)
 const RUN_TIMEOUT_SEC = Number(process.env.RUN_TIMEOUT_SEC ?? 180);
 // 기억 속 보고와 이만큼(0~1) 같으면 "같은 사례" 로 보고 Jev 를 다시 부르지 않는다
@@ -58,178 +54,7 @@ const REPORTS = [
   "옆 부대 훈련기예요. 아침에 미리 연락 온 대로 예정된 코스를 잘 날고 있고, 무전도 정상이에요.",
 ];
 
-// ── 1. 도구: 설명(모델이 읽는 것) + 실행 함수(내 코드가 돌리는 것) ──
-// 레이더·규정집은 이 파일 안의 로컬 도구. 날씨는 MCP 서버(mcp-servers/weather)에서 받아 온다 → mcp.ts
-const readJson = (file: string) => JSON.parse(readFileSync(new URL(`../../data/api/${file}`, import.meta.url), "utf8"));
-type RadarRow = Record<string, string> & { 지역: string[] };
-// 보고 속 장소와 레이더 줄을 맞춰 본다: 줄의 '지역' 열쇠말(서울, 남산 …) 중 하나라도 문장에 들어 있으면 그 지역이다
-const inRegion = (row: RadarRow, text: string): boolean => row.지역.some((k) => text.includes(k));
-const brief = ({ 자세히, _notice, 지역, ...row }: RadarRow) => row; // '자세히' 는 숨긴다 → 확대해야 보인다
-
-const localTools: Tool[] = [
-  { type: "function", function: { name: "look_radar", description: "레이더에서 한 지역을 본다. 보고에 나온 장소(서울, 한강, 잠실, 김포, 인천, 동해 …)를 넣으면 그 지역에 잡힌 것들만 보여 준다. 장소를 모르면 비워 두면 전체 목록이 나온다. 자세한 건 안 보인다. (교육용 합성 자료)",
-      parameters: { type: "object", properties: { 어디: { type: "string", description: "보고에 나온 장소 또는 보고 문장 그대로. 예: 서울 / 한강 위 풍선" } } } } },
-  { type: "function", function: { name: "look_closer", description: "레이더 화면에서 한 자리만 확대해 자세히 본다. 수상한 게 있으면 꼭 써 보라. (교육용 합성 자료)",
-      parameters: { type: "object", properties: { 어디: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["어디"] } } },
-  // RAG: 규정집은 모델이 외우고 있지 않다. 필요할 때 찾아서(search-docs.ts) 대화에 넣어 준다
-  { type: "function", function: { name: "look_rulebook", description: "관제실 규정집에서 지금 상황과 관련된 규정을 찾아본다. 판단 전에 꼭 한 번 보라. (교육용 합성 자료)",
-      parameters: { type: "object", properties: { 질문: { type: "string", description: "지금 상황을 한 문장으로. 예: 무전 응답 없는 풍선이 공항 쪽으로 간다" } }, required: ["질문"] } } },
-];
-
-// ── 레이더 화면 만들기: 파일(radar-screen.json)은 mock 모드나 LLM 실패 때의 대체본. 실제 모드에서는 LLM 이 보고에 맞춰 그 자리에서 지어낸다 ──
-//   한 번 지은 화면은 이번 실행 동안 기억해 둔다 → look_closer 가 같은 물체를 확대할 수 있다 (매번 새로 지으면 앞뒤가 안 맞는다)
-let radarScreen: RadarRow[] | null = null;   // 이번 보고에 대해 지은 레이더 화면 (runOnce 시작 때 비운다)
-export const resetRadar = () => { radarScreen = null; };
-async function radarFor(report: string): Promise<RadarRow[]> {
-  if (radarScreen) return radarScreen;
-  const file: RadarRow[] = readJson("radar-screen.json");
-  if (LLM_MODE === "mock") return (radarScreen = file);
-  try {
-    const text = await askLLM({
-      system: "너는 가상 레이더 관측 시스템이다. 받은 보고에 어울리는 '지금 레이더에 잡힌 것들' 을 2~4개 지어내라. 보고의 대상은 반드시 포함하고, 무관한 평범한 항적(여객기·훈련기 등)도 하나쯤 섞어라. " +
-        "답은 설명 없이 JSON 배열 한 줄만. 각 항목 모양: {\"지역\":[\"서울\",\"남산\"],\"어디\":\"서울 남산 위\",\"뭐가\":\"둥근 물체 1개\",\"높이\":\"…\",\"속도\":\"…\",\"무전\":\"…\",\"메모\":\"…\",\"자세히\":\"확대해야 보이는 상세\"}. " +
-        "지역은 보고 속 장소 열쇠말(서울·한강·잠실·김포·인천·동해·부산 … 또는 보고에 나온 지명) 두어 개. 값은 짧은 한국어. (교육용 합성 자료)",
-      user: `보고: ${report}\n이런 모양으로: ${JSON.stringify(file.slice(0, 2).map(({ _notice, ...r }) => r))}`,
-      mockText: "[]",
-    });
-    const rows = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] ?? "[]") as RadarRow[];
-    const ok = rows.filter((r) => Array.isArray(r.지역) && r.어디 && r.뭐가);
-    return (radarScreen = ok.length ? ok : file);   // 모양이 틀리면 파일로
-  } catch {
-    return (radarScreen = file);                      // 늦거나 실패해도 파일로 — 도구는 멈추지 않는다
-  }
-}
-
-// 모델이 고른 도구 이름과 입력값을 받아 실제로 실행한다 (report = 이번 보고, 레이더 화면을 지을 때 쓴다)
-async function runTool(name: string, args: Record<string, unknown>, report: string): Promise<string> {
-  const rows = await radarFor(report);
-  if (name === "look_radar") {
-    const where = String(args.어디 ?? "");
-    const found = rows.filter((r) => inRegion(r, where));
-    const matched = [...new Set(found.flatMap((r) => r.지역).filter((k) => where.includes(k)))]; // 문장에서 걸린 장소 열쇠말만
-    if (found.length) return JSON.stringify({ 지역: matched.join("·"), 잡힌것: found.map(brief) });
-    // 그 장소엔 아무것도 없거나 장소를 모르겠다 → 지금 레이더에 잡힌 것 전부를 짧게 (어디 · 뭐가) 보여 준다
-    return JSON.stringify({ 결과: where ? `'${where.slice(0, 20)}' 에 잡힌 것 없음 → 전체 목록` : "장소 없음 → 전체 목록", 지금_잡힌_것들: rows.map((r) => `${r.어디}: ${r.뭐가}`) });
-  }
-  if (name === "look_closer") {
-    const where = String(args.어디 ?? "");
-    const row = rows.find((r) => inRegion(r, where));                                        // "잠실 위" → 지역 열쇠말 "잠실" 로 찾는다
-    return row ? JSON.stringify({ 어디: row.어디, 뭐가: row.뭐가, 자세히: row.자세히 }) : JSON.stringify({ 결과: `레이더에 '${where}' 자리는 없음` });
-  }
-  if (name === "look_rulebook") {
-    const found = searchDocs(String(args.질문 ?? ""));
-    return JSON.stringify({ 규정: found.length ? found : ["관련 규정 없음"] });
-  }
-  return JSON.stringify({ error: `모르는 도구: ${name}` });
-}
-
-// 모델에게 줄 도구 목록 = 로컬 도구 + MCP 서버에서 받은 도구. 첫 호출 때 한 번만 서버에 묻는다
-let tools: Tool[] | null = null;
-async function allTools(): Promise<Tool[]> {
-  if (!tools) tools = [...localTools, ...(await listMcpTools())];
-  return tools;
-}
-
-// ── 2. 공유 기록(칠판): 대화는 뒤에 '이어 붙이기', 호출 횟수는 '더하기', 나머지는 덮어쓰기 ──
-const LoopState = Annotation.Root({
-  report: Annotation<string>(),                                                                       // 들어온 보고 한 줄
-  messages: Annotation<Msg[]>({ reducer: (prev, next) => [...prev, ...next], default: () => [] }),  // 모델과 주고받은 대화
-  steps: Annotation<number>({ reducer: (prev, next) => prev + next, default: () => 0 }),            // 모델을 부른 횟수
-  facts: Annotation<string>(),                                                                        // agent 가 도구로 확인해 정리한 사실
-  judgment: Annotation<Judgment>(),                                                                   // judge 의 결과
-  stuck: Annotation<string>(),                                                                        // 모델이 늦었을 때 그 이유 (비어 있으면 정상)
-  humanChoice: Annotation<string>(),                                                                  // 사람이 고른 것: retry / skip / stop
-  memory: Annotation<Memory | null>(),                                                                // remember 가 찾은 같은 사례 (없으면 null → judge 로)
-  past: Annotation<string[]>({ reducer: (_, next) => next, default: () => [] }),                   // judge 가 떠올린 비슷한 기억 (Jev 참고용)
-  // 도구가 돌려준 결과를 이름별로 모아 둔다 (approve 에서 사람에게 한눈에 보여 주려고). 같은 도구를 여러 번 쓰면 뒤에 이어 붙인다
-  evidence: Annotation<Record<string, string[]>>({
-    reducer: (prev, next) => { const out = { ...prev }; for (const [k, v] of Object.entries(next)) out[k] = [...(out[k] ?? []), ...v]; return out; },
-    default: () => ({}),
-  }),
-});
-type S = typeof LoopState.State;
-interface Judgment { action: string; probabilities: Record<string, number>; confidence: number; danger: number; unknown: number; decision: string }
-interface Memory { report: string; time: string; score: number }
-
-// ── 3. 단계 ──
-
-/** agent: 모델을 한 번 부른다. 답변이든 도구 요청이든 모델의 말로 기록에 남긴다 */
-// 모델에게 주는 역할 설명 (대화의 첫 줄). 그래프 안에서 넣어야 터미널·Studio 어디서 돌려도 같다
-const SYSTEM = "너는 관제실 보조다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련된 자리는 look_closer 로 확대해 자세히 확인하라. 필요하면 날씨도 본다. 판단 전에 look_rulebook 으로 관련 규정을 한 번 찾아보라. 확인된 사실과 관련 규정만 한국어 2~3줄로 정리하고, 판단은 하지 마라.";
-
-async function agentNode(state: S): Promise<Partial<S>> {
-  const step = state.steps + 1;
-  // 첫 호출이면 대화를 연다: 역할 설명 + 보고 한 줄. (입력에 report 만 있어도 돌아간다 — Studio 에서 { "report": "..." } 만 넣으면 됨)
-  const opening: Msg[] = state.messages.length ? [] : [{ role: "system", content: SYSTEM }, { role: "user", content: state.report }];
-  const history = [...state.messages, ...opening];
-  // 매번 묻는 건 같다: "도구를 더 쓸래, 아니면 지금까지 본 걸로 사실을 정리할래?" — 둘 중 하나를 모델이 고른다
-  const started = Date.now();
-  let reply;
-  try {
-    reply = await chat(history, await allTools(), { label: `loop.step${step}` });
-  } catch (e) {
-    if (!isTimeout(e)) throw e;
-    // 늦었다 → 여기서 정하지 않고 이유만 적는다. 다음에 뭘 할지는 사람에게 묻는다 (askHuman)
-    return { steps: 1, stuck: `${LLM_MODE === "mock" ? "가짜 모델" : LLM_MODEL} 이 ${LLM_TIMEOUT_SEC}초 안에 답하지 않았습니다 (${step}회째 호출)` };
-  }
-  const took = dim(`${Date.now() - started}ms${reply.usage ? ` · ${reply.usage.prompt_tokens + reply.usage.completion_tokens} 토큰` : ""}`);
-  log("llm", reply.toolCalls.length
-    ? `${step}회째 → 도구 쓰기: ${bold(reply.toolCalls.map((c) => c.name).join(", "))}  ${took}`
-    : `${step}회째 → 사실 정리 (도구 안 씀)  ${took}`);
-
-  const assistant: Msg = reply.toolCalls.length
-    ? {
-        role: "assistant",
-        content: reply.content || null,
-        tool_calls: reply.toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.args) } })),
-      }
-    : { role: "assistant", content: reply.content };
-  return { messages: [...opening, assistant], steps: 1, facts: reply.content };
-}
-
-/** tools: 모델이 바로 앞에서 쓰고 싶다고 한 도구를 실행하고, 결과를 기록에 남긴다 */
-async function toolsNode(state: S): Promise<Partial<S>> {
-  const last = state.messages.at(-1);
-  const calls = last?.role === "assistant" ? (last.tool_calls ?? []) : [];
-
-  // ===== TODO 1: 도구를 실행하고 결과를 모델에게 돌려주기 =====
-  // calls 를 하나씩 runTool(이름, 입력값) 으로 실행하고,
-  // 결과를 { role: "tool", tool_call_id: call.id, content: 결과 } 모양으로 만들어 { messages } 로 반환하세요.
-  //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 풀어서 넘깁니다 (예: {"어디":"잠실 위"})
-  //   · MCP 에서 받은 도구(isMcpTool)면 callMcpTool, 아니면 runTool
-  //   · 반환한 messages 는 공유 기록 뒤에 자동으로 이어 붙여집니다
-  const results: Msg[] = [];
-  // ----- SOLUTION -----
-  //! // 여기서 calls 를 돌며 results 에 { role: "tool", tool_call_id, content } 를 넣으세요
-  for (const call of calls) {
-    const args = JSON.parse(call.function.arguments || "{}");
-    // MCP 에서 받은 도구면 서버에 실행을 부탁하고, 아니면 이 파일의 runTool 로 직접 실행한다
-    const viaMcp = isMcpTool(call.function.name);
-    const result = viaMcp ? await callMcpTool(call.function.name, args) : await runTool(call.function.name, args, state.report);
-    showTool(call.function.name, args, result, viaMcp ? "mcp" : "tool"); // 결과를 색 입혀 보여 준다 (TOOL / MCP 꼬리표)
-    results.push({ role: "tool", tool_call_id: call.id, content: result });
-  }
-  // ----- END SOLUTION -----
-  // 도구 결과를 짧은 글로 바꿔 이름별로 모아 둔다 → 마지막 approve 에서 사람이 한눈에 본다
-  const evidence: Record<string, string[]> = {};
-  results.forEach((m, i) => { (evidence[calls[i].function.name] ??= []).push(...oneLine(String(m.content))); });
-  return { messages: results, evidence };
-}
-
-/** 도구 결과(JSON 글자)를 사람이 읽기 좋은 짧은 줄로. 목록이 있으면 항목마다 한 줄 */
-function oneLine(text: string): string[] {
-  let data: unknown;
-  try { data = JSON.parse(text); } catch { return [text.slice(0, 120)]; }
-  if (typeof data !== "object" || !data) return [String(data)];
-  const lines: string[] = [], plain: string[] = [];
-  for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
-    if (k === "_notice") continue;
-    if (Array.isArray(v)) v.forEach((item) => lines.push(typeof item === "object" && item ? Object.values(item as object).join(" · ") : String(item)));
-    else plain.push(`${k} ${v}`);
-  }
-  if (plain.length) lines.unshift(plain.join(" · "));
-  return lines.map((l) => l.slice(0, 120));
-}
+// ── 1. 단계: 수집은 search-docs.ts(Worker) · ask-radar.ts(Subagent) 에 있다. 여기엔 수집 뒤의 세 단계만 ──
 
 /** remember: 전에 똑같은 보고가 있었나? 있으면 그때의 판정을 그대로 쓰고 Jev 를 건너뛴다 (장기 기억으로 판단하기) */
 async function rememberNode(state: S): Promise<Partial<S>> {
@@ -291,14 +116,6 @@ async function judgeNode(state: S): Promise<Partial<S>> {
   return { judgment, past };
 }
 
-/** askHuman: 모델이 늦었을 때 그래프를 멈추고 사람에게 묻는다 (Human-in-the-Loop) */
-async function askHumanNode(state: S): Promise<Partial<S>> {
-  // interrupt(질문) 에서 그래프가 멈추고 질문이 실행부(6번)로 전달된다. 사람이 답하면 이 함수가 다시 돌고, 이번엔 interrupt 가 그 답을 돌려준다
-  const answer = interrupt({ 문제: state.stuck, 고르기: "retry(다시 부르기) / skip(사실 없이 판정으로) / stop(그만)" }) as string;
-  const facts = answer === "skip" ? `(모델 답 없음 — 담당자가 건너뛰어 사실 없이 판정. 이유: ${state.stuck})` : state.facts;
-  return { humanChoice: answer, stuck: "", facts };
-}
-
 /** approve: 언제나 마지막은 사람. 지금까지 모은 근거(레이더 · 확대 · 날씨 · 규정 · 기억 · Jev)를 한눈에 보여 주고
  *  출격 / 감시 / 무시 를 고르게 한다. Agent 는 권고까지, 버튼은 사람이 누른다 (Human-in-the-Loop) */
 async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
@@ -311,7 +128,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
     ...section("레이더", ev("look_radar")),
     ...section("확대해서 본 것", ev("look_closer")),
     ...section("날씨", ev("look_weather")),
-    ...section("관련 규정", ev("look_rulebook")),
+    ...section("관련 규정", ev("search_docs")),
     ...section("기억", state.memory
       ? [`같은 사례 (${state.memory.time}) → 그때 ${j.action}: ${j.decision}`]
       : state.past.length ? state.past.map((p) => p.replace(/\n/g, " / ").slice(0, 160)) : ["비슷한 보고 없음"]),
@@ -319,7 +136,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
       ? "생략 (같은 사례 기억으로 판정)"
       : `${j.action} · 확신 ${Math.round(j.confidence * 100)}% · 위험도 ${j.danger}단계 (${DANGER[j.danger]}) · 정체불명 ${Math.round(j.unknown * 100)}%`]),
     ...section("코드 권고", [j.decision]),
-    ...section("모델이 정리한 사실", [state.facts]),
+    ...section("모델이 정리한 사실", [state.facts ?? "(없음)"]),
   ];
   const answer = interrupt({ 문제: "종합 — 담당자가 결정합니다", 요약, 고르기: "y(출격) / w(감시 강화) / n(무시)" }) as string;
   const picked = /^(y|yes|출격)/.test(answer) ? "scramble" : /^(w|watch|감시)/.test(answer) ? "watch" : /^(n|no|무시)/.test(answer) ? "ignore" : "watch";
@@ -331,61 +148,42 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   return { judgment: { ...j, decision } };
 }
 
-/** stop: 내 코드가 반복을 끊을 때 들르는 단계 */
-async function stopNode(state: S): Promise<Partial<S>> {
-  const why = state.humanChoice === "stop" ? "담당자가 그만하라고 했습니다" : `모델을 이미 ${MAX_STEPS}번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다`;
-  const stopped = `[중단] ${why}.`;
-  log("stop", why);
-  return { facts: stopped };
-}
-
-// ── 4. 다음 단계 정하기: agent 다음에 어디로 갈까 ──
-function route(state: S): "tools" | "remember" | "stop" | "askHuman" {
-  if (state.stuck) return "askHuman"; // 모델이 늦었다 → 사람에게
-  const last = state.messages.at(-1);
-  const wantsTool = last?.role === "assistant" && (last.tool_calls?.length ?? 0) > 0;
-
-  // ===== TODO 2: 강제로 멈추는 건 모델이 아니라 내 코드다 =====
-  // · 모델이 도구를 원하지 않으면 → "remember" (사실 확인 끝, 기억부터 보고 판정으로)
-  // · 도구를 원하는데 이미 MAX_STEPS 만큼 모델을 불렀으면(state.steps >= MAX_STEPS) → "stop"
-  // · 그 외 → "tools"
+// ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm graph · Studio 가 가져다 쓴다)
+export const graph = new StateGraph(MainState)
+  .addNode("searchDocs", searchDocsNode)               // Worker: 함수 하나
+  // ===== TODO 7: 부하 Agent(서브그래프)를 노드로 꽂기 =====
+  // ask-radar.ts 의 radarAgent(compile 된 그래프)를 "askRadar" 라는 이름의 노드로 넣으세요. 함수 대신 그래프를 넣어도 LangGraph 에겐 똑같은 노드입니다.
+  //   · 비워 두면 아래 자리표시(레이더 없는 가짜 부하)로 돌아간다 → approve 화면에 레이더 · 확대 · 날씨 줄이 없다. 부하가 없으면 눈이 없다
   // ----- SOLUTION -----
-  //! return wantsTool ? "tools" : "remember"; // ← 이대로면 모델이 도구를 계속 원하는 한 끝나지 않습니다
-  if (!wantsTool) return "remember";
-  if (state.steps >= MAX_STEPS) return "stop";
-  return "tools";
+  //! .addNode("askRadar", async () => ({ facts: "(TODO 7: 레이더 부하가 아직 없어서 확인한 사실이 없습니다)" }))
+  .addNode("askRadar", radarAgent)                     // Subagent: 안에 agent ⇄ tools 루프가 있는 그래프
   // ----- END SOLUTION -----
-}
-
-// 사람의 답에 따라: retry → agent 다시 / skip → remember / stop → stop
-function afterHuman(state: S): "agent" | "remember" | "stop" {
-  if (state.humanChoice === "retry") return "agent";
-  if (state.humanChoice === "stop") return "stop";
-  return "remember";
-}
-
-// ── 5. 조립: 단계들을 선으로 잇는다 ── (export: pnpm graph 가 그림을 그릴 때 가져다 쓴다)
-export const graph = new StateGraph(LoopState)
-  .addNode("agent", agentNode)
-  .addNode("tools", toolsNode)
-  .addNode("askHuman", askHumanNode)
   .addNode("remember", rememberNode)
   .addNode("judge", judgeNode)
   .addNode("approve", approveNode)
-  .addNode("stop", stopNode)
-  .addEdge(START, "agent")
-  .addConditionalEdges("agent", route, ["tools", "remember", "stop", "askHuman"])
-  .addEdge("tools", "agent")
-  .addConditionalEdges("askHuman", afterHuman, ["agent", "remember", "stop"])
+  // ===== TODO 8: 동시에 수집하고 합류하기 =====
+  // 자리표시는 순차다: START → searchDocs → askRadar → remember (규정집이 끝나야 레이더가 출발한다)
+  // 같은 출발점(START)에 선 두 개를 걸면 LangGraph 가 같은 단계에서 둘을 동시에 돌린다.
+  // 합류는 출발점을 배열로 묶은 선 하나: .addEdge(["searchDocs", "askRadar"], "remember") — "둘 다 끝나면 한 번" 다음으로
+  //   · --watch 로 보면 자리표시는 searchDocs 가 끝난 뒤에야 askRadar 가 시작하고, 채우면 둘이 같이 시작한다 (실제 모델이면 시간도 준다)
+  //   · LangGraph 는 한 단계의 노드가 전부 끝나야 다음 단계로 간다. 그래서 선을 따로 그어도 합류되지만, 배열로 묶으면 "둘 다 끝나야" 가 코드에 보이고 가지 길이가 달라도 안전하다
+  // ----- SOLUTION -----
+  //! .addEdge(START, "searchDocs")
+  //! .addEdge("searchDocs", "askRadar")
+  //! .addEdge("askRadar", "remember")
+  .addEdge(START, "searchDocs")
+  .addEdge(START, "askRadar")
+  .addEdge(["searchDocs", "askRadar"], "remember")
+  // ----- END SOLUTION -----
   .addConditionalEdges("remember", afterRemember, ["judge", "approve"])
   .addEdge("judge", "approve")   // Jev 가 뭐라 하든 마지막은 사람
   .addEdge("approve", END)
-  .addEdge("stop", END)
   // 멈췄다 이어가려면 진행 상황(checkpoint)을 저장할 곳이 필요하다. LangGraph 가 주는 SqliteSaver 를 꽂으면
   // 단계마다 checkpoints.sqlite 파일에 저장된다 → 프로그램을 껐다 켜도 --resume 으로 멈춘 곳부터 이어간다 (직접 SQL 은 한 줄도 없다)
+  // 부하(askRadar) 안의 단계도 같은 파일에, 같은 실행번호 아래 저장된다
   .compile({ checkpointer: SqliteSaver.fromConnString("checkpoints.sqlite") });
 
-// ── 6. 실행: 보고 하나를 넣고 돌린다 ──
+// ── 3. 실행: 보고 하나를 넣고 돌린다 ──
 // 이 파일을 직접 실행할 때만 돈다 (pnpm graph 가 import 할 때는 그림만 그린다)
 if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -450,11 +248,12 @@ if (process.argv[1]?.endsWith("main.ts")) {
     const input = { report };  // 대화의 첫 줄(역할 설명 + 보고)은 agent 노드가 스스로 연다
     let result = {} as S;
 
-    /** 그래프를 돌린다. values: 단계마다 칠판 전체 / debug: 들어간 값·나온 값 (--watch 터미널, --live 브라우저) */
+    /** 그래프를 돌린다. values: 단계마다 칠판 전체 / debug: 들어간 값·나온 값 (--watch 터미널, --live 브라우저)
+     *  subgraphs: true → 부하(askRadar) 안의 단계도 흘러나온다. 그때는 맨 앞에 "어느 부하 안인지"(namespace)가 붙는다 */
     async function run(what: unknown) {
-      for await (const [mode, chunk] of await graph.stream(what as never, { ...config, streamMode: ["values", "debug"] })) {
-        if (mode === "debug") showDebug(chunk as never);
-        else result = chunk;
+      for await (const [ns, mode, chunk] of await graph.stream(what as never, { ...config, streamMode: ["values", "debug"], subgraphs: true })) {
+        if (mode === "debug") showDebug(chunk as never, ns.length ? "askRadar" : "");
+        else if (ns.length === 0) result = chunk; // 칠판은 부모 것만 받는다 (부하 칠판은 부하 안에)
       }
     }
     async function runWithHuman() {
@@ -463,7 +262,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
         // 그래프가 interrupt() 에서 멈춰 있으면 그 질문이 state.tasks 에 들어 있다. 없으면 끝까지 돈 것
         const question = (await graph.getState(config)).tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as { 문제: string; 요약?: string[]; 고르기: string } | undefined;
         if (!question) break;
-        // ===== TODO 6: 사람의 답으로 멈춘 곳부터 이어가기 =====
+        // ===== TODO 9: 사람의 답으로 멈춘 곳부터 이어가기 =====
         // askPerson(question) 으로 답을 받고, run(new Command({ resume: 답 })) 으로 그래프를 다시 돌리세요.
         //   · 같은 config(thread_id) 로 돌리면 LangGraph 가 checkpoints.sqlite 에서 멈춘 곳을 찾아 그 답을 interrupt() 의 반환값으로 넣어 준다
         //   · 그래서 Ctrl+C 로 껐다가 pnpm agent --resume <실행번호> 로 켜도 같은 줄에서 이어진다
@@ -487,8 +286,8 @@ if (process.argv[1]?.endsWith("main.ts")) {
         return result;
       }
       if (e?.lc_error_code !== "GRAPH_RECURSION_LIMIT") throw e;
-      // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (TODO 1 · 2 이 비어 있으면 이렇게 된다)
-      log("stop", "반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. TODO 1 · 2 을 확인하세요.");
+      // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (ask-radar.ts 의 TODO 1 · 2 가 비어 있으면 이렇게 된다)
+      log("stop", "반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. ask-radar.ts 의 TODO 1 · 2 를 확인하세요.");
       process.exit(1);
     }
 

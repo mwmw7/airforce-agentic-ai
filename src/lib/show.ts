@@ -80,9 +80,11 @@ const startedAt = new Map<string, number>(); // task id → 시작 시각 (걸�
 /** 노드가 돌려준 칸. LangGraph 0.3 은 [["칸", 값]] 쌍 배열, 1.x 는 { 칸: 값 } 객체로 준다 — 둘 다 받는다 */
 const asObject = (r: unknown): Record<string, unknown> => (Array.isArray(r) ? Object.fromEntries(r as [string, unknown][]) : ((r as Record<string, unknown>) ?? {}));
 
-/** debug 이벤트 하나를 받아 그린다. --watch 가 없으면 아무것도 하지 않는다. */
-export function showDebug(ev: { type: string; payload: Record<string, unknown> }) {
+/** debug 이벤트 하나를 받아 그린다. --watch 가 없으면 아무것도 하지 않는다.
+ *  inside: 부하(서브그래프) 안의 단계면 그 부하 이름 ("askRadar") — 터미널엔 "askRadar › agent" 로 찍고, 브라우저엔 노드 이름만 보낸다 */
+export function showDebug(ev: { type: string; payload: Record<string, unknown> }, inside = "") {
   const p = ev.payload;
+  const shown = inside ? `${inside} › ${String(p.name)}` : String(p.name);
   if (ev.type === "task") {
     startedAt.set(String(p.id), Date.now());
     send("node_start", { name: p.name, from: (p.triggers as string[])?.join(", "), input: p.input });
@@ -97,7 +99,7 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
   if (ev.type === "task") {
     const input = p.input as Record<string, unknown>;
     const from = (p.triggers as string[])?.join(", ");
-    log("node", `${bold("▶ " + String(p.name))} ${dim("시작 · ← " + from)}`,
+    log("node", `${bold("▶ " + shown)} ${dim("시작 · ← " + from)}`,
       [`${dim("입력 형태")} ${shape(input)}`, ...Object.entries(input).map(([k, v]) => `${yellow(k)} ${pretty(v)}`)]);
   }
 
@@ -105,7 +107,7 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
     const ms = Date.now() - (startedAt.get(String(p.id)) ?? Date.now());
     const result = asObject(p.result);
     const interrupts = (p.interrupts as { value: unknown }[]) ?? [];
-    log("node", `${bold("◀ " + String(p.name))} ${dim("끝 · " + ms + "ms")}`, [
+    log("node", `${bold("◀ " + shown)} ${dim("끝 · " + ms + "ms")}`, [
       `${dim("출력 형태")} ${shape(result)}`,
       ...Object.entries(result).map(([k, v]) => `${yellow(k)} ${pretty(v)}`),
       ...interrupts.map((i) => `${yellow("여기서 멈춤 — 사람에게 보낼 질문")} ${pretty(i.value)}`),
