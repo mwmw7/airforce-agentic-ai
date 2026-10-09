@@ -63,7 +63,7 @@ LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담
 pnpm studio                      # LangGraph Studio(공식 디버거). LangSmith 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
 ```
 
-`hands-on` 브랜치는 **거의 빈 Agent** 에서 출발합니다. 빈칸이 비어 있어도 끝까지 돌고, 담당자 화면에 근거 줄이 비어 있을 뿐입니다. 단계마다 빈칸을 채우고 다시 돌리면 화면에 새 줄이 생깁니다. 늦었으면 `pnpm step <단계>` 로 그 단계까지 채워진 상태로 넘어갑니다 (3장).
+`hands-on` 브랜치는 **거의 빈 Agent** 에서 출발합니다. 빈칸이 비어 있어도 끝까지 돌고, 담당자 화면에 근거 줄이 비어 있을 뿐입니다. 단계마다 빈칸을 채우고 다시 돌리면 화면에 새 줄이 생깁니다. 늦었으면 `pnpm step <지금 단계>` 로 앞 단계는 풀린 상태로 넘어갑니다 (3장).
 
 Studio 의 Input 에는 보고 한 줄만 넣습니다.
 
@@ -143,7 +143,16 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 | 7 | 사람의 답으로 이어가기 `Command({ resume })` | `main.ts` (7) | "사람이 결정". Ctrl+C → `pnpm agent --resume <번호>` | HITL · Checkpoint |
 | 8 | 기억 찾기 · 남기기 | `main.ts` (8-1 · 8-2) | 같은 보고 두 번째엔 "같은 사례 찾음 → Jev 생략" | Context · Memory |
 
-**따라잡기:** `pnpm step 4` → 4단계까지 채워진 상태 (main 의 정답을 가져와 5 부터는 다시 빈칸). `pnpm step 0` 은 처음 상태로. 빈칸이 든 파일만 덮어쓰며, 먼저 묻습니다.
+**따라잡기 — `pnpm step <지금 단계>`:** 강사가 "4단계 시작합니다" 하면 늦은 사람은 `pnpm step 4`. 1 ~ 3 은 풀린 상태, 4 부터 할 차례가 된다 (정답은 main 에서 가져온다).
+
+| 명령 | 상태 |
+|---|---|
+| `pnpm step 1` | 1 ~ 8 전부 남음 (처음 상태) |
+| `pnpm step 4` | 1 ~ 3 풀림, 4 번부터 |
+| `pnpm step 8` | 1 ~ 7 풀림, 8 번만 남음 |
+| `pnpm step done` | 전부 풀림 (main 과 같음) |
+
+빈칸이 든 파일만 덮어쓰며, 먼저 묻습니다.
 
 완성 코드로 제공 (설명 · 시연): 도구 실행 루프와 MAX_STEPS 강제 중단(`ask-radar.ts` — 1일차 Loop 그대로, `pnpm agent:limit`), 모델이 늦을 때 사람에게 묻기(`LLM_MOCK_SLOW=1`), 모델 교체, Studio.
 

@@ -1,7 +1,7 @@
 /**
  * tools/blanks.mjs — 완성본 코드에서 빈칸을 만드는 변환 하나. make-handson.mjs 와 step.mjs 가 같이 쓴다
  *   keep = 0  → 모든 빈칸을 비운다 (hands-on)
- *   keep = 4  → TODO 1 ~ 4 (4-1 · 4-2 포함) 는 정답을 남기고, 5 부터 비운다 (pnpm step 4)
+ *   keep = 3  → TODO 1 ~ 3 은 정답을 남기고, 4 (4-1 · 4-2 포함) 부터 비운다 (pnpm step 4 = 4번을 풀 차례)
  * 마커 규칙은 make-handson.mjs 상단 설명 참고
  */
 const RE_TODO = /^\s*\/\/ ===== (TODO [^:]+): (.*) =====\s*$/;
