@@ -16,7 +16,7 @@
  *   · 부하의 긴 대화(messages)는 부하 칠판에만 남고, 부모 칠판에는 facts · evidence · steps 만 돌아온다 — 팀장 칠판은 결론만 (state.ts)
  *   · LLM 은 사실을 모으고(부하), Jev 는 판정하고, 결정은 코드가 하고, 마지막 버튼은 사람이 누른다 — 역할이 다르다
  *   · Jev 는 의견(출격 / 감시 / 무시 + 확신도)만 준다. 결정은 그 아래 코드 규칙이 한다 (TODO 6)
- *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember, TODO 7)
+ *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember, TODO 8)
  *   · 실행 전체가 RUN_TIMEOUT_SEC 를 넘으면 끊는다. 부하 안에서 모델이 늦으면 부하가 사람에게 묻는다 (ask-radar.ts)
  *
  * 실행:  pnpm agent                           보고 1번
@@ -60,11 +60,11 @@ const REPORTS = [
 /** remember: 전에 똑같은 보고가 있었나? 있으면 그때의 판정을 그대로 쓰고 Jev 를 건너뛴다 (장기 기억으로 판단하기) */
 async function rememberNode(state: S): Promise<Partial<S>> {
   await createBank();
-  // ===== TODO 7-1: 기억에서 같은 사례 찾기 =====
+  // ===== TODO 8-1: 기억에서 같은 사례 찾기 =====
   // findSameCase(보고) 로 기억 속에서 가장 비슷한 사례를 꺼내세요. 일치도(score)가 SAME_CASE 이상이면 그때 판정을 그대로 쓴다.
   //   · 비워 두면 "기억 없음" → 늘 Jev 에게 묻는다. 같은 보고를 두 번 넣어 보면 차이가 보인다
   // ----- SOLUTION -----
-  //! const found: Awaited<ReturnType<typeof findSameCase>> = null; // 기억 없음
+  //! const found = null as { case: Case; time: string; score: number } | null; // 기억 없음
   const found = await findSameCase(state.report);
   // ----- END SOLUTION -----
   if (!found || found.score < SAME_CASE) {
@@ -161,7 +161,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   const decision = `${label} — 사람이 결정${/^(y|yes|출격|w|watch|감시|n|no|무시)/.test(answer) ? "" : " (답 없음 → 감시)"}`;
   // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 사람이 본 종합 근거(요약)와 최종 선택까지 같이 남긴다
   // → 다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오르고, "그때 무엇을 보고 그렇게 정했나" 도 기억에 있다 — 사람이 가르친 셈
-  // ===== TODO 7-2: 오늘 판단을 기억에 남기기 =====
+  // ===== TODO 8-2: 오늘 판단을 기억에 남기기 =====
   // saveCase(칠판, config, 결정, { summary, human }) 한 줄. 사람이 고른 쪽(picked)으로 판정을 바꿔 남긴다
   //   · summary = 사람이 본 종합 근거(요약에서 "## 모델이 정리한 사실" 앞까지), human = 사람의 선택(label)
   // ----- SOLUTION -----
@@ -276,7 +276,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
     async function run(what: unknown) {
       for await (const [ns, mode, chunk] of await graph.stream(what as never, { ...config, streamMode: ["values", "debug"], subgraphs: true })) {
         if (mode === "debug") showDebug(chunk as never, ns.length ? "askRadar" : "");
-        else if (ns.length === 0) result = chunk; // 칠판은 부모 것만 받는다 (부하 칠판은 부하 안에)
+        else if (ns.length === 0 && !("__interrupt__" in (chunk as object))) result = chunk; // 칠판은 부모 것만 받는다 (부하 칠판은 부하 안에). 멈춤 알림 조각은 칠판이 아니라 건너뛴다
       }
     }
     async function runWithHuman() {
@@ -285,12 +285,13 @@ if (process.argv[1]?.endsWith("main.ts")) {
         // 그래프가 interrupt() 에서 멈춰 있으면 그 질문이 state.tasks 에 들어 있다. 없으면 끝까지 돈 것
         const question = (await graph.getState(config)).tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as { 문제: string; 요약?: string[]; 고르기: string } | undefined;
         if (!question) break;
-        // ===== TODO 8: 사람의 답으로 멈춘 곳부터 이어가기 =====
+        // ===== TODO 7: 사람의 답으로 멈춘 곳부터 이어가기 =====
         // askPerson(question) 으로 답을 받고, run(new Command({ resume: 답 })) 으로 그래프를 다시 돌리세요.
         //   · 같은 config(thread_id) 로 돌리면 LangGraph 가 checkpoints.sqlite 에서 멈춘 곳을 찾아 그 답을 interrupt() 의 반환값으로 넣어 준다
         //   · 그래서 Ctrl+C 로 껐다가 pnpm agent --resume <실행번호> 로 켜도 같은 줄에서 이어진다
         // ----- SOLUTION -----
         //! const answer = await askPerson(question);
+        //! log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7`);
         //! break; // ← 이대로면 답을 받고도 이어가지 않습니다
         await run(new Command({ resume: await askPerson(question) }));
         // ----- END SOLUTION -----
