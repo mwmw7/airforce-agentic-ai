@@ -114,6 +114,24 @@
 | 그래프 그림 | `pnpm graph` | `docs/graphs/agent.md` — 선을 바꾸면 그림도 바뀐다 |
 | 공식 디버거 | `pnpm studio` | Input `{ "report": "…" }` 로 한 노드씩 |
 
+### 기억 파일 vs 기억 서버 (`MEMORY_MODE`)
+
+부르는 함수(`createBank · retain · recall · findSameCase · reflect`)는 똑같아서 그래프 코드는 바뀌지 않는다. 안에서 하는 일만 다르다 (`src/lib/memory.ts`).
+
+| | `MEMORY_MODE=file` (기본) | `MEMORY_MODE=hindsight` |
+|---|---|---|
+| 저장 | `.hindsight/control-room.json` 한 파일 | Hindsight 서버 (`pnpm memory:up`, `HINDSIGHT_BASE_URL`) |
+| 준비물 | 없음 | 서버 데몬 · `uv` · 서버가 쓸 LLM |
+| retain (남기기) | 원문 한 줄을 파일에 붙임. 같은 실행번호는 덮어씀. 바로 반영 | 맡기고 바로 돌아옴(`async: true`). 서버가 뒤에서 사실 추출 → 엔티티 연결 → 링크 → 요약(consolidation) |
+| recall (Jev 참고용 찾기) | 겹치는 단어 수로 순위 | 의미 · 단어 · 그래프 · 시간 네 갈래로 찾고 리랭커로 순위. 사실과 요약(observation)을 함께. 표현이 달라도 찾는다 |
+| findSameCase (remember 노드) | 저장된 원문 보고와의 `overlap` | 후보는 Hindsight 가 찾고, 같은 사례인지는 **같은 `overlap`** 으로 판단 |
+| reflect | LLM 이 없어 기억 목록을 그대로 | 서버 LLM 이 기억을 근거로 한 문단 |
+| 실행 끝 화면 | 없음 | `showMemoryWork` — 서버 작업 목록, 뽑힌 사실 · 엔티티, 새로 생기거나 고친 요약 |
+
+- **판단 결과는 거의 같다.** "같은 사례(0.9↑)면 Jev 생략" 은 두 모드 모두 코드 규칙이 정한다 → 키 없는 교육생도 "어제 판단을 오늘 기억" 을 똑같이 체험한다.
+- **차이는 찾는 힘과 정리.** 파일은 메모장에서 단어로 찾기, 서버는 보관소가 기억을 정리 · 연결해 두었다가 뜻으로 찾아 준다.
+- **주의:** hindsight 의 retain 은 비동기라 서버가 정리를 끝내기 전에 바로 다시 돌리면 방금 기억이 아직 안 잡힐 수 있다. 실행 끝 `[MEMORY] 서버 작업 끝` 을 본 뒤 다음 실행.
+
 ---
 
 ## 3. 시간 배치 (오전 2-A, 휴식 빼고 150분)
