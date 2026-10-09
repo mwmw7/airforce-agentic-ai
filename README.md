@@ -58,10 +58,16 @@ pnpm agent:limit                 # 호출 한도 1 로 강제 중단 — 멈추�
 pnpm agent --watch               # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
 pnpm agent --resume <실행번호>    # 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (실행번호는 시작할 때 출력)
 pnpm agent --all                 # 보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 y/w/n 을 답한다 (--answer w 를 주면 자동). JEV_MODE=local 과 typesafe 로 두 번 돌려 비교
-pnpm agent:live                  # 브라우저(http://localhost:3030)에서 실시간으로 보기 — 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
 LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다
-pnpm studio                      # LangGraph Studio(공식 디버거). LangSmith 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
 ```
+
+그래프를 **눈으로 보는** 명령은 `see:` 로 시작합니다.
+
+| 명령 | 하는 일 | 에이전트 실행 | 어디서 보나 | 계정 |
+|---|---|---|---|---|
+| `pnpm see:run` | 돌리면서 보기 — 그래프 그림 위에 지금 도는 단계가 켜진다. 보고를 무작위로 계속 돌림 (Ctrl+C 로 끝) | 함 | 브라우저 localhost:3030 | 필요 없음 |
+| `pnpm see:graph` | 그림만 그리기 — 선을 바꾼 뒤 모양 확인 | 안 함 | `docs/graphs/agent.md` (VS Code 미리보기) | 필요 없음 |
+| `pnpm see:studio` | 공식 디버거 LangGraph Studio — 입력을 넣고 한 단계씩 돌리기 · 칠판 보기. Codespace 면 포트 공개와 주소까지 알아서 | Studio 에서 | smith.langchain.com | LangSmith (`.env` 의 `LANGSMITH_API_KEY`) |
 
 `hands-on` 브랜치는 **거의 빈 Agent** 에서 출발합니다. 빈칸이 비어 있어도 끝까지 돌고, 담당자 화면에 근거 줄이 비어 있을 뿐입니다. 단계마다 빈칸을 채우고 다시 돌리면 화면에 새 줄이 생깁니다. 늦었으면 `pnpm step <지금 단계>` 로 앞 단계는 풀린 상태로 넘어갑니다 (3장).
 
@@ -104,7 +110,7 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 | `askHuman` (부하 안) | 모델이 늦으면 멈추고 retry / skip / stop 묻기. 부하 안의 interrupt 도 부모 실행번호로 저장·재개된다 | 시간 초과 · 사람 개입 |
 | `stop` (부하 안) | MAX_STEPS 를 넘기면 부하만 강제 종료. 부모는 규정집 결과만 들고 판정으로 | Harness — 멈추는 건 코드 · 장애 격리 |
 
-그림: `docs/graphs/agent.md` (`pnpm graph` 로 다시 생성)
+그림: `docs/graphs/agent.md` (`pnpm see:graph` 로 다시 생성)
 
 ### 도구 4개 + Worker 1개
 
@@ -181,14 +187,14 @@ pnpm memory:up               # Hindsight 기억 서버를 내 노트북에 띄�
 pnpm memory:ui               # Hindsight 대시보드 http://localhost:18888 — retain 된 기억(사실·요약·링크)과 서버 작업을 눈으로 본다 (끄기: pnpm memory:ui:stop)
 pnpm memory:reset            # 기억 전부 지우고 처음부터 (현재 MEMORY_MODE 의 저장소 + checkpoints.sqlite). --all 이면 서버 bank 와 파일 둘 다
 pnpm agent --watch=full      # 들어간 값·나온 값을 자르지 않고 전부
-pnpm graph                   # 그래프를 Mermaid 그림으로 (docs/graphs/)
+pnpm see:graph               # 그래프를 Mermaid 그림으로 (docs/graphs/)
 pnpm typecheck               # 타입 검사
 pnpm setup:check             # 환경 점검
 ```
 
 Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weather http://localhost:3333/mcp`
 
-기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "같은 사례 없음 → Jev 에게 묻는다", 한 번 더 돌리면 "기억 판단 … Jev 생략" 으로 Jev 없이 판단합니다. 첫 번째에 출격을 **반려(n)** 하면 두 번째엔 "감시" 로 떠오릅니다 — 사람의 결정이 기억을 고칩니다. `pnpm agent:live` 에서는 remember 노드 아래 기억 카드(그때 보고 · 일치도 · 그때 확신)로 보입니다. Hindsight 모드의 그래프는 `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` (localhost:9999) 에서 그림으로 봅니다.
+기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "같은 사례 없음 → Jev 에게 묻는다", 한 번 더 돌리면 "기억 판단 … Jev 생략" 으로 Jev 없이 판단합니다. 첫 번째에 출격을 **반려(n)** 하면 두 번째엔 "감시" 로 떠오릅니다 — 사람의 결정이 기억을 고칩니다. `pnpm see:run` 에서는 remember 노드 아래 기억 카드(그때 보고 · 일치도 · 그때 확신)로 보입니다. Hindsight 모드의 그래프는 `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` (localhost:9999) 에서 그림으로 봅니다.
 
 ---
 
@@ -216,7 +222,7 @@ airforce-agentic-ai/
 │  ├─ memory.ts              장기 기억 (Hindsight 서버 / 파일) — createBank · retain · recall · reflect
 │  ├─ trace.ts               실행 기록 (traces/*.jsonl)
 │  ├─ show.ts                --watch 출력
-│  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm agent:live)
+│  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm see:run)
 ├─ labs/agent/
 │  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve (빈칸 1 · 5 · 6 · 7 · 8)
 │  ├─ ask-radar.ts           레이더 부하 Agent(Subagent) — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop, 도구 look_flight_plan (빈칸 2)
@@ -227,14 +233,14 @@ airforce-agentic-ai/
 ├─ data/                     교육용 합성 자료
 │  ├─ api/                    레이더 화면(radar-screen.json)
 │  └─ docs/rulebook.md        관제 규정 10줄
-├─ docs/graphs/              그래프 그림 (pnpm graph)
+├─ docs/graphs/              그래프 그림 (pnpm see:graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
 ├─ docs/slides/day2.html     2일차 강의 슬라이드 (38장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
 ├─ docs/slides-plan.md       슬라이드 장 단위 계획
 ├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
 ├─ .hindsight/               file 모드 기억 (git 에 안 올라감)
 ├─ traces/                   실행 기록
-├─ langgraph.json            LangGraph Studio 설정 (pnpm studio)
+├─ langgraph.json            LangGraph Studio 설정 (pnpm see:studio)
 └─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · step(따라잡기) · blanks(빈칸 변환 공용) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
 ```
 

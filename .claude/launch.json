@@ -8,9 +8,9 @@
       "port": 3333
     },
     {
-      "name": "agent-live",
+      "name": "see-run",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["agent:live"],
+      "runtimeArgs": ["see:run"],
       "port": 3030
     },
     {
