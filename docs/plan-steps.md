@@ -9,7 +9,7 @@
 | 진행 | 빈칸 11개를 개념별로 나눠서 채운다 | 강사와 교육생이 **같이** 한 단계씩 붙이고, 매번 `pnpm agent` 로 다시 돌려 화면에 새 줄이 생기는 것을 확인한다 |
 | 출발점 | 대부분 켜진 상태 (Jev · 기억은 항상 켜짐) | **거의 빈 Agent**: 보고 한 줄 → 담당자 화면. 레이더 · 규정 · 날씨 · Jev · 기억 줄이 전부 비어 있다 |
 | 빈칸 번호 | 개념 순서 (1~11, 중간중간 빔) | **단계 번호 = TODO 번호** (TODO 1 = 1단계). 강의 중 "지금 몇 번" 이 한 숫자로 통한다 |
-| 늦은 사람 | `git diff hands-on main` 으로 정답 보기 | `pnpm step 4` 한 줄이면 4단계까지 채워진 상태로 점프한다 |
+| 늦은 사람 | `git diff hands-on main` 으로 정답 보기 | `pnpm step 4` 한 줄이면 1 ~ 3 은 풀리고 4 번을 풀 차례로 점프한다 (2026-10-09 번호 뜻 확정: N = 풀 차례인 문제) |
 
 ## 1. 단계 순서 (오전 2-A, 휴식 빼고 150분)
 
@@ -21,11 +21,11 @@
 | 0 | (붙이는 것 없음) 환경 · 구조 · 첫 실행 | — | 보고만 있고 근거가 다 빈 담당자 화면 | 개요 · Harness | 20분 |
 | 1 | **레이더 부하 데려오기** — 서브그래프를 노드로 꽂기 | `main.ts` 1줄 | `[SUB] ┏━ askRadar` 띠, "레이더" · "확대" 줄 | Subagent · Agent Loop | 15분 |
 | 2 | **부하에게 도구 하나 더** — `look_flight_plan` (비행 계획 조회) | `ask-radar.ts` 설명 1줄 + 실행 1줄 | `[TOOL] look_flight_plan`, "비행 계획" 줄 (잠실 드론 쇼 = 신청 없음) | Tool Calling | 15분 |
-| — | 휴식 09:50 · 여기까지 못 한 사람은 `pnpm step 2` | | | | |
+| — | 휴식 09:50 · 여기까지 못 한 사람은 `pnpm step 3` | | | | |
 | 3 | **규정집 찾기** — 규정 한 줄에 점수 매기기 | `search-docs.ts` 3줄 | "관련 규정" 줄 | RAG · 외부 Tool 연계 | 15분 |
 | 4 | **날씨를 MCP 로** — 서버에 도구 등록(4-1) + 클라이언트에서 목록 · 실행(4-2) | `server.ts` 5줄 · `mcp.ts` 7줄 | "날씨" 줄. 서버를 끄면 "날씨 없이 계속" | MCP | 25분 |
 | 5 | **동시에 모으기** — 순차를 동시로 + 합류 | `main.ts` 3줄 | `--watch` 에서 둘이 같이 시작, `join:searchDocs+askRadar` | Task Decomposition · 병렬 | 15분 |
-| — | 휴식 11:00 · `pnpm step 5` | | | | |
+| — | 휴식 11:00 · `pnpm step 6` | | | | |
 | 6 | **Jev 에게 묻기** | `main.ts` judge 1~2줄 | "Jev 판정" 줄 (출격 / 감시 / 무시 + 확신도) | 판정 모델 (플러스알파) | 15분 |
 | 7 | **이어가기** — 사람 답으로 멈춘 곳부터 | `main.ts` 1줄 | Ctrl+C → `pnpm agent --resume <번호>` 로 같은 질문에서 이어짐 | HITL · Checkpoint | 15분 |
 | 8 | **기억 붙이기** — 찾기(remember, 8-1) + 남기기(approve, 8-2) | `main.ts` 2곳, 각 1줄 | 같은 보고를 두 번 넣으면 두 번째는 "같은 사례 찾음 → Jev 생략" | Context · Memory | 15분 |
@@ -60,8 +60,8 @@
 
 ### 2-2. `pnpm step <N>` — 따라잡기 (새 파일 `tools/step.mjs`, 40줄 안팎)
 
-- 빈칸이 든 파일마다 `origin/main` 의 완성본을 읽어, **TODO 번호가 N 이하인 칸만 정답을 남기고** 나머지는 빈칸으로 만들어 덮어쓴다
-- 변환 로직은 `make-handson.mjs` 의 것을 함수로 빼서 같이 쓴다 (`--keep N` 옵션). 마커 규칙은 그대로
+- N = **풀 차례인 문제 번호.** 빈칸이 든 파일마다 `origin/main` 의 완성본을 읽어, **TODO 번호가 N 보다 작은 칸만 정답을 남기고** 나머지는 빈칸으로 만들어 덮어쓴다. `step 1` = 전부 빈칸, `step done` = 전부 정답
+- 변환 로직은 `tools/blanks.mjs` 의 `makeBlanks(text, keep)` 하나를 `make-handson.mjs` 와 같이 쓴다. 마커 규칙은 그대로
 - 덮어쓰기 전에 "지금 고친 내용이 사라집니다" 한 줄 경고, `--yes` 없으면 묻는다
 - Windows · Mac 모두 git 명령 하나(`git show origin/main:<경로>`)만 쓴다. 새 의존성 없음
 
@@ -80,8 +80,8 @@
 
 1. main: `pnpm typecheck`, mock 완주 (`LLM_MODE=mock JEV_MODE=local MEMORY_MODE=file`), `pnpm agent 2` 두 번(기억), Ctrl+C 후 `--resume`
 2. hands-on 재생성 → typecheck → **0단계 상태 그대로** mock 완주 (빈 화면이지만 끝까지 감)
-3. `pnpm step 1` … `pnpm step 8` 을 차례로 돌리며 매번 mock 완주, 화면에 그 단계의 새 줄이 생기는지
-4. `pnpm step 8` 결과가 main 과 같은지 (`git diff main -- labs mcp-servers`)
+3. `pnpm step 1` … `pnpm step 8` · `pnpm step done` 을 차례로 돌리며 매번 mock 완주, 화면에 그 단계의 새 줄이 생기는지
+4. `pnpm step done` 결과가 main 과 같은지 (`git diff main -- labs mcp-servers`)
 5. 실제 Ollama + 실제 Jev 로 한 번, Windows 노트북에서 `pnpm step` 한 번
 
 ## 5. 결정 필요
