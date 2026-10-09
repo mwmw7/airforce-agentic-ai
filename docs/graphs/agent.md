@@ -1,7 +1,7 @@
 # 내 에이전트 — 보고 → [규정집 Worker ‖ 레이더 Subagent] → remember → judge → approve
 
 ```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'primaryColor': '#f2f0ff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#6b5fd3', 'lineColor': '#6b5fd3', 'textColor': '#000000', 'clusterBkg': '#fafaff', 'clusterBorder': '#6b5fd3'}, 'flowchart': {'curve': 'linear', 'htmlLabels': false}}}%%
 graph TD;
 	__start__([<p>__start__</p>]):::first
 	searchDocs(searchDocs)
@@ -31,8 +31,8 @@ graph TD;
 	askRadar_askHuman -.-> askRadar_agent;
 	askRadar_askHuman -.-> askRadar_stop;
 	end
-	classDef default fill:#f2f0ff,line-height:1.2;
-	classDef first fill-opacity:0;
-	classDef last fill:#bfb6fc;
+	classDef default fill:#f2f0ff,stroke:#6b5fd3,color:#000000,line-height:1.2;
+	classDef first fill:#ffffff,stroke:#6b5fd3,color:#000000;
+	classDef last fill:#bfb6fc,stroke:#6b5fd3,color:#000000;
 
 ```
