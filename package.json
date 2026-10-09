@@ -16,6 +16,7 @@
     "agent": "tsx labs/agent/main.ts",
     "agent:limit": "MAX_STEPS=1 tsx labs/agent/main.ts",
     "agent:live": "tsx labs/agent/main.ts --live",
+    "step": "node tools/step.mjs",
     "mcp:weather": "tsx mcp-servers/weather/server.ts",
     "mcp:inspect": "pnpm dlx @modelcontextprotocol/inspector",
     "memory:up": "tsx tools/memory-up.ts",

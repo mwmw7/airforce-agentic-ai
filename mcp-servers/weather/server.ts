@@ -68,7 +68,7 @@ async function lookWeather(where: string): Promise<string> {
 function makeServer(): McpServer {
   const server = new McpServer({ name: "weather", version: "0.1.0" });
 
-  // ===== TODO 4: MCP 서버에 look_weather 도구 등록하기 =====
+  // ===== TODO 4-1: MCP 서버에 look_weather 도구 등록하기 =====
   // server.registerTool(이름, { description, inputSchema }, 실행 함수) 모양입니다.
   //   · 이름: "look_weather"
   //   · description: 모델이 읽고 "언제 쓸지" 정하는 설명. 예: "지금 날씨(하늘·구름·바람·시야·비행 가능 여부)를 한 번 본다"
