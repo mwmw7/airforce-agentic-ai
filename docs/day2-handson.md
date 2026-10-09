@@ -49,7 +49,7 @@
 | Trace · Evaluation · Observability | 단계별 기록, LangSmith, 채점표 (Langfuse 는 이현우 특강에서) |
 | 권한 · Prompt Injection · Guardrail | 실제 서비스(툰스퀘어 Deev)의 악성 지시 탐지 코드 사례(appendix), 담당자 결정 없이는 저장 금지 |
 | Sandbox | 보고서는 지정 폴더에만, MCP 서버에 API 키 미전달 |
-| (플러스알파) 판정 모델 | Jev 출격 판정 + 확신도 |
+| (추가) 판정 모델 | Jev 출격 판정 + 확신도 |
 
 ## 5. 교육생이 직접 채우는 빈칸
 

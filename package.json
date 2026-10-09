@@ -2,6 +2,7 @@
   "name": "airforce-agentic-ai",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@12.6.0",
   "description": "공군 AI센터 Agentic AI 교육 (2026.10.29~30) 핸즈온 저장소 — TypeScript · LangGraph.js · Jev",
   "type": "module",
