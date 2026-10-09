@@ -63,7 +63,7 @@ LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담
 pnpm studio                      # LangGraph Studio(공식 디버거). LangSmith 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
 ```
 
-`hands-on` 브랜치에서는 빈칸 때문에 "TODO … 미구현" 안내와 함께 멈춥니다. 정상이며, 순서대로 빈칸을 채우면 한 단계씩 살아납니다.
+`hands-on` 브랜치는 **거의 빈 Agent** 에서 출발합니다. 빈칸이 비어 있어도 끝까지 돌고, 담당자 화면에 근거 줄이 비어 있을 뿐입니다. 단계마다 빈칸을 채우고 다시 돌리면 화면에 새 줄이 생깁니다. 늦었으면 `pnpm step <단계>` 로 그 단계까지 채워진 상태로 넘어갑니다 (3장).
 
 Studio 의 Input 에는 보고 한 줄만 넣습니다.
 
@@ -106,12 +106,13 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 
 그림: `docs/graphs/agent.md` (`pnpm graph` 로 다시 생성)
 
-### 도구 3개 + Worker 1개
+### 도구 4개 + Worker 1개
 
 | 도구 | 어디서 실행 | 자료 |
 |---|---|---|
 | `look_radar` 보고에 나온 장소로 레이더 보기 | 로컬 (`ask-radar.ts`) | 실제 모델이면 **LLM 이 보고에 맞춰 레이더 화면을 지어냄** (실행마다 한 번, 확대와 앞뒤가 맞음). mock·실패 시 `data/api/radar-screen.json` |
 | `look_closer` 한 자리 확대 | 로컬 (`ask-radar.ts`) | 〃 |
+| `look_flight_plan` 오늘 통보·허가된 비행 계획 조회 (2단계에서 직접 붙인다) | 로컬 (`ask-radar.ts`) | `data/api/flight-plans.json` — 잠실 드론 쇼는 **신청 없음** |
 | (Worker) `searchDocs` 규정집 찾아보기 (RAG) — 모델이 고르는 도구가 아니라 부모 그래프가 항상 돌리는 노드 | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
 | `look_weather` 그 장소의 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | 서버 안에서 **LLM 이 장소·상황에 맞춰 지어냄**. mock·실패 시 규칙표 |
 
@@ -121,15 +122,32 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 |---|---|---|
 | 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | "서울" 로 레이더를 보면 남산 물체 + 광화문 헬기 두 건 → 확대해서 가려낸다 → Jev 출격 권고 → 사람이 결정. **두 번 돌리면 두 번째엔 기억으로 판단(Jev 생략)** |
 | 2 | 한강 위 거대한 오리 풍선, 김포 쪽으로 | 규정집에 "풍선은 감시" 가 있다 |
-| 3 | 잠실 상공 드론 수십 대 | 허가 여부 확인 |
+| 3 | 잠실 상공 드론 수십 대 | 비행 계획(`look_flight_plan`)에 드론 쇼 신청이 없다 → 규정집 "허가 없는 드론 떼는 감시" |
 | 4 | 옆 부대 훈련기, 예정 코스 정상 | 별일 아님 |
 
 ---
 
-## 3. 실습 순서 ↔ 빈칸 (TODO)
+## 3. 실습 순서 — 같이 하나씩 붙이기 (TODO 번호 = 단계 번호)
 
-| 단계 | 할 일 | 파일 | 개념 | 확인 명령 |
+강사와 함께 한 단계씩 붙이고, 매번 `pnpm agent` 로 다시 돌려 **담당자 화면에 새 줄이 생기는 것**을 확인합니다. 단계별 코드 · 확인 방법은 `docs/exercises.md`.
+
+| 단계 | 같이 붙이는 것 | 파일 (TODO) | 화면에 생기는 것 | 개념 |
 |---|---|---|---|---|
+| 0 | (없음) 환경 · 구조 · 첫 실행 | — | 보고만 있고 근거가 빈 담당자 화면 | 전체 구조 |
+| 1 | 레이더 부하 데려오기 `addNode("askRadar", radarAgent)` | `main.ts` (1) | `[SUB] ┏━ askRadar` 띠, 레이더 · 확대 줄 | Subagent · Agent Loop |
+| 2 | 부하에게 새 도구 `look_flight_plan` — 설명 + 실행 | `ask-radar.ts` (2-1 · 2-2) | `[TOOL] look_flight_plan`, 비행 계획 줄 | Tool Calling — 설명이 선택을 정한다 |
+| 3 | 규정집 줄마다 점수 매기기 | `search-docs.ts` (3) | 관련 규정 줄 (`pnpm agent 2`) | RAG |
+| 4 | 날씨를 MCP 로 — 서버에 등록 + 목록 받기 · 실행 | `server.ts` (4-1) · `mcp.ts` (4-2) | 날씨 줄 (`pnpm mcp:weather` 켜고). 끄면 "날씨 없이 계속" | MCP |
+| 5 | 순차를 동시로 + 합류 | `main.ts` (5) | `--watch` 에서 searchDocs · askRadar 가 같이 시작 | Task Decomposition · 병렬 |
+| 6 | Jev 에게 묻기 `askJev(…, QUESTIONS)` | `main.ts` (6) | Jev 판정 줄 (확신도 · 위험도 · 정체불명) | 판정 모델 |
+| 7 | 사람의 답으로 이어가기 `Command({ resume })` | `main.ts` (7) | "사람이 결정". Ctrl+C → `pnpm agent --resume <번호>` | HITL · Checkpoint |
+| 8 | 기억 찾기 · 남기기 | `main.ts` (8-1 · 8-2) | 같은 보고 두 번째엔 "같은 사례 찾음 → Jev 생략" | Context · Memory |
+
+**따라잡기:** `pnpm step 4` → 4단계까지 채워진 상태 (main 의 정답을 가져와 5 부터는 다시 빈칸). `pnpm step 0` 은 처음 상태로. 빈칸이 든 파일만 덮어쓰며, 먼저 묻습니다.
+
+완성 코드로 제공 (설명 · 시연): 도구 실행 루프와 MAX_STEPS 강제 중단(`ask-radar.ts` — 1일차 Loop 그대로, `pnpm agent:limit`), 모델이 늦을 때 사람에게 묻기(`LLM_MOCK_SLOW=1`), 모델 교체, Studio.
+
+---|---|---|---|---|
 | 1 | 도구 결과를 모델에게 돌려주기 | `labs/agent/ask-radar.ts` | Agent Loop | `pnpm agent` |
 | 2 | 강제 중단은 코드가 | 〃 | Harness | `pnpm agent:limit` |
 | 3 | 규정집 줄마다 점수 매기기 | `labs/agent/search-docs.ts` | RAG (찾아서 넣는다) | `pnpm agent 2` |
@@ -191,12 +209,12 @@ airforce-agentic-ai/
 │  ├─ show.ts                --watch 출력
 │  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm agent:live)
 ├─ labs/agent/
-│  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve (빈칸 7 · 8 · 9)
-│  ├─ ask-radar.ts           레이더 부하 Agent(Subagent) — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop (빈칸 1 · 2)
+│  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve (빈칸 1 · 5 · 6 · 7 · 8)
+│  ├─ ask-radar.ts           레이더 부하 Agent(Subagent) — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop, 도구 look_flight_plan (빈칸 2)
 │  ├─ state.ts               부모 칠판(State). 부하는 여기에 자기 칸(대화)을 더해 쓴다 — 겹치는 칸만 부모로 돌아온다
 │  ├─ search-docs.ts         규정집 찾아보기 + Worker 노드 (빈칸 3)
-│  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 5)
-├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4)
+│  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 4-2)
+├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4-1)
 ├─ data/                     교육용 합성 자료
 │  ├─ api/                    레이더 화면(radar-screen.json)
 │  └─ docs/rulebook.md        관제 규정 10줄
@@ -208,7 +226,7 @@ airforce-agentic-ai/
 ├─ .hindsight/               file 모드 기억 (git 에 안 올라감)
 ├─ traces/                   실행 기록
 ├─ langgraph.json            LangGraph Studio 설정 (pnpm studio)
-└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
+└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · step(따라잡기) · blanks(빈칸 변환 공용) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
 ```
 
 ---

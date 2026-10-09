@@ -1,6 +1,6 @@
 # 2일차 진행 방식 변경 계획 — "같이 하나씩 붙여 가며 키우기"
 
-작성: 2026-10-09 · 상태: **승인 대기** (승인 전에는 코드를 고치지 않는다)
+작성: 2026-10-09 · 상태: **승인 · 코드 반영 완료 (2026-10-09)** — 구현 중 7 · 8 순서를 바꿈 (아래 1장)
 
 ## 0. 무엇이 바뀌나
 
@@ -27,8 +27,10 @@
 | 5 | **동시에 모으기** — 순차를 동시로 + 합류 | `main.ts` 3줄 | `--watch` 에서 둘이 같이 시작, `join:searchDocs+askRadar` | Task Decomposition · 병렬 | 15분 |
 | — | 휴식 11:00 · `pnpm step 5` | | | | |
 | 6 | **Jev 에게 묻기** | `main.ts` judge 1~2줄 | "Jev 판정" 줄 (출격 / 감시 / 무시 + 확신도) | 판정 모델 (플러스알파) | 15분 |
-| 7 | **기억 붙이기** — 찾기(remember) + 남기기(approve) | `main.ts` 2곳, 각 1줄 | 같은 보고를 두 번 넣으면 두 번째는 "같은 사례 찾음 → Jev 생략" | Context · Memory | 15분 |
-| 8 | **이어가기** — 사람 답으로 멈춘 곳부터 | `main.ts` 1줄 | Ctrl+C → `pnpm agent --resume <번호>` 로 같은 질문에서 이어짐 | HITL · Checkpoint | 15분 |
+| 7 | **이어가기** — 사람 답으로 멈춘 곳부터 | `main.ts` 1줄 | Ctrl+C → `pnpm agent --resume <번호>` 로 같은 질문에서 이어짐 | HITL · Checkpoint | 15분 |
+| 8 | **기억 붙이기** — 찾기(remember, 8-1) + 남기기(approve, 8-2) | `main.ts` 2곳, 각 1줄 | 같은 보고를 두 번 넣으면 두 번째는 "같은 사례 찾음 → Jev 생략" | Context · Memory | 15분 |
+
+> 구현 중 변경: 처음엔 7 = 기억, 8 = 이어가기였으나, 기억은 approve 가 사람의 결정까지 합쳐 남기므로 이어가기(resume)가 없으면 남길 수 없다. 그래서 순서를 바꿨다.
 
 2-B(70분)는 지금처럼 시연 위주: Prompt Injection(appendix Deev 사례) · 모델 교체(`LLM_MODE`) · 실행 기록(LangSmith) · Jev 질문 문장 바꿔 보기(옛 빈칸 10, 실험으로).
 
@@ -44,13 +46,13 @@
 | TODO | 비워 둔 상태 (hands-on) | 채운 상태 (main) |
 |---|---|---|
 | 1 | 가짜 부하: `facts: "(레이더 부하가 아직 없습니다)"` (지금 TODO 7 그대로) | `.addNode("askRadar", radarAgent)` |
-| 2 | 도구 설명이 빈 문자열 → 모델이 고르지 않음, 실행은 "미구현" | 설명 + `flight-plans.json` 조회 |
+| 2-1 · 2-2 | 도구가 목록에 없음 → 모델이 모름. 2-1 만 채우면 실행은 "모르는 도구" | 설명 + `flight-plans.json` 조회 |
 | 3 | 점수 0 → 규정 없음 (지금 TODO 3 그대로) | 겹치는 단어 수 |
 | 4-1 · 4-2 | 도구 없음 → "날씨 없이 계속" (지금 TODO 4 · 5 그대로) | registerTool · listTools · callTool |
 | 5 | 순차 연결 (지금 TODO 8 그대로) | 동시 + 배열 합류 |
 | 6 | **새 빈칸.** Jev 없음 → `{ action: "watch", 확신 0 }` 으로 "일단 감시" (코드 규칙은 그대로 돌아 "Jev 도 헷갈려함 → 사람 확인") | `askJev(…, QUESTIONS)` 한 줄. 질문 세 개는 빈칸 위에 상수로 미리 써 둔다 (빈칸이 15줄을 넘지 않게) |
-| 7 | **새 빈칸.** 기억 없음 → remember 는 `memory: null`, approve 는 저장 안 함 | `findSameCase` 한 줄 · `saveCase` 한 줄 |
-| 8 | 답을 받고도 이어가지 않음 (지금 TODO 9 그대로) | `Command({ resume })` |
+| 8-1 · 8-2 | **새 빈칸.** 기억 없음 → remember 는 `memory: null`, approve 는 저장 안 함 | `findSameCase` 한 줄 · `saveCase` 한 줄 |
+| 7 | 답을 받고도 이어가지 않음 + "TODO 7" 안내 줄 (옛 TODO 9) | `Command({ resume })` |
 
 - 옛 TODO 1 · 2 (`ask-radar.ts`) 의 마커를 지우고 완성 코드로 남긴다. 주석의 "TODO 1 · 2" 언급도 정리
 - 새 자료 `data/api/flight-plans.json` (교육용 합성 자료): 서쪽 훈련 09~11시 승인 · 광화문 방송 헬기 승인 · 잠실 드론 쇼 신청 없음
@@ -65,14 +67,14 @@
 
 ## 3. 문서 · 슬라이드 갱신
 
-| 파일 | 할 일 |
-|---|---|
-| `tools/make-slides.py` → `docs/slides/day2.html` | 빈칸 슬라이드를 단계 0~8 순서로 재배치, 슬라이드마다 "붙이기 전 / 후" 화면. 옛 빈칸 1·2 슬라이드는 1단계 설명으로 합침 |
-| `docs/exercises.md` | 단계표로 다시 씀 (위 1장 표 + 단계별 diff) |
-| `docs/day2-handson.md` (권 대위 전달용) | 5장 빈칸 표를 단계표로 |
-| `README.md` | 3장 표, `pnpm step` 사용법 |
-| `CLAUDE.md` | 3-1 현재 상태 · 6장 대응표의 TODO 번호 |
-| `docs/instructor-script.md` (새로) | 단계별: 말할 것 2~3줄 · 같이 칠 코드 · 확인 명령 · 흔한 실수 · 시간이 밀리면 자를 곳 (8장 8번 강사 스크립트를 겸함) |
+| 파일 | 할 일 | 상태 |
+|---|---|---|
+| `tools/make-slides.py` → `docs/slides/day2.html` | 빈칸 슬라이드를 단계 0~8 순서로 재배치, 슬라이드마다 "붙이기 전 / 후" 화면. 옛 빈칸 1·2 슬라이드는 1단계 설명으로 합침 | 남음 |
+| `docs/exercises.md` | 단계표로 다시 씀 (위 1장 표 + 단계별 diff) | 완료 |
+| `docs/day2-handson.md` (권 대위 전달용) | 5장 빈칸 표를 단계표로 | 완료 |
+| `README.md` | 3장 표, `pnpm step` 사용법 | 완료 |
+| `CLAUDE.md` | 3-1 현재 상태 · 6장 대응표의 TODO 번호 | 완료 (로컬 전용, gitignore) |
+| `docs/instructor-script.md` (새로) | 단계별: 말할 것 2~3줄 · 같이 칠 코드 · 확인 명령 · 흔한 실수 · 시간이 밀리면 자를 곳 (8장 8번 강사 스크립트를 겸함) | 남음 |
 
 ## 4. 검증
 
