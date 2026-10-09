@@ -40,7 +40,8 @@ const files = git("ls-tree", "-r", "--name-only", source, "--", "labs", "mcp-ser
   .map((f) => ({ path: f, answer: git("show", `${source}:${f}`) }))
   .filter((f) => f.answer.includes("// ----- SOLUTION -----"));
 
-console.log(`${step > LAST ? "전부 정답으로" : `${step}번을 풀 차례로 (1 ~ ${keep} 정답)`} 바꿉니다 (정답 출처: ${source}). 아래 파일을 덮어씁니다 — 이 파일들에 직접 고친 내용은 사라집니다:`);
+const what = step > LAST ? "전부 정답으로" : step === 1 ? "처음 상태(전부 빈칸)로" : `${step}번을 풀 차례로 (1 ~ ${keep} 은 정답)`;
+console.log(`${what} 바꿉니다 (정답 출처: ${source}). 아래 파일을 덮어씁니다 — 이 파일들에 직접 고친 내용은 사라집니다:`);
 files.forEach((f) => console.log(`  ${f.path}`));
 if (!process.argv.includes("--yes")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
