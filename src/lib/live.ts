@@ -51,7 +51,7 @@ export async function startLive(graph: { getGraphAsync(opts?: { xray?: boolean }
       res.end(page);
     }
   }).on("error", (e: NodeJS.ErrnoException) => {
-    // 가장 흔한 실수: 이전 pnpm agent:live 가 아직 살아 있어 포트가 잡혀 있음
+    // 가장 흔한 실수: 이전 pnpm see:run 가 아직 살아 있어 포트가 잡혀 있음
     if (e.code === "EADDRINUSE") log("live", `포트 ${PORT} 가 이미 사용 중입니다. 이전 실행(Ctrl+C 안 한 터미널)을 끄거나 LIVE_PORT=${PORT + 1} 로 다시 실행하세요.`);
     else log("live", `서버를 못 띄웠습니다: ${e.message}`);
     process.exit(1);

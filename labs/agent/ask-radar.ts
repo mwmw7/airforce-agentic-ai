@@ -1,6 +1,6 @@
 /**
  * labs/agent/ask-radar.ts — 레이더 담당 부하 Agent (Subagent). 부모 그래프(main.ts)의 노드 하나로 꽂힌다
- *   입력: 보고 한 줄  →  처리: 모델이 도구(레이더 · 확대 · 날씨)를 골라 가며 확인 (agent ⇄ tools 반복)  →  출력: 사실 2~3줄 + 근거
+ *   입력: 보고 한 줄  →  처리: 모델이 도구(레이더 · 확대 · 비행 계획 · 날씨)를 골라 가며 확인 (agent ⇄ tools 반복)  →  출력: 사실 2~3줄 + 근거
  *
  *   START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
  *                   ├─ 다 확인했다     ─▶ END   (facts 를 들고 부모에게 돌아간다)
@@ -13,8 +13,9 @@
  *   · Worker(search-docs.ts, 함수 하나)와 나란히 놓고 --watch 로 보면 차이가 보인다: Worker 는 한 줄, 부하는 여러 줄
  *
  * 꼭 볼 것
- *   · 모델은 "이 도구를 써 달라" 고 말할 뿐, 실제로 실행하는 건 tools 단계(내 코드)다           (TODO 1)
- *   · 언제 멈출지(MAX_STEPS)도 모델이 아니라 route 함수(내 코드)가 정한다                       (TODO 2)
+ *   · 1일차에 만든 그 루프다: 모델은 "이 도구를 써 달라" 고 말할 뿐, 실제로 실행하는 건 tools 단계(내 코드)다
+ *   · 언제 멈출지(MAX_STEPS)도 모델이 아니라 route 함수(내 코드)가 정한다 (pnpm agent:limit 로 확인)
+ *   · 도구 하나 더 붙이기 = 설명(모델이 읽는 것) 하나 + 실행 한 갈래 (TODO 2)
  *   · 모델이 늦으면(LLM_TIMEOUT_SEC) 끊고 사람에게 묻는다. 부하 안의 interrupt 도 부모 실행번호로 이어진다
  */
 import { readFileSync } from "node:fs";
@@ -49,6 +50,15 @@ const localTools: Tool[] = [
       parameters: { type: "object", properties: { 어디: { type: "string", description: "보고에 나온 장소 또는 보고 문장 그대로. 예: 서울 / 한강 위 풍선" } } } } },
   { type: "function", function: { name: "look_closer", description: "레이더 화면에서 한 자리만 확대해 자세히 본다. 수상한 게 있으면 꼭 써 보라. (교육용 합성 자료)",
       parameters: { type: "object", properties: { 어디: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["어디"] } } },
+  // ===== TODO 2-1: 내 도구 만들기 — 모델이 읽을 설명 =====
+  // look_flight_plan 도구를 목록에 넣으세요. 모양은 위 look_closer 와 같습니다 (name · description · parameters).
+  //   · description 이 모델의 선택을 정한다: "오늘 미리 통보·허가된 비행 계획을 조회한다. 레이더에 잡힌 것이 허가된 것인지 확인할 때 쓴다"
+  //   · parameters: 어디(장소) 하나. 예: 잠실 / 서쪽 훈련 구역
+  // ----- SOLUTION -----
+  //! // { type: "function", function: { name: "look_flight_plan", description: "…", parameters: { … } } },
+  { type: "function", function: { name: "look_flight_plan", description: "오늘 미리 통보되거나 허가된 비행 계획(훈련 · 드론 쇼 · 취재 헬기)을 조회한다. 레이더에 잡힌 것이 허가된 것인지 확인할 때 쓴다. (교육용 합성 자료)",
+      parameters: { type: "object", properties: { 어디: { type: "string", description: "장소 또는 보고 문장 그대로. 예: 잠실 / 서쪽 훈련 구역" } }, required: ["어디"] } } },
+  // ----- END SOLUTION -----
 ];
 
 // ── 레이더 화면 만들기: 파일(radar-screen.json)은 mock 모드나 LLM 실패 때의 대체본. 실제 모드에서는 LLM 이 보고에 맞춰 그 자리에서 지어낸다 ──
@@ -91,6 +101,18 @@ async function runTool(name: string, args: Record<string, unknown>, report: stri
     const row = rows.find((r) => inRegion(r, where));                                        // "잠실 위" → 지역 열쇠말 "잠실" 로 찾는다
     return row ? JSON.stringify({ 어디: row.어디, 뭐가: row.뭐가, 자세히: row.자세히 }) : JSON.stringify({ 결과: `레이더에 '${where}' 자리는 없음` });
   }
+  // ===== TODO 2-2: 내 도구 만들기 — 실행 =====
+  // 모델이 look_flight_plan 을 고르면 flight-plans.json 에서 그 장소의 계획을 찾아 돌려주세요. 위 look_radar 와 같은 모양입니다.
+  //   · 찾기: plans.filter((p) => inRegion(p, where))   · 없으면 "'잠실' 에 통보된 비행 계획 없음" 한 줄
+  // ----- SOLUTION -----
+  //! // if (name === "look_flight_plan") { … }
+  if (name === "look_flight_plan") {
+    const where = String(args.어디 ?? "");
+    const plans: RadarRow[] = readJson("flight-plans.json");
+    const found = plans.filter((p) => inRegion(p, where));
+    return JSON.stringify({ 비행계획: found.length ? found.map(brief) : [`'${where.slice(0, 20)}' 에 통보된 비행 계획 없음`] });
+  }
+  // ----- END SOLUTION -----
   return JSON.stringify({ error: `모르는 도구: ${name}` });
 }
 
@@ -143,15 +165,9 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   const last = state.messages.at(-1);
   const calls = last?.role === "assistant" ? (last.tool_calls ?? []) : [];
 
-  // ===== TODO 1: 도구를 실행하고 결과를 모델에게 돌려주기 =====
-  // calls 를 하나씩 runTool(이름, 입력값) 으로 실행하고,
-  // 결과를 { role: "tool", tool_call_id: call.id, content: 결과 } 모양으로 만들어 { messages } 로 반환하세요.
-  //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 풀어서 넘깁니다 (예: {"어디":"잠실 위"})
-  //   · MCP 에서 받은 도구(isMcpTool)면 callMcpTool, 아니면 runTool
-  //   · 반환한 messages 는 공유 기록 뒤에 자동으로 이어 붙여집니다
+  // 도구를 하나씩 실행하고 결과를 { role: "tool", tool_call_id, content } 로 모델에게 돌려준다 (1일차 Agent Loop 그대로)
+  //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 푼다 (예: {"어디":"잠실 위"})
   const results: Msg[] = [];
-  // ----- SOLUTION -----
-  //! // 여기서 calls 를 돌며 results 에 { role: "tool", tool_call_id, content } 를 넣으세요
   for (const call of calls) {
     const args = JSON.parse(call.function.arguments || "{}");
     // MCP 에서 받은 도구면 서버에 실행을 부탁하고, 아니면 이 파일의 runTool 로 직접 실행한다
@@ -160,7 +176,6 @@ async function toolsNode(state: S): Promise<Partial<S>> {
     showTool(call.function.name, args, result, viaMcp ? "mcp" : "tool"); // 결과를 색 입혀 보여 준다 (TOOL / MCP 꼬리표)
     results.push({ role: "tool", tool_call_id: call.id, content: result });
   }
-  // ----- END SOLUTION -----
   // 도구 결과를 짧은 글로 바꿔 이름별로 모아 둔다 → 부모의 approve 에서 사람이 한눈에 본다
   const evidence: Record<string, string[]> = {};
   results.forEach((m, i) => { (evidence[calls[i].function.name] ??= []).push(...oneLine(String(m.content))); });
@@ -205,16 +220,10 @@ function route(state: S): "tools" | typeof END | "stop" | "askHuman" {
   const last = state.messages.at(-1);
   const wantsTool = last?.role === "assistant" && (last.tool_calls?.length ?? 0) > 0;
 
-  // ===== TODO 2: 강제로 멈추는 건 모델이 아니라 내 코드다 =====
-  // · 모델이 도구를 원하지 않으면 → END (사실 확인 끝, facts 를 들고 부모에게 돌아간다)
-  // · 도구를 원하는데 이미 MAX_STEPS 만큼 모델을 불렀으면(state.steps >= MAX_STEPS) → "stop"
-  // · 그 외 → "tools"
-  // ----- SOLUTION -----
-  //! return wantsTool ? "tools" : END; // ← 이대로면 모델이 도구를 계속 원하는 한 끝나지 않습니다
+  // 강제로 멈추는 건 모델이 아니라 내 코드다: 도구를 안 원하면 END(부모에게), 이미 MAX_STEPS 만큼 불렀으면 stop, 아니면 tools
   if (!wantsTool) { leaveSub(`모델 ${state.steps}회 호출, 사실 정리 완료 → 부모에게`); return END; }
   if (state.steps >= MAX_STEPS) return "stop";
   return "tools";
-  // ----- END SOLUTION -----
 }
 
 // 사람의 답에 따라: retry → agent 다시 / skip → END (사실 없이 부모에게) / stop → stop

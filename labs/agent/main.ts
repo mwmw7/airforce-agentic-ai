@@ -11,11 +11,12 @@
  *                                                                                                        사람이 출격 / 감시 / 무시 를 고른다 (언제나 마지막은 사람)
  *
  * 꼭 볼 것
- *   · Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐 (TODO 7)
- *   · 같은 출발점에 선을 두 개 걸면 LangGraph 가 같은 단계에서 동시에 돌리고, 출발점을 배열로 묶은 선이 "둘 다 끝나면" 합류다 (TODO 8)
+ *   · Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐 (TODO 1)
+ *   · 같은 출발점에 선을 두 개 걸면 LangGraph 가 같은 단계에서 동시에 돌리고, 출발점을 배열로 묶은 선이 "둘 다 끝나면" 합류다 (TODO 5)
  *   · 부하의 긴 대화(messages)는 부하 칠판에만 남고, 부모 칠판에는 facts · evidence · steps 만 돌아온다 — 팀장 칠판은 결론만 (state.ts)
  *   · LLM 은 사실을 모으고(부하), Jev 는 판정하고, 결정은 코드가 하고, 마지막 버튼은 사람이 누른다 — 역할이 다르다
- *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember)
+ *   · Jev 는 의견(출격 / 감시 / 무시 + 확신도)만 준다. 결정은 그 아래 코드 규칙이 한다 (TODO 6)
+ *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember, TODO 8)
  *   · 실행 전체가 RUN_TIMEOUT_SEC 를 넘으면 끊는다. 부하 안에서 모델이 늦으면 부하가 사람에게 묻는다 (ask-radar.ts)
  *
  * 실행:  pnpm agent                           보고 1번
@@ -24,16 +25,16 @@
  *        pnpm agent:limit                     MAX_STEPS=1 로 부하를 강제 중단 → 부하만 멈추고 부모는 규정집만으로 판정까지 간다
  *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부). 부하 안의 단계는 askRadar › agent 처럼 찍힌다
  *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 부하 안에서 사람에게 묻는 화면이 뜬다
- *        pnpm agent:live                      브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
+ *        pnpm see:run                         브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
  *        pnpm agent --resume <실행번호>       담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (checkpoints.sqlite)
  *        pnpm agent --all                     보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 답한다 (--answer w 를 주면 자동). JEV_MODE 바꿔 두 번 돌려 비교
- *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). 부하는 접힌 노드로 보인다
+ *        pnpm see:studio                      LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). 부하는 접힌 노드로 보인다
  */
 import readline from "node:readline/promises";
 import { Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { LLM_MODE, LLM_MODEL, LLM_TIMEOUT_SEC } from "../../src/lib/llm.js";
-import { JEV_MODE, askJev } from "../../src/lib/jev.js";
+import { JEV_MODE, askJev, type JevQuestion, type JevResult } from "../../src/lib/jev.js";
 import { blue, bold, cyan, dim, green, log, magenta, red, showDebug, yellow } from "../../src/lib/show.js";
 import { LIVE, send, startLive, waitAnswerFromPage } from "../../src/lib/live.js";
 import { type Case, createBank, findSameCase, MEMORY_MODE, recall, retain, showMemoryWork } from "../../src/lib/memory.js";
@@ -59,7 +60,13 @@ const REPORTS = [
 /** remember: 전에 똑같은 보고가 있었나? 있으면 그때의 판정을 그대로 쓰고 Jev 를 건너뛴다 (장기 기억으로 판단하기) */
 async function rememberNode(state: S): Promise<Partial<S>> {
   await createBank();
+  // ===== TODO 8-1: 기억에서 같은 사례 찾기 =====
+  // findSameCase(보고) 로 기억 속에서 가장 비슷한 사례를 꺼내세요. 일치도(score)가 SAME_CASE 이상이면 그때 판정을 그대로 쓴다.
+  //   · 비워 두면 "기억 없음" → 늘 Jev 에게 묻는다. 같은 보고를 두 번 넣어 보면 차이가 보인다
+  // ----- SOLUTION -----
+  //! const found = null as { case: Case; time: string; score: number } | null; // 기억 없음
   const found = await findSameCase(state.report);
+  // ----- END SOLUTION -----
   if (!found || found.score < SAME_CASE) {
     log("memory", `${dim(`[${MEMORY_MODE}]`)} 같은 사례 없음 ${dim(`(가장 비슷한 것 일치도 ${(found?.score ?? 0).toFixed(2)} < ${SAME_CASE})`)} → Jev 에게 묻는다`);
     return { memory: null };
@@ -83,21 +90,30 @@ const saveCase = (state: S, config: LangGraphRunnableConfig, decision: string, e
   action: state.judgment.action, confidence: state.judgment.confidence, decision, ...extra,
 } satisfies Case);
 
-/** judge: 비슷한 기억을 떠올리고(recall), Jev 에게 세 가지를 한 번에 묻고, 코드 규칙으로 권고를 만든다. 기억에 남기는 건 approve 가 한다 */
 const DANGER = ["전혀 안 위험함, 심심한 하루", "조금 신경 쓰임", "꽤 수상함", "비상! 당장 뭔가 해야 함"];
+// Jev 에게 한 번에 묻는 세 질문. 고르기(choice) · 점수(score) · 예/아니오 확률(noul)
+const QUESTIONS: Record<string, JevQuestion> = {
+  action: { type: "choice", instructions: "report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?", criteria: {
+    scramble: "위험해 보인다. 전투기를 띄워서 직접 확인해야 한다",
+    watch: "좀 수상하지만 아직은 지켜보면서 정보를 더 모으면 된다",
+    ignore: "별일 아니다. 평소처럼 두면 된다",
+  } },
+  danger: { type: "score", instructions: "얼마나 위험해 보이나?", criteria: DANGER },
+  unknown: { type: "noul", instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다", criteria: { true: "정체를 모른다", false: "무엇인지 대략 안다" } },
+};
+/** judge: 비슷한 기억을 떠올리고(recall), Jev 에게 세 가지를 한 번에 묻고, 코드 규칙으로 권고를 만든다. 기억에 남기는 건 approve 가 한다 */
 async function judgeNode(state: S): Promise<Partial<S>> {
   // 장기 기억: 비슷한 보고가 전에 있었나? 있으면 Jev 에게 past 로 같이 보여 준다 (어제 판단을 오늘 기억한다)
   const past = await recall(state.report);
 
-  const res = await askJev({ report: state.report, facts: state.facts, past }, {
-    action: { type: "choice", instructions: "report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?", criteria: {
-      scramble: "위험해 보인다. 전투기를 띄워서 직접 확인해야 한다",
-      watch: "좀 수상하지만 아직은 지켜보면서 정보를 더 모으면 된다",
-      ignore: "별일 아니다. 평소처럼 두면 된다",
-    } },
-    danger: { type: "score", instructions: "얼마나 위험해 보이나?", criteria: DANGER },
-    unknown: { type: "noul", instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다", criteria: { true: "정체를 모른다", false: "무엇인지 대략 안다" } },
-  });
+  // ===== TODO 6: Jev 에게 묻기 =====
+  // askJev(근거, QUESTIONS) 한 줄로 Jev 에게 세 질문(할 일 · 위험도 · 정체불명)을 한 번에 묻습니다. 근거 = { report, facts, past }
+  //   · 비워 두면 "Jev 없음" → 확신 0 의 감시 의견만 있어서, 아래 코드 규칙이 "Jev 도 헷갈려함 → 사람이 한 번 더 확인" 으로 간다
+  //   · 채운 뒤에는 QUESTIONS 의 문장을 바꿔 보세요. 질문 한 줄이 결과를 바꾼다
+  // ----- SOLUTION -----
+  //! const res: JevResult = { answers: { action: { type: "choice", choice: "watch", confidence: 0 }, danger: { type: "score" }, unknown: { type: "noul" } }, provider: "local", ms: 0 }; // Jev 없음
+  const res = await askJev({ report: state.report, facts: state.facts, past }, QUESTIONS);
+  // ----- END SOLUTION -----
   const { action, danger, unknown } = res.answers;
   const confidence = action.confidence ?? 0;
   const noul = unknown.noul ?? 0;
@@ -116,7 +132,7 @@ async function judgeNode(state: S): Promise<Partial<S>> {
   return { judgment, past };
 }
 
-/** approve: 언제나 마지막은 사람. 지금까지 모은 근거(레이더 · 확대 · 날씨 · 규정 · 기억 · Jev)를 한눈에 보여 주고
+/** approve: 언제나 마지막은 사람. 지금까지 모은 근거(레이더 · 확대 · 비행 계획 · 날씨 · 규정 · 기억 · Jev)를 한눈에 보여 주고
  *  출격 / 감시 / 무시 를 고르게 한다. Agent 는 권고까지, 버튼은 사람이 누른다 (Human-in-the-Loop) */
 async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<Partial<S>> {
   const j = state.judgment;
@@ -127,6 +143,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
     ...section("보고", [state.report]),
     ...section("레이더", ev("look_radar")),
     ...section("확대해서 본 것", ev("look_closer")),
+    ...section("비행 계획", ev("look_flight_plan")),
     ...section("날씨", ev("look_weather")),
     ...section("관련 규정", ev("search_docs")),
     ...section("기억", state.memory
@@ -144,24 +161,30 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   const decision = `${label} — 사람이 결정${/^(y|yes|출격|w|watch|감시|n|no|무시)/.test(answer) ? "" : " (답 없음 → 감시)"}`;
   // 사람의 결정으로 기억을 고쳐 쓴다 (같은 실행번호 → 덮어쓰기). 사람이 본 종합 근거(요약)와 최종 선택까지 같이 남긴다
   // → 다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오르고, "그때 무엇을 보고 그렇게 정했나" 도 기억에 있다 — 사람이 가르친 셈
+  // ===== TODO 8-2: 오늘 판단을 기억에 남기기 =====
+  // saveCase(칠판, config, 결정, { summary, human }) 한 줄. 사람이 고른 쪽(picked)으로 판정을 바꿔 남긴다
+  //   · summary = 사람이 본 종합 근거(요약에서 "## 모델이 정리한 사실" 앞까지), human = 사람의 선택(label)
+  // ----- SOLUTION -----
+  //! // 기억에 남기지 않는다 → 다음에 같은 보고가 와도 처음 보는 일
   await saveCase({ ...state, judgment: { ...j, action: picked } }, config, decision, { summary: 요약.slice(0, 요약.indexOf("## 모델이 정리한 사실")), human: label });
+  // ----- END SOLUTION -----
   return { judgment: { ...j, decision } };
 }
 
-// ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm graph · Studio 가 가져다 쓴다)
+// ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm see:graph · Studio 가 가져다 쓴다)
 export const graph = new StateGraph(MainState)
   .addNode("searchDocs", searchDocsNode)               // Worker: 함수 하나
-  // ===== TODO 7: 부하 Agent(서브그래프)를 노드로 꽂기 =====
+  // ===== TODO 1: 레이더 부하 Agent(서브그래프)를 노드로 꽂기 =====
   // ask-radar.ts 의 radarAgent(compile 된 그래프)를 "askRadar" 라는 이름의 노드로 넣으세요. 함수 대신 그래프를 넣어도 LangGraph 에겐 똑같은 노드입니다.
   //   · 비워 두면 아래 자리표시(레이더 없는 가짜 부하)로 돌아간다 → approve 화면에 레이더 · 확대 · 날씨 줄이 없다. 부하가 없으면 눈이 없다
   // ----- SOLUTION -----
-  //! .addNode("askRadar", async () => ({ facts: "(TODO 7: 레이더 부하가 아직 없어서 확인한 사실이 없습니다)" }))
+  //! .addNode("askRadar", async () => ({ facts: "(TODO 1: 레이더 부하가 아직 없어서 확인한 사실이 없습니다)" }))
   .addNode("askRadar", radarAgent)                     // Subagent: 안에 agent ⇄ tools 루프가 있는 그래프
   // ----- END SOLUTION -----
   .addNode("remember", rememberNode)
   .addNode("judge", judgeNode)
   .addNode("approve", approveNode)
-  // ===== TODO 8: 동시에 수집하고 합류하기 =====
+  // ===== TODO 5: 동시에 수집하고 합류하기 =====
   // 자리표시는 순차다: START → searchDocs → askRadar → remember (규정집이 끝나야 레이더가 출발한다)
   // 같은 출발점(START)에 선 두 개를 걸면 LangGraph 가 같은 단계에서 둘을 동시에 돌린다.
   // 합류는 출발점을 배열로 묶은 선 하나: .addEdge(["searchDocs", "askRadar"], "remember") — "둘 다 끝나면 한 번" 다음으로
@@ -184,7 +207,7 @@ export const graph = new StateGraph(MainState)
   .compile({ checkpointer: SqliteSaver.fromConnString("checkpoints.sqlite") });
 
 // ── 3. 실행: 보고 하나를 넣고 돌린다 ──
-// 이 파일을 직접 실행할 때만 돈다 (pnpm graph 가 import 할 때는 그림만 그린다)
+// 이 파일을 직접 실행할 때만 돈다 (pnpm see:graph 가 import 할 때는 그림만 그린다)
 if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -194,7 +217,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
   function pretty(lines: string[]): string[] {
     const width = 100;
     const titleColor: Record<string, (s: string) => string> = {
-      "보고": (t) => bold(t), "레이더": green, "확대해서 본 것": green, "날씨": cyan, "관련 규정": green,
+      "보고": (t) => bold(t), "레이더": green, "확대해서 본 것": green, "비행 계획": green, "날씨": cyan, "관련 규정": green,
       "기억": blue, "Jev 판정": yellow, "코드 권고": (t) => bold(t), "모델이 정리한 사실": magenta,
     };
     const verdict = (t: string) => t.replace(/\bscramble\b|출격/g, (m) => red(bold(m))).replace(/\bwatch\b|감시 강화|감시/g, (m) => yellow(m)).replace(/\bignore\b|무시/g, (m) => green(m));
@@ -253,7 +276,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
     async function run(what: unknown) {
       for await (const [ns, mode, chunk] of await graph.stream(what as never, { ...config, streamMode: ["values", "debug"], subgraphs: true })) {
         if (mode === "debug") showDebug(chunk as never, ns.length ? "askRadar" : "");
-        else if (ns.length === 0) result = chunk; // 칠판은 부모 것만 받는다 (부하 칠판은 부하 안에)
+        else if (ns.length === 0 && !("__interrupt__" in (chunk as object))) result = chunk; // 칠판은 부모 것만 받는다 (부하 칠판은 부하 안에). 멈춤 알림 조각은 칠판이 아니라 건너뛴다
       }
     }
     async function runWithHuman() {
@@ -262,12 +285,13 @@ if (process.argv[1]?.endsWith("main.ts")) {
         // 그래프가 interrupt() 에서 멈춰 있으면 그 질문이 state.tasks 에 들어 있다. 없으면 끝까지 돈 것
         const question = (await graph.getState(config)).tasks.flatMap((t) => t.interrupts ?? [])[0]?.value as { 문제: string; 요약?: string[]; 고르기: string } | undefined;
         if (!question) break;
-        // ===== TODO 9: 사람의 답으로 멈춘 곳부터 이어가기 =====
+        // ===== TODO 7: 사람의 답으로 멈춘 곳부터 이어가기 =====
         // askPerson(question) 으로 답을 받고, run(new Command({ resume: 답 })) 으로 그래프를 다시 돌리세요.
         //   · 같은 config(thread_id) 로 돌리면 LangGraph 가 checkpoints.sqlite 에서 멈춘 곳을 찾아 그 답을 interrupt() 의 반환값으로 넣어 준다
         //   · 그래서 Ctrl+C 로 껐다가 pnpm agent --resume <실행번호> 로 켜도 같은 줄에서 이어진다
         // ----- SOLUTION -----
         //! const answer = await askPerson(question);
+        //! log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7`);
         //! break; // ← 이대로면 답을 받고도 이어가지 않습니다
         await run(new Command({ resume: await askPerson(question) }));
         // ----- END SOLUTION -----
@@ -286,8 +310,8 @@ if (process.argv[1]?.endsWith("main.ts")) {
         return result;
       }
       if (e?.lc_error_code !== "GRAPH_RECURSION_LIMIT") throw e;
-      // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (ask-radar.ts 의 TODO 1 · 2 가 비어 있으면 이렇게 된다)
-      log("stop", "반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. ask-radar.ts 의 TODO 1 · 2 를 확인하세요.");
+      // 여기까지 왔다 = route 가 반복을 끊지 못했다는 뜻 (ask-radar.ts 의 route 를 고쳤다면 거기를 확인)
+      log("stop", "반복이 멈추지 않아 LangGraph 가 강제로 끊었습니다. ask-radar.ts 의 route(MAX_STEPS) 를 확인하세요.");
       process.exit(1);
     }
 

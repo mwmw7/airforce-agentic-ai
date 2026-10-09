@@ -18,8 +18,8 @@
   "forwardPorts": [3333, 3030, 2024],
   "portsAttributes": {
     "3333": { "label": "날씨 MCP 서버 (pnpm mcp:weather)", "onAutoForward": "silent" },
-    "3030": { "label": "실시간 화면 (pnpm agent:live)", "onAutoForward": "openBrowser" },
-    "2024": { "label": "LangGraph Studio (pnpm studio:cs)", "onAutoForward": "notify" }
+    "3030": { "label": "실시간 화면 (pnpm see:run)", "onAutoForward": "openBrowser" },
+    "2024": { "label": "LangGraph Studio (pnpm see:studio)", "onAutoForward": "notify" }
   },
 
   "customizations": {

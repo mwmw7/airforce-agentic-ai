@@ -36,9 +36,9 @@ git diff hands-on main -- labs/agent/main.ts
 - 30분 동안 아무것도 안 하면 잠듭니다(점심시간). 파일은 그대로, 켜 둔 `pnpm mcp:weather` 만 다시 켜세요
 - 토큰·키는 `.env` 에 넣거나, GitHub **Settings → Codespaces → Secrets** 에 같은 이름(`LLM_API_KEY` 등)으로 넣으면 `.env` 보다 우선합니다
 - 그래프 보기 (Codespace 에서)
-  - `pnpm agent:live` — 그래프 그림 위에서 지금 도는 노드가 켜진다. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
-  - `pnpm graph` → `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기). 선을 고치면 그림도 바뀐다
-  - `pnpm studio:cs` — LangGraph Studio. 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
+  - `pnpm see:run` — 돌리면서 보기. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
+  - `pnpm see:graph` — 그림만. `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기)
+  - `pnpm see:studio` — 공식 디버거. Codespace 에서는 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
 - 내 노트북에 직접 설치하려면 아래 1-1 부터
 
 ### 1-1. 준비물 (교육 1주 전에 미리)
@@ -75,12 +75,18 @@ pnpm agent:limit                 # 호출 한도 1 로 강제 중단 — 멈추�
 pnpm agent --watch               # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
 pnpm agent --resume <실행번호>    # 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (실행번호는 시작할 때 출력)
 pnpm agent --all                 # 보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 y/w/n 을 답한다 (--answer w 를 주면 자동). JEV_MODE=local 과 typesafe 로 두 번 돌려 비교
-pnpm agent:live                  # 브라우저(http://localhost:3030)에서 실시간으로 보기 — 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
 LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다
-pnpm studio                      # LangGraph Studio(공식 디버거). LangSmith 키를 .env 의 LANGSMITH_API_KEY 에 (설정: langgraph.json)
 ```
 
-`hands-on` 브랜치에서는 빈칸 때문에 "TODO … 미구현" 안내와 함께 멈춥니다. 정상이며, 순서대로 빈칸을 채우면 한 단계씩 살아납니다.
+그래프를 **눈으로 보는** 명령은 `see:` 로 시작합니다.
+
+| 명령 | 하는 일 | 에이전트 실행 | 어디서 보나 | 계정 |
+|---|---|---|---|---|
+| `pnpm see:run` | 돌리면서 보기 — 그래프 그림 위에 지금 도는 단계가 켜진다. 보고를 무작위로 계속 돌림 (Ctrl+C 로 끝) | 함 | 브라우저 localhost:3030 | 필요 없음 |
+| `pnpm see:graph` | 그림만 그리기 — 선을 바꾼 뒤 모양 확인 | 안 함 | `docs/graphs/agent.md` (VS Code 미리보기) | 필요 없음 |
+| `pnpm see:studio` | 공식 디버거 LangGraph Studio — 입력을 넣고 한 단계씩 돌리기 · 칠판 보기. Codespace 면 포트 공개와 주소까지 알아서 | Studio 에서 | smith.langchain.com | LangSmith (`.env` 의 `LANGSMITH_API_KEY`) |
+
+`hands-on` 브랜치는 **거의 빈 Agent** 에서 출발합니다. 빈칸이 비어 있어도 끝까지 돌고, 담당자 화면에 근거 줄이 비어 있을 뿐입니다. 단계마다 빈칸을 채우고 다시 돌리면 화면에 새 줄이 생깁니다. 늦었으면 `pnpm step <지금 단계>` 로 앞 단계는 풀린 상태로 넘어갑니다 (3장).
 
 Studio 의 Input 에는 보고 한 줄만 넣습니다.
 
@@ -121,14 +127,15 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 | `askHuman` (부하 안) | 모델이 늦으면 멈추고 retry / skip / stop 묻기. 부하 안의 interrupt 도 부모 실행번호로 저장·재개된다 | 시간 초과 · 사람 개입 |
 | `stop` (부하 안) | MAX_STEPS 를 넘기면 부하만 강제 종료. 부모는 규정집 결과만 들고 판정으로 | Harness — 멈추는 건 코드 · 장애 격리 |
 
-그림: `docs/graphs/agent.md` (`pnpm graph` 로 다시 생성)
+그림: `docs/graphs/agent.md` (`pnpm see:graph` 로 다시 생성)
 
-### 도구 3개 + Worker 1개
+### 도구 4개 + Worker 1개
 
 | 도구 | 어디서 실행 | 자료 |
 |---|---|---|
 | `look_radar` 보고에 나온 장소로 레이더 보기 | 로컬 (`ask-radar.ts`) | 실제 모델이면 **LLM 이 보고에 맞춰 레이더 화면을 지어냄** (실행마다 한 번, 확대와 앞뒤가 맞음). mock·실패 시 `data/api/radar-screen.json` |
 | `look_closer` 한 자리 확대 | 로컬 (`ask-radar.ts`) | 〃 |
+| `look_flight_plan` 오늘 통보·허가된 비행 계획 조회 (2단계에서 직접 붙인다) | 로컬 (`ask-radar.ts`) | `data/api/flight-plans.json` — 잠실 드론 쇼는 **신청 없음** |
 | (Worker) `searchDocs` 규정집 찾아보기 (RAG) — 모델이 고르는 도구가 아니라 부모 그래프가 항상 돌리는 노드 | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
 | `look_weather` 그 장소의 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | 서버 안에서 **LLM 이 장소·상황에 맞춰 지어냄**. mock·실패 시 규칙표 |
 
@@ -138,15 +145,41 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 |---|---|---|
 | 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | "서울" 로 레이더를 보면 남산 물체 + 광화문 헬기 두 건 → 확대해서 가려낸다 → Jev 출격 권고 → 사람이 결정. **두 번 돌리면 두 번째엔 기억으로 판단(Jev 생략)** |
 | 2 | 한강 위 거대한 오리 풍선, 김포 쪽으로 | 규정집에 "풍선은 감시" 가 있다 |
-| 3 | 잠실 상공 드론 수십 대 | 허가 여부 확인 |
+| 3 | 잠실 상공 드론 수십 대 | 비행 계획(`look_flight_plan`)에 드론 쇼 신청이 없다 → 규정집 "허가 없는 드론 떼는 감시" |
 | 4 | 옆 부대 훈련기, 예정 코스 정상 | 별일 아님 |
 
 ---
 
-## 3. 실습 순서 ↔ 빈칸 (TODO)
+## 3. 실습 순서 — 같이 하나씩 붙이기 (TODO 번호 = 단계 번호)
 
-| 단계 | 할 일 | 파일 | 개념 | 확인 명령 |
+강사와 함께 한 단계씩 붙이고, 매번 `pnpm agent` 로 다시 돌려 **담당자 화면에 새 줄이 생기는 것**을 확인합니다. 단계별 코드 · 확인 방법은 `docs/exercises.md`.
+
+| 단계 | 같이 붙이는 것 | 파일 (TODO) | 화면에 생기는 것 | 개념 |
 |---|---|---|---|---|
+| 0 | (없음) 환경 · 구조 · 첫 실행 | — | 보고만 있고 근거가 빈 담당자 화면 | 전체 구조 |
+| 1 | 레이더 부하 데려오기 `addNode("askRadar", radarAgent)` | `main.ts` (1) | `[SUB] ┏━ askRadar` 띠, 레이더 · 확대 줄 | Subagent · Agent Loop |
+| 2 | 부하에게 새 도구 `look_flight_plan` — 설명 + 실행 | `ask-radar.ts` (2-1 · 2-2) | `[TOOL] look_flight_plan`, 비행 계획 줄 | Tool Calling — 설명이 선택을 정한다 |
+| 3 | 규정집 줄마다 점수 매기기 | `search-docs.ts` (3) | 관련 규정 줄 (`pnpm agent 2`) | RAG |
+| 4 | 날씨를 MCP 로 — 서버에 등록 + 목록 받기 · 실행 | `server.ts` (4-1) · `mcp.ts` (4-2) | 날씨 줄 (`pnpm mcp:weather` 켜고). 끄면 "날씨 없이 계속" | MCP |
+| 5 | 순차를 동시로 + 합류 | `main.ts` (5) | `--watch` 에서 searchDocs · askRadar 가 같이 시작 | Task Decomposition · 병렬 |
+| 6 | Jev 에게 묻기 `askJev(…, QUESTIONS)` | `main.ts` (6) | Jev 판정 줄 (확신도 · 위험도 · 정체불명) | 판정 모델 |
+| 7 | 사람의 답으로 이어가기 `Command({ resume })` | `main.ts` (7) | "사람이 결정". Ctrl+C → `pnpm agent --resume <번호>` | HITL · Checkpoint |
+| 8 | 기억 찾기 · 남기기 | `main.ts` (8-1 · 8-2) | 같은 보고 두 번째엔 "같은 사례 찾음 → Jev 생략" | Context · Memory |
+
+**따라잡기 — `pnpm step <지금 단계>`:** 강사가 "4단계 시작합니다" 하면 늦은 사람은 `pnpm step 4`. 1 ~ 3 은 풀린 상태, 4 부터 할 차례가 된다 (정답은 main 에서 가져온다).
+
+| 명령 | 상태 |
+|---|---|
+| `pnpm step 1` | 1 ~ 8 전부 남음 (처음 상태) |
+| `pnpm step 4` | 1 ~ 3 풀림, 4 번부터 |
+| `pnpm step 8` | 1 ~ 7 풀림, 8 번만 남음 |
+| `pnpm step done` | 전부 풀림 (main 과 같음) |
+
+빈칸이 든 파일만 덮어쓰며, 먼저 묻습니다.
+
+완성 코드로 제공 (설명 · 시연): 도구 실행 루프와 MAX_STEPS 강제 중단(`ask-radar.ts` — 1일차 Loop 그대로, `pnpm agent:limit`), 모델이 늦을 때 사람에게 묻기(`LLM_MOCK_SLOW=1`), 모델 교체, Studio.
+
+---|---|---|---|---|
 | 1 | 도구 결과를 모델에게 돌려주기 | `labs/agent/ask-radar.ts` | Agent Loop | `pnpm agent` |
 | 2 | 강제 중단은 코드가 | 〃 | Harness | `pnpm agent:limit` |
 | 3 | 규정집 줄마다 점수 매기기 | `labs/agent/search-docs.ts` | RAG (찾아서 넣는다) | `pnpm agent 2` |
@@ -171,14 +204,14 @@ pnpm memory:up               # Hindsight 기억 서버를 내 노트북에 띄�
 pnpm memory:ui               # Hindsight 대시보드 http://localhost:18888 — retain 된 기억(사실·요약·링크)과 서버 작업을 눈으로 본다 (끄기: pnpm memory:ui:stop)
 pnpm memory:reset            # 기억 전부 지우고 처음부터 (현재 MEMORY_MODE 의 저장소 + checkpoints.sqlite). --all 이면 서버 bank 와 파일 둘 다
 pnpm agent --watch=full      # 들어간 값·나온 값을 자르지 않고 전부
-pnpm graph                   # 그래프를 Mermaid 그림으로 (docs/graphs/)
+pnpm see:graph               # 그래프를 Mermaid 그림으로 (docs/graphs/)
 pnpm typecheck               # 타입 검사
 pnpm setup:check             # 환경 점검
 ```
 
 Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weather http://localhost:3333/mcp`
 
-기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "같은 사례 없음 → Jev 에게 묻는다", 한 번 더 돌리면 "기억 판단 … Jev 생략" 으로 Jev 없이 판단합니다. 첫 번째에 출격을 **반려(n)** 하면 두 번째엔 "감시" 로 떠오릅니다 — 사람의 결정이 기억을 고칩니다. `pnpm agent:live` 에서는 remember 노드 아래 기억 카드(그때 보고 · 일치도 · 그때 확신)로 보입니다. Hindsight 모드의 그래프는 `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` (localhost:9999) 에서 그림으로 봅니다.
+기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "같은 사례 없음 → Jev 에게 묻는다", 한 번 더 돌리면 "기억 판단 … Jev 생략" 으로 Jev 없이 판단합니다. 첫 번째에 출격을 **반려(n)** 하면 두 번째엔 "감시" 로 떠오릅니다 — 사람의 결정이 기억을 고칩니다. `pnpm see:run` 에서는 remember 노드 아래 기억 카드(그때 보고 · 일치도 · 그때 확신)로 보입니다. Hindsight 모드의 그래프는 `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` (localhost:9999) 에서 그림으로 봅니다.
 
 ---
 
@@ -206,26 +239,26 @@ airforce-agentic-ai/
 │  ├─ memory.ts              장기 기억 (Hindsight 서버 / 파일) — createBank · retain · recall · reflect
 │  ├─ trace.ts               실행 기록 (traces/*.jsonl)
 │  ├─ show.ts                --watch 출력
-│  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm agent:live)
+│  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm see:run)
 ├─ labs/agent/
-│  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve (빈칸 7 · 8 · 9)
-│  ├─ ask-radar.ts           레이더 부하 Agent(Subagent) — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop (빈칸 1 · 2)
+│  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve (빈칸 1 · 5 · 6 · 7 · 8)
+│  ├─ ask-radar.ts           레이더 부하 Agent(Subagent) — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop, 도구 look_flight_plan (빈칸 2)
 │  ├─ state.ts               부모 칠판(State). 부하는 여기에 자기 칸(대화)을 더해 쓴다 — 겹치는 칸만 부모로 돌아온다
 │  ├─ search-docs.ts         규정집 찾아보기 + Worker 노드 (빈칸 3)
-│  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 5)
-├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4)
+│  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 4-2)
+├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4-1)
 ├─ data/                     교육용 합성 자료
 │  ├─ api/                    레이더 화면(radar-screen.json)
 │  └─ docs/rulebook.md        관제 규정 10줄
-├─ docs/graphs/              그래프 그림 (pnpm graph)
+├─ docs/graphs/              그래프 그림 (pnpm see:graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
 ├─ docs/slides/day2.html     2일차 강의 슬라이드 (38장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
 ├─ docs/slides-plan.md       슬라이드 장 단위 계획
 ├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
 ├─ .hindsight/               file 모드 기억 (git 에 안 올라감)
 ├─ traces/                   실행 기록
-├─ langgraph.json            LangGraph Studio 설정 (pnpm studio)
-└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
+├─ langgraph.json            LangGraph Studio 설정 (pnpm see:studio)
+└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · step(따라잡기) · blanks(빈칸 변환 공용) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
 ```
 
 ---

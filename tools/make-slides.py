@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """tools/make-slides.py — 2일차 강의 슬라이드 생성기 → docs/slides/day2.html 한 파일
-   재료: docs/slides/captures/*.txt (터미널 캡처, mock) · captures/todos.json (빈칸 before/after) · docs/graphs/agent.md (Mermaid)
+   재료: docs/slides/captures/*.txt (터미널 캡처, mock) · 빈칸 before/after 는 main 코드의 TODO 마커에서 바로 읽음 · docs/graphs/agent.md (Mermaid)
    실행: python3 tools/make-slides.py   (캡처를 새로 뽑았거나 문안을 고쳤을 때)
    보기: docs/slides/day2.html 을 브라우저로. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기, F 전체화면"""
 import html, json, re, unicodedata
@@ -9,7 +9,24 @@ from pathlib import Path
 R = Path(__file__).resolve().parent.parent
 S = R / 'docs/slides/captures'
 CAP = S
-TODOS = json.load(open(S / 'todos.json', encoding='utf-8'))
+def read_todos():
+    """main(완성본) 코드의 빈칸 마커에서 before(자리표시 //!) / after(정답)를 뽑는다. 'TODO 4' 에는 4-1 · 4-2 가 나온 순서대로 parts 로 들어간다"""
+    todos = {}
+    for f in ['labs/agent/main.ts', 'labs/agent/ask-radar.ts', 'labs/agent/search-docs.ts', 'mcp-servers/weather/server.ts', 'labs/agent/mcp.ts']:
+        ls = (R / f).read_text(encoding='utf-8').split('\n'); name = None
+        for i, l in enumerate(ls):
+            m = re.match(r'\s*// ===== (TODO (\d+)[^:]*): (.*) =====', l)
+            if m: name = f'TODO {m.group(2)}'
+            if re.match(r'\s*// ----- SOLUTION -----', l):
+                part = {'before': [], 'after': []}
+                for x in ls[i + 1:]:
+                    if re.match(r'\s*// ----- END SOLUTION -----', x): break
+                    pm = re.match(r'\s*//! ?(.*)', x)
+                    if pm: part['before'].append(pm.group(1))
+                    else: part['after'].append(x)
+                todos.setdefault(name, {'file': f, 'parts': []})['parts'].append(part)
+    return todos
+TODOS = read_todos()
 MERMAID = re.search(r'```mermaid\n(.*?)```', (R / 'docs/graphs/agent.md').read_text(encoding='utf-8'), re.S).group(1).strip()
 MERMAID = '\n'.join(l for l in MERMAID.split('\n') if not l.strip().startswith('classDef') and not l.strip().startswith('%%')).replace('graph TD;', 'graph LR;').replace(':::first','').replace(':::last','').replace('<p>','').replace('</p>','')
 
@@ -74,9 +91,10 @@ def cols(*parts, ratio=''): return f'<div class="cols {ratio}">' + ''.join(f'<di
 def bullets(items): return '<ul class="list">' + ''.join(f'<li>{i}</li>' for i in items) + '</ul>'
 def small(t): return f'<p class="small">{t}</p>'
 
-BLOCKS = ['오프닝', 'Agent Loop · Harness', 'RAG · MCP · Subagent', 'Jev · Hindsight', 'HITL · Checkpoint', '운영']
+BLOCKS = ['오프닝', '1교시 · 부하와 도구 (단계 1 · 2)', '2교시 · 자료 · MCP · 동시 (단계 3 · 4 · 5)', '3교시 · 판정 · 사람 · 기억 (단계 6 · 7 · 8)', '운영']
 slides = []  # (block, title, body_html, kind)
 def add(block, title, body, kind='text'): slides.append((block, title, body, kind))
+def step_tag(n, title): return f'<span class="amber">{n}단계</span> · {title}'
 
 # ───────── 0. 오프닝 ─────────
 add(0, '보고 한 줄이 들어오면, 수집하고, 기억하고, 판정하고, 사람이 결정한다',
@@ -85,37 +103,55 @@ add(0, '보고 한 줄이 들어오면, 수집하고, 기억하고, 판정하고
                   '전에 같은 보고를 판단했으면 기억이 답한다 (Jev 생략)',
                   '없으면 Jev 가 출격 / 감시 / 무시 의견을 낸다']),
          bullets(['마지막 버튼은 언제나 사람이 누른다',
-                  '오늘 이 그래프를 빈칸 9개로 직접 완성한다',
+                  '오늘 이 그래프를 <b>거의 빈 Agent 에서 8단계로</b> 같이 붙여 완성한다',
                   '점선은 조건에 따라 갈리는 선, 실선은 항상 가는 선'])), 'fig')
 add(0, '소개', '''
 <div class="intro">
   <div class="name">최호섭</div>
   <div class="career">삼성전자 R&amp;D센터 → 툰스퀘어 CTO</div>
   <table class="tbl plain">
-    <tr><td>Tooning</td><td>웹툰 제작 툴</td></tr>
+    <tr><td>Tooning Edu</td><td>웹툰 제작 툴</td></tr>
     <tr><td>Tooning Plus</td><td>Tooning 의 유료 고급 기능</td></tr>
     <tr><td>Deev</td><td>캐릭터 챗 서비스. 오늘 오후에 이 서비스의 실제 지시문 탐지 코드를 봅니다</td></tr>
   </table>
   <div class="mail">branden@tooning.io</div>
 </div>''', 'text')
-add(0, '오늘의 규칙: 빈칸을 비워 둔 채로도 프로그램은 돌아간다',
-    cols(cmd('git clone -b hands-on https://github.com/mwmw7/airforce-agentic-ai') + cmd('pnpm install && cp .env.example .env') + cmd('pnpm agent', '빈칸이 비어 있으면 멈추거나 틀리게 돈다') +
-         bullets(['빈칸은 <b>TODO 1 ~ 9</b>. 파일 안에서 <code>// ===== TODO n</code> 을 찾는다',
-                  '채운 뒤 같은 명령을 다시 치면 한 단계 살아난다',
-                  '막히면 정답과 비교: <code>git diff hands-on main -- &lt;파일&gt;</code>',
+add(0, '오늘의 규칙: 같이 하나씩 붙이고, 매번 다시 돌린다',
+    cols(cmd('git clone -b hands-on https://github.com/mwmw7/airforce-agentic-ai') + cmd('pnpm install && cp .env.example .env') + cmd('pnpm agent', '빈칸이 비어 있어도 끝까지 돈다') +
+         bullets(['문제는 <b>TODO 1 ~ 8</b>. 단계 번호 = TODO 번호. 파일 안에서 <code>// ===== TODO n</code> 을 찾는다',
+                  '강사가 화면에서 치면 같이 친다. 채운 뒤 <code>pnpm agent</code> → 화면에 새 줄이 생긴다',
                   '키가 하나도 없어도 mock 모드로 전부 돈다']),
-         term(pick('01_handson_todo1.txt', [r'^\[SUB', r'^┃ \[LLM', r'^┃ \[STOP'], limit=12)) + small('빈칸 1 이 비어 있을 때: 도구 결과가 돌아가지 않아 모델이 같은 도구를 8번 조르다 내 코드에 막힌다')), 'cmd')
+         table(['늦었으면', '상태'],
+               [['<code>pnpm step 1</code>', '1 ~ 8 전부 남음 (처음 상태)'],
+                ['<code>pnpm step 4</code>', '1 ~ 3 풀림, 4번을 풀 차례'],
+                ['<code>pnpm step 8</code>', '1 ~ 7 풀림, 8번만 남음'],
+                ['<code>pnpm step done</code>', '전부 풀림 (main 과 같음)']]) +
+         small('강사가 "4단계 시작합니다" 하면 늦은 사람도 같은 숫자 4. 정답은 main 브랜치에서 가져오고, 빈칸이 든 파일만 덮어쓴다 (먼저 묻는다)')), 'cmd')
 add(0, '오늘 일정',
-    table(['시간', '블록', '하는 일', '빈칸'],
-          [['09:00 ~ 09:50', 'Agent Loop · Harness', '도구 호출 루프, 멈추는 조건, 칠판(State)', '1 · 2 · 6'],
-           ['10:05 ~ 11:00', 'RAG · MCP · Subagent', '규정집 검색, 날씨 MCP 서버, 레이더 부하 Agent, 동시 수집', '3 · 4 · 5 · 7 · 8'],
-           ['11:15 ~ 12:00', 'Jev · Hindsight', 'Jev 3질문, 어제 판단을 오늘 기억', '10'],
-           ['13:00 ~ 13:30', 'HITL · Checkpoint', '사람 결정, 껐다 켜도 이어가기', '9'],
-           ['13:30 ~ 14:10', '운영', '자료 속 지시문, 모델 교체, 실행 기록', '—'],
-           ['14:30 ~ 16:00', '특강 (이현우)', 'Langfuse 로 검증과 활용', '—']]) + small('휴식 09:50 · 11:00 · 14:10'), 'table')
+    table(['시간', '단계', '같이 붙이는 것', '공군 요청 항목'],
+          [['09:00 ~ 09:50', '0 · 1 · 2', '첫 실행, 레이더 부하 데려오기, 부하에게 도구 하나 더', 'Subagent · Agent Loop · Harness · Tool'],
+           ['10:05 ~ 11:00', '3 · 4 · 5', '규정집 찾기, 날씨 MCP, 동시에 모으기', 'RAG · MCP · Task Decomposition'],
+           ['11:15 ~ 12:00', '6 · 7 · 8', 'Jev 판정, 사람 답으로 이어가기, 기억', '판정 모델 · HITL · Checkpoint · Memory'],
+           ['13:00 ~ 14:10', '시연', '자료 속 지시문, 모델 교체, 실행 기록', 'Guardrail · Sandbox · Trace'],
+           ['14:30 ~ 16:00', '특강 (이현우)', 'Langfuse 로 검증과 활용', 'Evaluation · Observability']]) +
+    small('휴식 09:50 · 11:00 · 14:10 — 휴식 뒤 늦은 사람은 <code>pnpm step 3</code> · <code>pnpm step 6</code>'), 'table')
+add(0, step_tag(0, '첫 실행: 근거가 텅 빈 담당자 화면'),
+    cols(term(pick('00_step1_blank.txt', [r'^\[TOOL', r'^\[HUMAN \] 종합', r'^\s+│ (보고|관련 규정|기억|Jev 판정|코드 권고|모델이 정리한 사실)$', r'^\s+│\s+· (관련 규정 없음|비슷한|watch|Jev 도|\(TODO)', r'^\[STOP', r'^\[DECIDE'], limit=18)) + cmd('pnpm agent 3'),
+         bullets(['보고는 들어왔는데 <b>눈(레이더)이 없다</b>. 규정도, 날씨도, 기억도 없다',
+                  'Jev 자리는 "확신 0%" — 코드 규칙이 "사람이 한 번 더 확인" 으로 보낸다',
+                  '마지막 줄: 사람 답을 받고도 이어가지 않는다 (TODO 7)',
+                  '오늘 8단계 동안 이 화면에 줄이 하나씩 늘어난다']) +
+         ok('끝까지 돌고 <code>[DECIDE]</code> 가 찍힌다. 빈칸이 비어도 프로그램은 멈추지 않는다')), 'cmd')
 
-# ───────── 1. Agent Loop · Harness ─────────
-add(1, '도구 호출은 어떻게 일어나나?',
+# ───────── 1. 단계 1 · 2 ─────────
+add(1, step_tag(1, '레이더 담당 부하 Agent 데려오기'),
+    cols(diff('TODO 1') + cmd('pnpm agent 1') +
+         bullets(['<code>ask-radar.ts</code> 는 1일차에 만든 것과 같은 <b>도구 쓰는 Agent</b> 하나다',
+                  '함수 자리에 <code>compile()</code> 된 그래프를 넣으면 그게 부하(Subagent)다',
+                  '부모와 이름이 겹치는 칸(facts · evidence · steps)만 돌아온다. 부하의 대화는 부하 안에']),
+         term(pick('02_run1_first.txt', [r'^\[TOOL  \] search_docs', r'^\[SUB', r'^┃ \[(LLM|TOOL)'], limit=10)) +
+         ok('<code>[SUB] ┏━ askRadar</code> 띠가 열리고, 담당자 화면에 <b>레이더 · 확대</b> 줄이 생긴다')), 'diff')
+add(1, '부하 안을 열면? — 1일차 그 루프',
     cols(mermaid('''flowchart LR
   A["agent<br/>모델 호출"] -- "tool_calls: [{name: look_radar, arguments: {어디: 서울}}]" --> T["tools<br/>내 코드 runTool()"]
   T -- "{ role: tool, tool_call_id, content: 결과 JSON }" --> A
@@ -123,27 +159,20 @@ add(1, '도구 호출은 어떻게 일어나나?',
          bullets(['모델은 <b>JSON 으로 "이 도구를 써 달라"</b> 고 말한다',
                   '실행은 내 코드 <code>runTool</code> 이 한다. 모델은 파일도 네트워크도 못 만진다',
                   '결과는 <code>role: "tool"</code> 메시지로 다시 모델에게',
-                  '모델이 도구를 더 안 원하면 루프가 끝난다']), ratio='r64'), 'fig')
-add(1, '빈칸 1 · 도구를 실행하고 결과를 모델에게 돌려주기',
-    cols(diff('TODO 1') + cmd('pnpm agent'),
-         term(pick('02_run1_first.txt', [r'^┃ \[LLM', r'^┃ \[TOOL  \] look_radar', r'지역 서울', r'서울 남산 위'], limit=7)) +
-         ok('<code>[TOOL] look_radar</code> 가 찍히고, 2회째 호출에서 모델이 결과를 받아 다음 도구를 고른다')), 'diff')
-add(1, '누가 멈추나?',
+                  '이 부분은 완성 코드로 준다 — 어제(1일차) 직접 만든 것과 같다']), ratio='r64'), 'fig')
+add(1, '누가 멈추나? — 모델이 아니라 코드',
     cols(mermaid('''flowchart TD
   A[agent] --> R{route}
   R -- "도구 원함 · steps < MAX_STEPS" --> T[tools]
   R -- "도구 원함 · steps ≥ MAX_STEPS" --> S[stop]
   R -- "도구 안 원함" --> E((END))
   R -- "모델이 늦음" --> H[askHuman]
-  T --> A'''),
-         bullets(['모델은 "그만할까?" 를 스스로 판단하지 않는다',
-                  '<code>route</code> 함수가 매번 칠판을 보고 다음 노드를 고른다',
-                  '<code>MAX_STEPS</code> 는 환경 변수. 넘으면 모델을 더 부르지 않는다',
-                  '시간도 마찬가지: <code>LLM_TIMEOUT_SEC</code> · <code>RUN_TIMEOUT_SEC</code>'])), 'fig')
-add(1, '빈칸 2 · 멈추는 조건은 코드가 쓴다',
-    cols(diff('TODO 2') + cmd('pnpm agent:limit', 'MAX_STEPS=1'),
-         term(pick('04_limit.txt', [r'^\[SUB', r'^┃ \[LLM', r'^┃ \[STOP', r'^\[(MEMORY|JEV|HUMAN|DECIDE)'], limit=9)) +
-         ok('<code>[STOP] 모델을 이미 1번 불렀습니다</code> 가 찍히고, 레이더 없이도 판정과 담당자 화면까지 간다')), 'diff')
+  T --> A''') +
+         code(['if (!wantsTool) return END;                 // 사실 정리 끝 → 부모에게',
+               'if (state.steps >= MAX_STEPS) return "stop"; // 내 코드가 끊는다',
+               'return "tools";']),
+         term(pick('04_limit.txt', [r'^\[SUB', r'^┃ \[LLM', r'^┃ \[STOP', r'^\[(MEMORY|JEV|HUMAN|DECIDE)'], limit=9)) + cmd('pnpm agent:limit', 'MAX_STEPS=1') +
+         ok('<code>[STOP]</code> 은 부하만 끝낸다. 부모는 규정집 결과만 들고 판정과 담당자 화면까지 간다')), 'diff')
 add(1, '칠판(State)은 어떻게 쌓이나?',
     cols(term(pick('05_watch.txt', [r'◀ askRadar › agent 끝', r'▶ askRadar › tools 시작', r'▶ askRadar › agent 시작', r'^┃\s+│ steps'], limit=12)) + cmd('pnpm agent 3 --watch'),
          bullets(['agent 노드는 매번 <code>steps: 1</code> 만 돌려준다',
@@ -153,21 +182,21 @@ add(1, '칠판(State)은 어떻게 쌓이나?',
          code(['steps:    Annotation<number>({ reducer: (prev, next) => prev + next })',
                'messages: Annotation<Msg[]>({ reducer: (prev, next) => [...prev, ...next] })',
                'facts:    Annotation<string>()   // 덮어쓰기'])), 'cmd')
-add(1, '빈칸 6 · 선이 끊긴 곳에서 그래프는 멈춘다',
-    cols(diff_raw(['// .addEdge("어디서", "어디로")'], ['.addEdge("judge", "approve")']) + cmd('pnpm agent 2') +
-         bullets(['노드는 다 있어도 선이 없으면 거기서 끝난다',
-                  'LangGraph 는 compile 때 "못 가는 노드" 만 잡고, 안 이어진 끝은 조용히 끝낸다',
-                  '그림을 뽑으면 바로 보인다: <code>pnpm graph</code>']),
-         term(pick('02_run1_first.txt', [r'^\[RULE', r'^\[HUMAN', r'^\s+│ (보고|레이더|관련 규정|Jev 판정|코드 권고)$', r'^\[DECIDE'], limit=9)) +
-         ok('채우기 전엔 Jev 판정에서 끝난다. 채우면 <code>[HUMAN] 종합 — 담당자가 결정합니다</code> 화면이 뜬다')), 'diff')
 add(1, '모델이 늦으면?',
     cols(term(pick('06_slow.txt', [r'^┃ \[LLM', r'^┃ \[HUMAN', r'^\[SUB   \] ┗', r'^\[HUMAN', r'^\[DECIDE'], limit=8)) + cmd('LLM_MOCK_SLOW=1 pnpm agent 4'),
          bullets(['한 번 호출이 <code>LLM_TIMEOUT_SEC</code> 를 넘으면 끊는다',
                   '끊은 뒤 뭘 할지는 코드가 정하지 않고 <b>사람에게 묻는다</b>: retry / skip / stop',
                   'skip 이면 사실 없이 판정으로, stop 이면 전부 중단',
                   '실행 전체가 <code>RUN_TIMEOUT_SEC</code> 를 넘어도 끊는다'])), 'cmd')
+add(1, step_tag(2, '부하에게 도구 하나 더 — 비행 계획 조회'),
+    cols(diff('TODO 2', 0, w=88) + diff('TODO 2', 1, w=88) + cmd('pnpm agent 3', '잠실 드론'),
+         term(pick('14_flight_plan.txt', [r'^┃ \[LLM   \] 3회째', r'^┃ \[TOOL  \] look_flight_plan', r'^\s+│ 비행 계획$', r'신청 없음'], limit=5)) +
+         bullets(['도구 = <b>설명(모델이 읽는 것)</b> + <b>실행(내 코드)</b>. 둘 다 내가 쓴다',
+                  '모델은 description 을 읽고 "언제 쓸지" 정한다. 설명이 선택을 정한다',
+                  '자료 <code>data/api/flight-plans.json</code>: 잠실 드론 쇼는 신청 없음']) +
+         ok('<code>[TOOL] look_flight_plan</code> 이 찍히고 담당자 화면에 <b>비행 계획</b> 줄이 생긴다')), 'dense')
 
-# ───────── 2. RAG · MCP · Subagent ─────────
+# ───────── 2. 단계 3 · 4 · 5 ─────────
 add(2, '모델이 모르는 문서는?',
     cols(mermaid('''flowchart LR
   Q["보고 한 줄"] --> W["단어로 쪼개기"]
@@ -179,15 +208,15 @@ add(2, '모델이 모르는 문서는?',
                   '어떻게 찾느냐는 자유. 오늘은 가장 단순한 겹치는 단어 수',
                   '임베딩으로 바꾸고 싶으면 점수 함수 하나만 바꾼다. 그래프는 그대로',
                   '규정집은 <code>data/docs/rulebook.md</code> 열 줄, 전부 가상']), ratio='r64'), 'fig')
-add(2, '빈칸 3 · 규정 한 줄에 점수 매기기',
+add(2, step_tag(3, '규정 한 줄에 점수 매기기'),
     cols(diff('TODO 3') + cmd('pnpm agent 2'),
          term(pick('07_mcp_off.txt', [r'^\[TOOL  \] search_docs', r'^\s+│ \d+\. '], limit=4)) +
          term(pick('07_mcp_off.txt', [r'^\s+│ 관련 규정$', r'^\s+│\s+· \d+\. '], limit=4)) +
-         ok('담당자 화면 "관련 규정" 에 풍선 규정이 올라온다. 점수가 전부 0 이면 "관련 규정 없음"')), 'diff')
+         ok('담당자 화면 <b>관련 규정</b> 에 풍선 규정이 올라온다. 점수가 전부 0 이면 "관련 규정 없음"')), 'diff')
 add(2, '도구를 다른 프로세스에 두면?',
     cols(mermaid('''flowchart LR
   subgraph agent["내 Agent (MCP Host · Client)"]
-    A[agent] --> L["도구 목록 = 로컬 2개 + MCP 서버 것"]
+    A[agent] --> L["도구 목록 = 로컬 3개 + MCP 서버 것"]
   end
   subgraph srv["mcp-servers/weather (MCP Server · localhost:3333)"]
     W["look_weather"]
@@ -195,14 +224,14 @@ add(2, '도구를 다른 프로세스에 두면?',
   L -- "listTools()" --> W
   L -- "callTool()" --> W'''),
          bullets(['MCP = 도구를 <b>다른 프로세스</b>에 두고 표준 규약으로 부르는 것',
-                  '서버: <code>registerTool</code> 로 이름 · 설명 · 입력 모양 · 실행 함수를 등록',
-                  '클라이언트: 접속 → 목록 받기 → 실행. 세 함수뿐',
-                  '모델 입장에선 로컬 도구와 구분이 없다. 같은 목록에 섞여 있을 뿐'])), 'fig')
-add(2, '빈칸 4 · 5 · 서버에 도구 등록, 클라이언트에서 목록 받고 실행',
-    cols(diff('TODO 4', w=88) + cmd('pnpm mcp:weather', '다른 터미널에서 먼저') + cmd('pnpm mcp:inspect', 'http://localhost:3333/mcp'),
-         diff('TODO 5', 0, w=88) + diff('TODO 5', 1, w=88) + cmd('pnpm agent') +
-         term(pick('02_run1_first.txt', [r'^┃ \[MCP   \] 날씨 서버 연결 OK', r'look_weather  ', r'^┃ \[MCP   \] look_weather'], limit=3)) +
-         ok('<code>[MCP] 날씨 서버 연결 OK — 도구 1개</code>, 그리고 모델이 3회째에 look_weather 를 고른다')), 'dense')
+                  '서버: <code>registerTool</code> 로 이름 · 설명 · 입력 모양 · 실행 함수를 등록 (4-1)',
+                  '클라이언트: 접속 → 목록 받기 → 실행 (4-2)',
+                  '모델 입장에선 2단계에서 만든 로컬 도구와 구분이 없다. 같은 목록에 섞여 있을 뿐'])), 'fig')
+add(2, step_tag(4, '날씨를 MCP 로 — 서버에 등록, 클라이언트에서 목록 받고 실행'),
+    cols(diff('TODO 4', 0, w=88) + cmd('pnpm mcp:weather', '다른 터미널에서 먼저') + cmd('pnpm mcp:inspect', 'http://localhost:3333/mcp'),
+         diff('TODO 4', 1, w=88) + diff('TODO 4', 2, w=88) + cmd('pnpm agent') +
+         term(pick('02_run1_first.txt', [r'^┃ \[MCP   \] 날씨 서버 연결 OK', r'^┃ \[MCP   \] look_weather'], limit=2)) +
+         ok('<code>[MCP] 날씨 서버 연결 OK — 도구 1개</code>, 담당자 화면에 <b>날씨</b> 줄')), 'dense')
 add(2, '서버를 끄면?',
     cols(term(pick('07_mcp_off.txt', [r'^┃ \[MCP   \] 날씨 서버 연결 실패', r'^┃ \[LLM', r'^\[SUB   \] ┗', r'^\[DECIDE'], limit=7)) + cmd('pnpm agent 2', '날씨 서버를 끈 채로'),
          bullets(['연결 실패는 <b>에러가 아니라 안내 한 줄</b>이다',
@@ -211,9 +240,9 @@ add(2, '서버를 끄면?',
                   '어디서 그렇게 했나: <code>labs/agent/mcp.ts</code> 의 <code>connectMcp</code> 가 null 을 돌려준다'])), 'cmd')
 add(2, 'LangGraph 사용자가 가장 많이 쓰는 그래프 다섯 가지',
     table(['패턴', '모양', '한 줄 비유', '우리 코드'],
-          [['Tool-calling 루프 (ReAct)', 'agent ⇄ tools 왕복', '혼자 일하는 직원', '있음 — ask-radar.ts'],
+          [['Tool-calling 루프 (ReAct)', 'agent ⇄ tools 왕복', '혼자 일하는 직원', '있음 — ask-radar.ts (1단계)'],
            ['Supervisor', '감독 모델이 부하 여럿 중 누구에게 넘길지 고름', '팀장이 팀원을 지명', '없음 — 다음 단계'],
-           ['Orchestrator–Workers', '일을 쪼개 동시에 뿌리고 합침', '팀장이 일을 쪼개 동시에 배분', '있음 — main.ts (빈칸 8)'],
+           ['Orchestrator–Workers', '일을 쪼개 동시에 뿌리고 합침', '팀장이 일을 쪼개 동시에 배분', '있음 — main.ts (5단계)'],
            ['Router', '입력 보고 갈림길 하나, 루프 없음', '안내 데스크', 'route 함수가 축소판'],
            ['Evaluator–Optimizer', '만들기 → 평가 → 다시 만들기', '퇴고하는 작가', '<span class="amber">실제 사례 시연: 3D 이펙트 생성 → 렌더 → 평가 → 재생성</span>']]) +
     small('interrupt 로 사람이 끼어드는 것은 패턴이 아니라 어느 패턴에나 끼우는 공통 부품이다. LangChain 이 권하는 순서: ReAct 하나로 시작하고, 도구가 열 개를 넘거나 역할이 갈리면 쪼개라'), 'table')
@@ -223,22 +252,15 @@ add(2, 'Worker 와 Subagent 는 뭐가 다른가?',
                 ['모델 호출', '없음', '있음, 반복 (도구를 고르고 또 고름)'],
                 ['실행 횟수', '항상 같음', '상황마다 다름'],
                 ['코드 모양', '함수 하나', '그래프 하나 (agent ⇄ tools)'],
-                ['우리 코드', 'searchDocs', 'askRadar']]),
+                ['우리 코드', 'searchDocs (3단계)', 'askRadar (1단계)']]),
          bullets(['복사기와 인턴. 복사기는 몇 장 나올지 미리 알고, 인턴은 몇 번 왔다 갔다 할지 자기가 정한다',
                   '<b>LangGraph 에겐 둘 다 노드 하나다.</b> 안에 모델 루프가 있으면 우리가 부하라고 부를 뿐',
                   '선 잇기 · 체크포인트 · interrupt 코드는 둘이 완전히 같다']) +
          code(['.addNode("searchDocs", searchDocsNode)   // 함수',
                '.addNode("askRadar",   radarAgent)       // compile() 된 그래프'])), 'table')
-add(2, '빈칸 7 · 부하 Agent 를 노드로 꽂기',
-    cols(diff('TODO 7') + cmd('pnpm agent') +
-         bullets(['<code>ask-radar.ts</code> 가 자기 칠판으로 agent ⇄ tools 를 돌리고 <code>compile()</code> 한 것',
-                  '부모와 이름이 겹치는 칸(facts · evidence · steps)만 돌아온다',
-                  '부하가 모델과 주고받은 대화 20줄은 부하 안에 남는다']),
-         term(pick('02_run1_first.txt', [r'^\[TOOL  \] search_docs', r'^\[SUB', r'^┃ \[(MCP|LLM)'], limit=9)) +
-         ok('<code>[SUB] ┏━ askRadar</code> 띠가 열리고 그 안의 줄에 ┃ 가 붙는다. 비워 두면 레이더 줄 없이 판정으로 간다')), 'diff')
-add(2, '빈칸 8 · 순차를 동시로',
-    cols(diff('TODO 8') + cmd('pnpm agent 1 --watch') +
-         small('LangGraph 는 한 단계의 노드가 전부 끝나야 다음으로 간다. 배열로 묶으면 "둘 다 끝나야" 가 코드에 보이고, 가지 길이가 달라도 안전하다. 자유 과제: 부하에 도구 하나 더 — 비행 계획 조회 look_flight_plan'),
+add(2, step_tag(5, '순차를 동시로'),
+    cols(diff('TODO 5') + cmd('pnpm agent 1 --watch') +
+         small('LangGraph 는 한 단계의 노드가 전부 끝나야 다음으로 간다. 배열로 묶으면 "둘 다 끝나야" 가 코드에 보이고, 가지 길이가 달라도 안전하다'),
          term(pick('08_sequential_watch.txt', [r'^\[NODE  \] [▶◀] (searchDocs|askRadar) '], limit=3)) + small('채우기 전: 규정집이 끝나야 레이더가 출발') +
          term(pick('05_watch.txt', [r'^\[NODE  \] [▶◀] (searchDocs|askRadar|remember) '], limit=5)) + small('채운 뒤: 둘이 같이 출발, remember 는 둘 다 끝나야') +
          ok('<code>▶ askRadar</code> 와 <code>▶ searchDocs</code> 가 나란히 시작하고, remember 가 <code>← join:searchDocs+askRadar</code> 로 깨어난다')), 'diff')
@@ -250,61 +272,38 @@ add(2, '왜 나누나?',
            ['속도', '—', '<b>지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + Bedrock 일 때']]) +
     small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, 칠판 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
 
-# ───────── 3. Jev · Hindsight ─────────
+# ───────── 3. 단계 6 · 7 · 8 ─────────
 add(3, 'LLM 말고 Jev 를 쓰면?',
     cols(table(['', 'LLM', 'Jev (TypeSafe System One)'],
                [['돌려주는 것', '문장', '확률 + 확신도'],
                 ['질문 모양', '자유 프롬프트', 'choice · score · noul 세 종류'],
                 ['속도', '초 단위', '밀리초 단위'],
-                ['우리 코드', '부하의 사실 정리', 'judge 노드 3질문']]),
-         code(['askJev({ report, facts, past }, {',
+                ['우리 코드', '부하의 사실 정리', 'judge 노드 3질문 (QUESTIONS)']]),
+         code(['const QUESTIONS = {',
                '  action:  { type: "choice", criteria: { scramble, watch, ignore } },',
                '  danger:  { type: "score",  criteria: ["안 위험", "조금", "꽤", "비상"] },',
                '  unknown: { type: "noul",   instructions: "정체가 무엇인지 전혀 짐작이 안 가서 …" },',
-               '})']) +
+               '};']) +
          bullets(['Jev 는 <b>의견</b>만 준다. 출격 / 감시 / 무시를 정하는 규칙은 코드에 있다',
                   '키가 없으면 <code>JEV_MODE=local</code> 로 Jev 자리를 정규식 규칙이 대신한다. 흐름은 똑같이 돈다'])), 'table')
-add(3, '판정 화면 읽기',
-    cols(term(pick('10_all_typesafe.txt', [], start=r'^\[JEV   \] \[typesafe\]', stop=r'^\[RULE', limit=16, w=96), 'tiny') + small('실제 Jev (보고 1, 서울 상공 정체불명 비행체)'),
-         bullets(['① action: 셋 중 하나를 고르고 확률을 나란히 준다. 확신(confidence)은 1등과 2등의 차이',
+add(3, step_tag(6, 'Jev 에게 묻기'),
+    cols(diff('TODO 6', w=88) + cmd('pnpm agent 1') +
+         bullets(['질문 세 개는 위에 <code>QUESTIONS</code> 로 미리 적혀 있다. 빈칸은 묻는 한 줄',
+                  '비워 두면 "확신 0% 감시" 뿐이라 코드 규칙이 언제나 사람에게 넘긴다']),
+         term(pick('10_all_typesafe.txt', [], start=r'^\[JEV   \] \[typesafe\]', stop=r'^\[RULE', limit=16, w=96), 'tiny') +
+         ok('<code>[JEV]</code> 막대 세 개와 <code>[RULE]</code> 줄이 찍히고, 담당자 화면 <b>Jev 판정</b> 에 확신도 · 위험도 · 정체불명')), 'diff')
+add(3, '판정 화면 읽기 · 질문 한 줄이 결과를 바꾼다',
+    cols(bullets(['① action: 셋 중 하나를 고르고 확률을 나란히 준다. 확신(confidence)은 1등과 2등의 차이',
                   '② danger: 0 ~ 3 점수. 기준 문장 4개를 우리가 적었다',
                   '③ unknown: 예 / 아니오 확률',
-                  '<code>[RULE]</code> 줄이 코드 규칙이다: 확신 20% 미만이면 사람에게, scramble 이면 출격 준비, watch 인데 정체불명 50% 이상이면 정체부터'])), 'cmd')
-add(3, '빈칸 10 · 질문 한 줄이 결과를 바꾼다',
-    cols(diff_raw(['instructions: "더 알아봐야 해?",'], ['instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다",']) + cmd('pnpm agent 1', 'UFO') + cmd('pnpm agent 4', '훈련기') +
-         bullets(['noul 질문은 문장 하나가 전부다. 모호하면 어느 보고든 70 ~ 80% 가 나온다',
-                  '좁혀 쓰면 UFO 는 75% 근처, 훈련기는 10% 이하로 갈린다',
-                  '실제 Jev 키가 있어야 차이가 난다. JEV_MODE=local 은 정규식이라 둔하다']),
-         ok('보고 1 과 4 의 <code>정체불명 %</code> 가 확실히 갈리면 성공')), 'diff')
+                  '<code>[RULE]</code> 줄이 코드 규칙이다: 확신 20% 미만이면 사람에게, scramble 이면 출격 준비, watch 인데 정체불명 50% 이상이면 정체부터']),
+         diff_raw(['instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다",'], ['instructions: "더 알아봐야 해?",']) + cmd('pnpm agent 1', 'UFO') + cmd('pnpm agent 4', '훈련기') +
+         small('해 보기: noul 문장을 모호하게 바꾸면 어느 보고든 70 ~ 80% 가 나온다. 좁혀 쓰면 UFO 75% 근처, 훈련기 10% 이하로 갈린다 (실제 Jev 키가 있어야 차이가 난다)')), 'cmd')
 add(3, 'JEV_MODE 를 바꾸면?',
     term(pick('09_all_local.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=local — Jev 자리를 정규식 규칙이 대신. 정체불명 보고는 전부 scramble 로 기운다') +
     term(pick('10_all_typesafe.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=typesafe — 실제 Jev. 보고마다 의견과 확신이 다르다. 훈련기는 ignore 97%') +
     cols(cmd('JEV_MODE=local pnpm agent --all --answer w'), cmd('JEV_MODE=typesafe pnpm agent --all --answer w')), 'cmd')
-add(3, '어제 판단을 오늘 기억하면?',
-    cols(mermaid('''flowchart LR
-  C["수집 끝"] --> M{remember<br/>같은 사례?}
-  M -- "일치 0.9 이상" --> AP["approve<br/>그때 판정 그대로"]
-  M -- "없음" --> J["judge<br/>Jev + recall"]
-  J --> AP
-  AP -- "사람 결정 + 근거 요약 retain" --> H[("Hindsight<br/>기억 서버 또는 파일")]
-  H -. "findSameCase · recall" .-> M'''),
-         bullets(['기억은 두 번 쓴다: 판정 전에 <b>찾고</b>, 사람 결정 뒤에 <b>남긴다</b>',
-                  '같은 사례면 Jev 를 부르지 않는다. 그때의 판정과 사람의 선택이 그대로 올라온다',
-                  '비슷하지만 다른 사례는 Jev 에게 참고 자료(past)로 같이 보낸다',
-                  '서버가 없으면 <code>MEMORY_MODE=file</code> 로 JSON 파일에 똑같이 남긴다']), ratio='r64'), 'fig')
-add(3, '같은 보고 두 번',
-    cols(term(pick('02_run1_first.txt', [r'^\[MEMORY', r'^\[JEV   \]', r'^\[RULE', r'^\[DECIDE'], limit=5)) + small('첫 번째: 기억 없음 → Jev 판정'),
-         term(pick('03_run1_again.txt', [r'^\[MEMORY', r'^\s+│ 그때', r'^\[DECIDE'], limit=5)) + small('두 번째: 같은 사례 찾음 → Jev 생략, 그때 결정이 그대로')) +
-    cmd('pnpm agent 1', '두 번') + ok('두 번째 실행에 <code>[MEMORY] 같은 사례 찾음 → Jev 생략</code>'), 'cmd')
-add(3, '사람이 가르친다',
-    cols(term(pick('07_mcp_off.txt', [r'^\[MEMORY', r'^\s+│ 그때', r'^\[DECIDE'], limit=5)) + cmd('pnpm agent 2', '담당자가 w(감시 강화)를 고른 뒤 다시') +
-         bullets(['기억에 남는 건 Jev 의견이 아니라 <b>사람의 최종 선택</b>과 그때 본 근거 요약이다',
-                  '다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오른다',
-                  '기억 서버 안은 <code>pnpm memory:ui</code> 로 들여다본다 (localhost:18888)']),
-         '<div class="placeholder">pnpm memory:ui 대시보드 캡처 자리<br/><span>점 = 사실 · 요약, 선 = 시간 · 의미 · 엔티티</span></div>'), 'cmd')
-
-# ───────── 4. HITL · Checkpoint ─────────
-add(4, '사람이 끼어들면 어디서 멈추나?',
+add(3, '사람이 끼어들면 어디서 멈추나?',
     cols(mermaid('''flowchart LR
   subgraph sub["askRadar (부하)"]
     AG[agent] -- "모델이 늦음" --> AH["askHuman<br/>interrupt: retry / skip / stop"]
@@ -312,26 +311,59 @@ add(4, '사람이 끼어들면 어디서 멈추나?',
   sub --> RM[remember] --> JD[judge] --> AP["approve<br/>interrupt: y / w / n"] --> E((END))'''),
          bullets(['<code>interrupt(질문)</code> 한 줄이면 그래프가 거기서 멈추고 질문이 바깥으로 나온다',
                   '두 곳: 부하 안(모델이 늦을 때), 부모의 approve(언제나)',
-                  'approve 는 레이더 · 확대 · 날씨 · 규정 · 기억 · Jev 를 한 화면에 모아 보여 주고 묻는다',
+                  'approve 는 레이더 · 확대 · 비행 계획 · 날씨 · 규정 · 기억 · Jev 를 한 화면에 모아 보여 주고 묻는다',
                   'Agent 는 권고까지. 버튼은 사람이 누른다'])), 'fig')
-add(4, '빈칸 9 · 사람의 답으로 멈춘 곳부터 이어가기',
-    cols(diff('TODO 9') + cmd('pnpm agent') +
+add(3, step_tag(7, '사람의 답으로 멈춘 곳부터 이어가기'),
+    cols(diff('TODO 7') + cmd('pnpm agent') +
          bullets(['같은 <code>thread_id</code> 로 다시 돌리면 LangGraph 가 멈춘 자리를 찾는다',
                   '답은 <code>interrupt()</code> 의 반환값으로 들어간다. 노드 함수는 처음부터 다시 돌지만 그 줄에서 답을 받는다']),
-         term(pick('02_run1_first.txt', [r'^\[HUMAN \] 종합', r'^\s+│ 코드 권고$', r'^\s+│\s+· 출격', r'^\[HUMAN \] 답', r'^\[DECIDE'], limit=5)) +
-         ok('답을 넣으면 같은 줄에서 이어져 <code>[DECIDE]</code> 까지 간다. 비워 두면 답을 받고도 끝난다')), 'diff')
-add(4, '껐다 켜면?',
+         term(pick('00_step1_blank.txt', [r'^\[HUMAN \] 답', r'^\[STOP', r'^\[DECIDE'], limit=3)) + small('채우기 전: 답을 받고도 끝난다') +
+         term(pick('14_flight_plan.txt', [r'^\[HUMAN \] 답', r'^\[DECIDE'], limit=2)) + small('채운 뒤: 같은 줄에서 이어져 사람의 결정으로') +
+         ok('<code>[DECIDE] … — 사람이 결정</code>')), 'diff')
+add(3, '껐다 켜면?',
     cols(term(pick('12a_approve_killed.txt', [r'^\[SETUP', r'^\s+│ 모델 한 번', r'^\[HUMAN \] 종합'], limit=3) + ['^C  (담당자 확인 중 Ctrl+C)']) + small('멈춘 실행번호가 SETUP 줄에 있다'),
          term(pick('12b_approve_resume.txt', [r'^\[SETUP', r'^\[HUMAN', r'^\[DECIDE'], limit=4)) + small('--resume: 처음부터 돌리지 않고 같은 질문에서 이어진다')) +
     cmd('pnpm agent --resume loop-1-1791371799518') +
     bullets(['저장은 <code>SqliteSaver</code> 한 줄. 단계마다 <code>checkpoints.sqlite</code> 에 칠판이 남는다',
+             '부하 안 askHuman 에서 멈춰도 같다 — 부하의 체크포인트도 부모 실행번호 아래 저장된다',
              '직접 쓴 SQL 은 한 줄도 없다. 파일 하나를 지우면 처음부터']), 'cmd')
-add(4, '부하 안에서 멈춰도?',
-    cols(term(pick('11a_killed.txt', [r'^\[SUB', r'^┃ \[LLM', r'^┃ \[HUMAN'], limit=3) + ['^C']) + small('부하 안 askHuman 에서 Ctrl+C'),
-         term(pick('11b_resume.txt', [r'^\[SETUP \] 이어가기', r'^\[HUMAN \] 가짜', r'^\[SUB', r'^┃ \[LLM', r'^\[DECIDE'], limit=8)) + small('같은 실행번호로 부하 안 그 줄부터')) +
-    bullets(['부하의 체크포인트는 부모 실행번호 아래 이름을 달고 저장된다',
-             '그래서 서브그래프 안에서 멈춰도 <code>--resume</code> 한 줄로 이어진다. 특별한 코드가 없다']), 'cmd')
-add(4, '되감으면?',
+add(3, '어제 판단을 오늘 기억하면?',
+    cols(mermaid('''flowchart LR
+  C["수집 끝"] --> M{remember<br/>같은 사례? 8-1}
+  M -- "일치 0.9 이상" --> AP["approve<br/>그때 판정 그대로"]
+  M -- "없음" --> J["judge<br/>Jev + recall"]
+  J --> AP
+  AP -- "사람 결정 + 근거 요약 saveCase 8-2" --> H[("Hindsight<br/>기억 서버 또는 파일")]
+  H -. "findSameCase · recall" .-> M'''),
+         bullets(['기억은 두 번 쓴다: 판정 전에 <b>찾고</b>(8-1), 사람 결정 뒤에 <b>남긴다</b>(8-2)',
+                  '남기는 건 approve 가 끝난 뒤 — 그래서 7단계(이어가기)가 먼저다',
+                  '같은 사례면 Jev 를 부르지 않는다. 그때의 판정과 사람의 선택이 그대로 올라온다',
+                  '서버가 없으면 <code>MEMORY_MODE=file</code> 로 JSON 파일에 똑같이 남긴다']), ratio='r64'), 'fig')
+add(3, step_tag(8, '기억 찾기 · 남기기'),
+    cols(diff('TODO 8', 0, w=88) + diff('TODO 8', 1, w=88) + cmd('pnpm agent 1', '두 번'),
+         term(pick('02_run1_first.txt', [r'^\[MEMORY', r'^\[JEV   \]', r'^\[DECIDE'], limit=4)) + small('첫 번째: 기억 없음 → Jev 판정') +
+         term(pick('03_run1_again.txt', [r'^\[MEMORY', r'^\s+│ 그때', r'^\[DECIDE'], limit=5)) + small('두 번째: 같은 사례 찾음 → Jev 생략') +
+         ok('두 번째 실행에 <code>[MEMORY] 같은 사례 찾음 → Jev 생략</code>')), 'dense')
+add(3, '사람이 가르친다',
+    cols(term(pick('07_mcp_off.txt', [r'^\[MEMORY', r'^\s+│ 그때', r'^\[DECIDE'], limit=5)) + cmd('pnpm agent 2', '담당자가 w(감시 강화)를 고른 뒤 다시') +
+         bullets(['기억에 남는 건 Jev 의견이 아니라 <b>사람의 최종 선택</b>과 그때 본 근거 요약이다',
+                  '다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오른다',
+                  '기억 서버 안은 <code>pnpm memory:ui</code> 로 들여다본다 (localhost:18888)']),
+         '<div class="placeholder">pnpm memory:ui 대시보드 캡처 자리<br/><span>점 = 사실 · 요약, 선 = 시간 · 의미 · 엔티티</span></div>'), 'cmd')
+add(3, '기억 파일 vs 기억 서버 — 무엇이 다른가?',
+    table(['', '<code>MEMORY_MODE=file</code> (기본)', '<code>MEMORY_MODE=hindsight</code>'],
+          [['저장', '<code>.hindsight/control-room.json</code> 한 파일', 'Hindsight 서버 (<code>pnpm memory:up</code>, localhost:8888)'],
+           ['준비물', '없음', '서버 데몬 · <code>uv</code> · 서버가 쓸 LLM'],
+           ['retain 남기기', '원문 한 줄을 파일에 붙임, 바로 반영', '맡기고 바로 돌아옴(async). 서버가 뒤에서 사실 추출 → 엔티티 연결 → 링크 → 요약(consolidation)'],
+           ['recall 찾기 (Jev 참고)', '겹치는 <b>단어 수</b>', '의미 · 단어 · 그래프 · 시간 네 갈래 + 리랭커. 표현이 달라도 찾는다'],
+           ['같은 사례? (remember)', '원문 보고 겹침 <code>overlap</code> ≥ 0.9', '후보는 Hindsight 가 찾고, 판단은 <b>같은 <code>overlap</code></b>'],
+           ['reflect', '기억 목록을 그대로', '서버 LLM 이 기억을 근거로 한 문단'],
+           ['실행 끝 화면', '없음', '서버가 한 일(사실 · 엔티티 · 요약)을 숫자로']], 'dense') +
+    bullets(['부르는 함수는 똑같다 (<code>createBank · retain · recall · findSameCase</code>) → 그래프 코드는 한 줄도 안 바뀐다',
+             '"같은 사례면 Jev 생략" 은 두 모드 모두 <b>코드 규칙</b>이 정한다 → 키 없이도 "어제 판단을 오늘 기억" 체험은 같다',
+             '차이는 찾는 힘과 정리: 파일은 메모장에서 단어 찾기, 서버는 보관소가 정리 · 연결해 두었다가 뜻으로 찾아 준다',
+             '주의: hindsight 의 retain 은 비동기 — 실행 끝 <code>[MEMORY] 서버 작업 끝</code> 을 본 뒤 다음 실행']), 'table')
+add(3, '되감으면?',
     cols(code(['const history = [];',
                'for await (const snap of graph.getStateHistory(config)) history.push(snap);',
                '// 체크포인트마다: snap.values(칠판) · snap.next(다음 노드) · snap.config(그 시점 id)',
@@ -343,8 +375,8 @@ add(4, '되감으면?',
                   '시연만 한다. 코드는 10줄, 빈칸 아님']),
          '<div class="placeholder">시연 자리<br/><span>구현 여부 미정 — 미구현이면 "다음 단계" 로 넘어간다</span></div>'), 'cmd')
 
-# ───────── 5. 운영 ─────────
-add(5, '운영 중 자료에 지시문이 섞여 오면?',
+# ───────── 4. 운영 ─────────
+add(4, '운영 중 자료에 지시문이 섞여 오면?',
     cols(code(['// src/lib/jev.ts — JEV_MODE=local 규칙 (속는 쪽을 흉내 낸다)',
                'const injected = /승인 없이|즉시 (저장|통보)|이전 지시는 무시|ignore previous|bypass approval/.test(everything);',
                'if (injected) risk = 0.95;   // 자료 속 한 줄이 위험도를 끌어올린다 → 무조건 출격으로 기운다']) +
@@ -356,7 +388,7 @@ add(5, '운영 중 자료에 지시문이 섞여 오면?',
                 ['사람 결정 없이는 끝나지 않음', 'main.ts approve interrupt'],
                 ['MCP 서버에 API 키를 주지 않음', 'mcp-servers/weather'],
                 ['Jev 에는 걸러낸 사실만', 'judge 는 facts · report 만 보냄']])), 'table')
-add(5, '실제 서비스(Deev)는 어떻게 거르나',
+add(4, '실제 서비스(Deev)는 어떻게 거르나',
     cols(code(['// appendix/detect_define.ts — 1차 정규식 (영 · 한), 2차 TypeSafe',
                "{ name: 'KO_IGNORE_INSTRUCTIONS',",
                "  regex: /(?:이전|기존|시스템|위의|모든)\\s*(?:지시|지침|명령|규칙|프롬프트|설정)\\s*…(?:무시|우회|초기화|재설정|생략)/ },",
@@ -374,14 +406,14 @@ add(5, '실제 서비스(Deev)는 어떻게 거르나',
                   '모델 판정: 말을 바꿔 써도 잡는다',
                   '둘을 겹쳐 쓰고, 키가 없을 때의 동작도 정해 둔다']),
          '<figure class="shot"><img src="../../appendix/img.png" alt="Deev 캐릭터 챗 화면"><figcaption>Deev 캐릭터 챗 화면 — 사용자 입력 · 페르소나 · 메모 · 재생성 지시 네 곳을 모두 검사한다</figcaption></figure>', ratio='r64'), 'cmd')
-add(5, '모델을 바꾸면?',
+add(4, '모델을 바꾸면?',
     cols(term(pick('02_run1_first.txt', [r'^\[SETUP \] 모델', r'^┃ \[LLM', r'^\[DECIDE'], limit=6)) + small('LLM_MODE=mock — 정해진 순서로 도구를 하나씩'),
          term(pick('13_ollama.txt', [r'^\[SETUP \] 모델', r'^┃ \[LLM', r'^\[DECIDE'], limit=6)) + small('LLM_MODE=ollama — 노트북 qwen3.5. 확대까지 2번만 보고 사실 정리, 호출마다 5 ~ 10초')) +
     code(['# .env — 슬롯만 바꾼다. 그래프 · 도구 · 판정 코드는 그대로',
           'LLM_MODE=relay      LLM_BASE_URL=<강사가 나눠 주는 Bedrock 주소>   LLM_API_KEY=<조별 토큰>',
           'LLM_MODE=ollama     LLM_BASE_URL=http://localhost:11434/v1          LLM_MODEL=qwen3:8b']) +
     small('relay(Bedrock) 주소와 조별 토큰은 당일 안내'), 'cmd')
-add(5, '실행 기록은 어디서 보나?',
+add(4, '실행 기록은 어디서 보나?',
     cols(code(['# .env',
                'LANGSMITH_TRACING=true',
                'LANGSMITH_API_KEY=<smith.langchain.com 무료 키>',
@@ -390,22 +422,22 @@ add(5, '실행 기록은 어디서 보나?',
                '# 끄면 traces/*.jsonl 만 남는다']) +
          bullets(['노드 하나 = span 하나, 부하 안의 agent ⇄ tools 는 askRadar 아래에 접혀 있다',
                   'LLM 호출은 보낸 메시지 · 받은 답 · 토큰 수까지',
-                  '<code>pnpm studio</code> 는 같은 키로 LangGraph Studio 를 띄운다',
+                  '<code>pnpm see:studio</code> 는 같은 키로 LangGraph Studio 를 띄운다',
                   'Langfuse 로 보는 법은 14:30 이현우 특강에서']),
          '<div class="placeholder img">LangSmith 트리 캡처 자리<br/><span>run → searchDocs · askRadar(agent, tools …) · remember · judge · approve</span></div>'), 'cmd')
-add(5, '오늘 만든 것과 요청 항목',
-    table(['요청 항목', '오늘 코드', '빈칸'],
-          [['Agent Loop · Planning · Tool Calling', 'ask-radar.ts agent ⇄ tools', '1'],
-           ['Harness · Context Engineering', 'MAX_STEPS 강제 중단, 부하 대화는 부하 안에만', '2'],
-           ['외부 Tool 연계', 'searchDocs(RAG) · look_weather(MCP)', '3'],
-           ['MCP', '날씨 MCP 서버 + 클라이언트', '4 · 5'],
-           ['Context · Memory · Agentic Retrieval', 'Hindsight remember / retain, 같은 사례면 Jev 생략', '시연'],
-           ['State · Checkpoint · Retry', 'reducer 칠판, SqliteSaver, --resume', '9'],
-           ['Task Decomposition · Subagent', 'searchDocs(Worker) + askRadar(서브그래프) 동시 실행 후 합류', '7 · 8'],
-           ['HITL · 장기 실행 제어', 'interrupt 두 곳, 이어가기', '6 · 9'],
-           ['Trace · Evaluation · Observability', 'traces/*.jsonl, LangSmith, Langfuse(특강)', '—'],
-           ['권한 · Prompt Injection · Sandbox', '상한 다섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달', '—'],
-           ['Jev', 'choice · score · noul 3질문', '10']], 'dense') +
+add(4, '오늘 만든 것과 요청 항목',
+    table(['요청 항목', '오늘 코드', '단계'],
+          [['Agent Loop · Planning · Tool Calling', 'ask-radar.ts agent ⇄ tools, 새 도구 look_flight_plan', '1 · 2'],
+           ['Harness · Context Engineering', 'MAX_STEPS 강제 중단, 부하 대화는 부하 안에만', '1 · 5'],
+           ['외부 Tool 연계', 'searchDocs(RAG) · look_flight_plan · look_weather(MCP)', '2 · 3 · 4'],
+           ['MCP', '날씨 MCP 서버 + 클라이언트', '4'],
+           ['Task Decomposition · Subagent', 'searchDocs(Worker) + askRadar(서브그래프) 동시 실행 후 합류', '1 · 5'],
+           ['Jev (판정 모델)', 'choice · score · noul 3질문 + 코드 규칙', '6'],
+           ['HITL · 장기 실행 제어', 'interrupt 두 곳, 이어가기', '7'],
+           ['State · Checkpoint · Retry', 'reducer 칠판, SqliteSaver, --resume', '7'],
+           ['Context · Memory · Agentic Retrieval', 'Hindsight 찾기 · 남기기, 같은 사례면 Jev 생략', '8'],
+           ['Trace · Evaluation · Observability', 'traces/*.jsonl, LangSmith, Langfuse(특강)', '시연'],
+           ['권한 · Prompt Injection · Sandbox', '상한 다섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달', '시연']], 'dense') +
     '<div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div>', 'table')
 
 # ───────── HTML ─────────
