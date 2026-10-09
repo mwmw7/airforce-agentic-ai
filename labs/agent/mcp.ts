@@ -34,11 +34,11 @@ export async function connectMcp(url = MCP_WEATHER_URL): Promise<Client | null> 
 export async function listMcpTools(): Promise<Tool[]> {
   const c = await connectMcp();
   if (!c) return [];
-  // ===== TODO 5: MCP 도구 목록 받기 =====
+  // ===== TODO 4-2: MCP 도구 목록 받기 =====
   // c.listTools() 의 결과 tools 는 [{ name, description, inputSchema }] 모양입니다.
   // 이걸 모델이 읽는 형식 { type: "function", function: { name, description, parameters: inputSchema } } 로 하나씩 바꿔 돌려주세요.
   // (이름은 mcpToolNames 에 넣어 두면 tools 노드가 "MCP 도구인지" 구분할 수 있습니다)
-  // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일
+  // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 4)
   return [];
 }
 
@@ -49,8 +49,8 @@ export const isMcpTool = (name: string): boolean => mcpToolNames.has(name);
 export const callMcpTool = traceable(async function callMcpTool(name: string, args: Record<string, unknown>): Promise<string> {
   const c = await connectMcp();
   if (!c) return JSON.stringify({ error: "MCP 서버 없음" });
-  // ===== TODO 5: MCP 도구 실행하기 =====
+  // ===== TODO 4-2: MCP 도구 실행하기 =====
   // c.callTool({ name, arguments: args }) 를 부르면 result.content 에 [{ type: "text", text }] 가 옵니다. text 만 모아 돌려주세요.
-  // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일
-  return JSON.stringify({ error: "TODO 5 미구현" });
+  // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 4)
+  return JSON.stringify({ error: "TODO 4-2 미구현" });
 }, { name: "mcp.call", run_type: "tool" });

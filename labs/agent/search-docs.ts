@@ -24,7 +24,7 @@ export function searchDocs(question: string, topN = 3): string[] {
   // 규정의 단어(words(rule))가 질문(question) 안에 들어 있으면 1점씩. 겹치는 단어가 많을수록 관련 있는 규정이다.
   //   · question.includes(word) 로 "들어 있는지" 만 본다 (조사 때문에 단어가 정확히 같지 않아도 걸리게)
   //   · 점수가 0 인 줄은 버리고, 점수 높은 순으로 정렬한 뒤 앞에서 topN 개만 돌려준다
-  // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일
+  // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 3)
   const scored = rules.map((rule) => ({ rule, score: 0 }));
   return scored
     .filter((s) => s.score > 0)
