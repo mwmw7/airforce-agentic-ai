@@ -66,6 +66,6 @@ console.log(`
   pnpm mcp:weather        # 날씨 MCP 서버 (다른 터미널에 켜 둔다)
   pnpm agent              # 보고 한 줄 → agent ⇄ tools → judge
   pnpm agent --watch      # 단계마다 들어간 값·나온 값 보기
-  pnpm agent:live         # 브라우저(localhost:3030)에서 실시간 보기
-  pnpm studio             # LangGraph Studio (LangSmith 키 필요)
+  pnpm see:run            # 브라우저(localhost:3030)에서 실시간 보기
+  pnpm see:studio         # LangGraph Studio (LangSmith 키 필요)
 `);

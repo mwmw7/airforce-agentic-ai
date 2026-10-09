@@ -422,7 +422,7 @@ add(4, '실행 기록은 어디서 보나?',
                '# 끄면 traces/*.jsonl 만 남는다']) +
          bullets(['노드 하나 = span 하나, 부하 안의 agent ⇄ tools 는 askRadar 아래에 접혀 있다',
                   'LLM 호출은 보낸 메시지 · 받은 답 · 토큰 수까지',
-                  '<code>pnpm studio</code> 는 같은 키로 LangGraph Studio 를 띄운다',
+                  '<code>pnpm see:studio</code> 는 같은 키로 LangGraph Studio 를 띄운다',
                   'Langfuse 로 보는 법은 14:30 이현우 특강에서']),
          '<div class="placeholder img">LangSmith 트리 캡처 자리<br/><span>run → searchDocs · askRadar(agent, tools …) · remember · judge · approve</span></div>'), 'cmd')
 add(4, '오늘 만든 것과 요청 항목',

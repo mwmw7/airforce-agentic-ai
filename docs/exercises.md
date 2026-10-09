@@ -111,8 +111,8 @@
 | Jev 바꿔 비교 | `JEV_MODE=local pnpm agent --all` 과 `JEV_MODE=typesafe pnpm agent --all` | 표 두 개 나란히: 규칙 판정기는 전부 scramble, Jev 는 보고마다 다르게 |
 | 모델 바꿔 보기 | `.env` 의 `LLM_MODE` 를 ollama / relay 로 | 같은 보고, 다른 도구 선택·사실 정리 |
 | 실행 기록 트리 | `.env` 에 `LANGSMITH_TRACING=true` | smith.langchain.com 에서 노드 → LLM · Jev · MCP · 기억 호출이 트리로 |
-| 그래프 그림 | `pnpm graph` | `docs/graphs/agent.md` — 선을 바꾸면 그림도 바뀐다 |
-| 공식 디버거 | `pnpm studio` | Input `{ "report": "…" }` 로 한 노드씩 |
+| 그래프 그림 | `pnpm see:graph` | `docs/graphs/agent.md` — 선을 바꾸면 그림도 바뀐다 |
+| 공식 디버거 | `pnpm see:studio` | Input `{ "report": "…" }` 로 한 노드씩 |
 
 ### 기억 파일 vs 기억 서버 (`MEMORY_MODE`)
 

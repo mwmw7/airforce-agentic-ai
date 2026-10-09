@@ -25,10 +25,10 @@
  *        pnpm agent:limit                     MAX_STEPS=1 로 부하를 강제 중단 → 부하만 멈추고 부모는 규정집만으로 판정까지 간다
  *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부). 부하 안의 단계는 askRadar › agent 처럼 찍힌다
  *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 부하 안에서 사람에게 묻는 화면이 뜬다
- *        pnpm agent:live                      브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
+ *        pnpm see:run                         브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
  *        pnpm agent --resume <실행번호>       담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (checkpoints.sqlite)
  *        pnpm agent --all                     보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 답한다 (--answer w 를 주면 자동). JEV_MODE 바꿔 두 번 돌려 비교
- *        pnpm studio                          LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). 부하는 접힌 노드로 보인다
+ *        pnpm see:studio                      LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). 부하는 접힌 노드로 보인다
  */
 import readline from "node:readline/promises";
 import { Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
@@ -171,7 +171,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   return { judgment: { ...j, decision } };
 }
 
-// ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm graph · Studio 가 가져다 쓴다)
+// ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm see:graph · Studio 가 가져다 쓴다)
 export const graph = new StateGraph(MainState)
   .addNode("searchDocs", searchDocsNode)               // Worker: 함수 하나
   // ===== TODO 1: 레이더 부하 Agent(서브그래프)를 노드로 꽂기 =====
@@ -207,7 +207,7 @@ export const graph = new StateGraph(MainState)
   .compile({ checkpointer: SqliteSaver.fromConnString("checkpoints.sqlite") });
 
 // ── 3. 실행: 보고 하나를 넣고 돌린다 ──
-// 이 파일을 직접 실행할 때만 돈다 (pnpm graph 가 import 할 때는 그림만 그린다)
+// 이 파일을 직접 실행할 때만 돈다 (pnpm see:graph 가 import 할 때는 그림만 그린다)
 if (process.argv[1]?.endsWith("main.ts")) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
