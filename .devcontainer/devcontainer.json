@@ -1,0 +1,32 @@
+// .devcontainer/devcontainer.json — 실습 환경 레시피 (GitHub Codespaces · VS Code Dev Containers 공용)
+//   교육생은 아무것도 설치하지 않는다. 이 파일을 읽은 도구가 Node 22 Linux 상자를 만들고 setup.sh 를 돌려 준다.
+//   비밀값(조별 토큰 · Jev 키)은 여기 넣지 않는다 → Codespaces 의 Secrets 나 .env 로
+{
+  "name": "공군 Agentic AI 핸즈온",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "hostRequirements": { "cpus": 2 },
+
+  "containerEnv": {
+    "TZ": "Asia/Seoul",
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+  },
+
+  // 컨테이너를 처음 만들 때 한 번: pnpm 준비 → 패키지 설치 → .env 만들기 → 환경 점검
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // 컨테이너 안에서 켜는 서버들. 켜지면 브라우저로 열 수 있게 알려 준다
+  "forwardPorts": [3333, 3030, 2024],
+  "portsAttributes": {
+    "3333": { "label": "날씨 MCP 서버 (pnpm mcp:weather)", "onAutoForward": "silent" },
+    "3030": { "label": "실시간 화면 (pnpm agent:live)", "onAutoForward": "openBrowser" },
+    "2024": { "label": "LangGraph Studio (pnpm studio)", "onAutoForward": "notify" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "settings": { "files.eol": "\n", "terminal.integrated.defaultProfile.linux": "bash" }
+    },
+    // Codespace 를 열면 README 를 먼저 보여 준다
+    "codespaces": { "openFiles": ["README.md"] }
+  }
+}
