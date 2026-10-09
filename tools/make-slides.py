@@ -27,8 +27,26 @@ def read_todos():
                 todos.setdefault(name, {'file': f, 'parts': []})['parts'].append(part)
     return todos
 TODOS = read_todos()
-MERMAID = re.search(r'```mermaid\n(.*?)```', (R / 'docs/graphs/agent.md').read_text(encoding='utf-8'), re.S).group(1).strip()
-MERMAID = '\n'.join(l for l in MERMAID.split('\n') if not l.strip().startswith('classDef') and not l.strip().startswith('%%')).replace('graph TD;', 'graph LR;').replace(':::first','').replace(':::last','').replace('<p>','').replace('</p>','')
+def read_graph(name):
+    """docs/graphs/<name>.md 의 Mermaid 를 슬라이드 테마에 맞게 다듬는다 (색 지정 · init 줄을 빼고 슬라이드 쪽 테마를 쓴다)"""
+    src = re.search(r'```mermaid\n(.*?)```', (R / f'docs/graphs/{name}.md').read_text(encoding='utf-8'), re.S).group(1).strip()
+    return '\n'.join(l for l in src.split('\n') if not l.strip().startswith('classDef') and not l.strip().startswith('%%')).replace(':::first','').replace(':::last','').replace('<p>','').replace('</p>','')
+MERMAID = read_graph('agent').replace('graph TD;', 'graph LR;')
+
+def graph_change(before, after):
+    """단계 그림 둘(docs/graphs/step-*.md, pnpm see:steps 로 생성)을 비교해 뒤 그림에서 새로 생긴 노드 · 선을 앰버로 칠한다"""
+    a, b = read_graph(before), read_graph(after)
+    node = lambda l: re.match(r'\s*(\w+)\(', l)
+    edge = lambda l: re.search(r'-\.?->', l)
+    nodes_a = {node(l).group(1) for l in a.split('\n') if node(l)}
+    edges_a = {l.strip() for l in a.split('\n') if edge(l)}
+    new_nodes = [node(l).group(1) for l in b.split('\n') if node(l) and node(l).group(1) not in nodes_a]
+    edges_b = [l.strip() for l in b.split('\n') if edge(l)]
+    new_edges = [i for i, l in enumerate(edges_b) if l not in edges_a]
+    marks = ['classDef new stroke:#F2B544,stroke-width:3px']
+    if new_nodes: marks.append(f'class {",".join(new_nodes)} new')
+    if new_edges: marks.append(f'linkStyle {",".join(map(str, new_edges))} stroke:#F2B544,stroke-width:3px')
+    return a, b + '\n' + '\n'.join(marks)
 
 # ───────── 재료 다듬기 ─────────
 def width(s):  # 한글은 2칸
@@ -151,6 +169,13 @@ add(1, step_tag(1, '레이더 담당 부하 Agent 데려오기'),
                   '부모와 이름이 겹치는 칸(facts · evidence · steps)만 돌아온다. 부하의 대화는 부하 안에']),
          term(pick('02_run1_first.txt', [r'^\[TOOL  \] search_docs', r'^\[SUB', r'^┃ \[(LLM|TOOL)'], limit=10)) +
          ok('<code>[SUB] ┏━ askRadar</code> 띠가 열리고, 담당자 화면에 <b>레이더 · 확대</b> 줄이 생긴다')), 'diff')
+G1, G2 = graph_change('step-1', 'step-2')
+add(1, '1단계 전후 — 그래프에서 무엇이 바뀌었나?',
+    cols(mermaid(G1) + small('채우기 전 (<code>pnpm step 1</code>): askRadar 는 함수 하나짜리 가짜 부하'),
+         mermaid(G2) + small('채운 뒤 (<code>pnpm step 2</code>): askRadar 가 <span class="amber">agent ⇄ tools 루프</span>로 펼쳐진다')) +
+    bullets(['바뀐 건 노드 <b>하나의 속</b>. 바깥 선(searchDocs → askRadar → remember)은 그대로다',
+             '오늘 그래프 모양이 바뀌는 건 두 번뿐: 지금(1단계, 노드)과 5단계(선). 나머지 단계는 노드 안의 코드만 채운다',
+             '그림 다시 뽑기: <code>pnpm see:steps</code> → <code>docs/graphs/step-*.md</code>']), 'fig')
 add(1, '부하 안을 열면? — 1일차 그 루프',
     cols(mermaid('''flowchart LR
   A["agent<br/>모델 호출"] -- "tool_calls: [{name: look_radar, arguments: {어디: 서울}}]" --> T["tools<br/>내 코드 runTool()"]
@@ -264,6 +289,12 @@ add(2, step_tag(5, '순차를 동시로'),
          term(pick('08_sequential_watch.txt', [r'^\[NODE  \] [▶◀] (searchDocs|askRadar) '], limit=3)) + small('채우기 전: 규정집이 끝나야 레이더가 출발') +
          term(pick('05_watch.txt', [r'^\[NODE  \] [▶◀] (searchDocs|askRadar|remember) '], limit=5)) + small('채운 뒤: 둘이 같이 출발, remember 는 둘 다 끝나야') +
          ok('<code>▶ askRadar</code> 와 <code>▶ searchDocs</code> 가 나란히 시작하고, remember 가 <code>← join:searchDocs+askRadar</code> 로 깨어난다')), 'diff')
+G5, G6 = graph_change('step-5', 'step-6')
+add(2, '5단계 전후 — 그래프에서 무엇이 바뀌었나?',
+    cols(mermaid(G5) + small('채우기 전 (<code>pnpm step 5</code>): 규정집 → 레이더 → remember, 한 줄로'),
+         mermaid(G6) + small('채운 뒤 (<code>pnpm step 6</code>): <span class="amber">START 에서 둘로 갈라졌다가 remember 에서 합류</span>')) +
+    bullets(['노드는 하나도 안 늘었다. 코드 세 줄을 바꿨고, 그림에선 <b>searchDocs → askRadar 선이 빠지고 앰버 선 두 개가 생겼다</b>',
+             '1단계는 노드 속을, 5단계는 노드 사이의 선을 바꿨다. 오늘 그래프 모양이 바뀌는 건 이 두 번이 전부다']), 'fig')
 add(2, '왜 나누나?',
     table(['이점', '하나의 루프였을 때', '부하로 나누면', '어디서 보이나'],
           [['작업 기록이 부모에 안 남는다', '레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감', '20줄은 부하 칠판에만. 부모엔 facts 3줄 + evidence', '<code>--watch</code>: remember 입력에 messages 가 없다'],
