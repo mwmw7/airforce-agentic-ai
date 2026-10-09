@@ -24,6 +24,7 @@
     "memory:ui:stop": "uvx hindsight-embed -p airforce-agent ui stop --port 18888",
     "see:run": "tsx labs/agent/main.ts --live",
     "see:graph": "tsx tools/draw-graph.ts",
+    "see:steps": "node tools/draw-steps.mjs",
     "see:studio": "node tools/see-studio.mjs",
     "instructor:make-handson": "node tools/make-handson.mjs",
     "slides": "python3 tools/make-slides.py"
