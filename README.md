@@ -35,6 +35,10 @@ git diff hands-on main -- labs/agent/main.ts
 - Windows · Mac · Linux 상관없이 **브라우저만 있으면 됩니다.** 개인 계정 무료 한도(월 120 core-hours, 2코어 기준 60시간) 안에서 돌고, 한도를 넘어도 요금이 나가지 않고 멈춥니다
 - 30분 동안 아무것도 안 하면 잠듭니다(점심시간). 파일은 그대로, 켜 둔 `pnpm mcp:weather` 만 다시 켜세요
 - 토큰·키는 `.env` 에 넣거나, GitHub **Settings → Codespaces → Secrets** 에 같은 이름(`LLM_API_KEY` 등)으로 넣으면 `.env` 보다 우선합니다
+- 그래프 보기 (Codespace 에서)
+  - `pnpm agent:live` — 그래프 그림 위에서 지금 도는 노드가 켜진다. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
+  - `pnpm graph` → `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기). 선을 고치면 그림도 바뀐다
+  - `pnpm studio:cs` — LangGraph Studio. 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
 - 내 노트북에 직접 설치하려면 아래 1-1 부터
 
 ### 1-1. 준비물 (교육 1주 전에 미리)

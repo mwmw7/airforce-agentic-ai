@@ -19,12 +19,14 @@
   "portsAttributes": {
     "3333": { "label": "날씨 MCP 서버 (pnpm mcp:weather)", "onAutoForward": "silent" },
     "3030": { "label": "실시간 화면 (pnpm agent:live)", "onAutoForward": "openBrowser" },
-    "2024": { "label": "LangGraph Studio (pnpm studio)", "onAutoForward": "notify" }
+    "2024": { "label": "LangGraph Studio (pnpm studio:cs)", "onAutoForward": "notify" }
   },
 
   "customizations": {
     "vscode": {
-      "settings": { "files.eol": "\n", "terminal.integrated.defaultProfile.linux": "bash" }
+      "settings": { "files.eol": "\n", "terminal.integrated.defaultProfile.linux": "bash" },
+      // pnpm graph 가 만든 docs/graphs/*.md 의 Mermaid 그림을 미리보기(Ctrl+Shift+V)로 바로 보기
+      "extensions": ["bierner.markdown-mermaid"]
     },
     // Codespace 를 열면 README 를 먼저 보여 준다
     "codespaces": { "openFiles": ["README.md"] }
