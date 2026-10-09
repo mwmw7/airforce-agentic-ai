@@ -2,6 +2,7 @@
   "name": "airforce-agentic-ai",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@12.6.0",
   "description": "공군 AI센터 Agentic AI 교육 (2026.10.29~30) 핸즈온 저장소 — TypeScript · LangGraph.js · Jev",
   "type": "module",
@@ -23,7 +24,8 @@
     "memory:ui:stop": "uvx hindsight-embed -p airforce-agent ui stop --port 18888",
     "studio": "langgraphjs dev --port 2024",
     "graph": "tsx tools/draw-graph.ts",
-    "instructor:make-handson": "node tools/make-handson.mjs"
+    "instructor:make-handson": "node tools/make-handson.mjs",
+    "slides": "python3 tools/make-slides.py"
   },
   "dependencies": {
     "@langchain/core": "^1.2.14",

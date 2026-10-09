@@ -12,7 +12,8 @@
  *
  * 콘솔 한 줄은 모두 같은 모양이다:  [꼬리표] 내용  — 꼬리표 색만 보면 누가 한 일인지 안다
  *   REPORT 보고 · SETUP 설정 · LLM 모델 · TOOL 내 도구 · MCP MCP 도구 · MEMORY 기억(Hindsight/file)
- *   JEV 판정 모델 · RULE 코드 규칙 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch)
+ *   JEV 판정 모델 · RULE 코드 규칙 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch) · SUB 부하(Subagent) 시작·끝
+ *   부하 안에서 찍히는 줄은 전부 앞에 보라색 ┃ 가 붙는다 → 어디까지가 부하의 일인지 한눈에
  */
 import { inspect } from "node:util";
 import { send } from "./live.js";
@@ -37,6 +38,7 @@ const TAGS = {
   report: ["REPORT", "107;30"], setup: ["SETUP", "100;97"], llm: ["LLM", "105;30"], tool: ["TOOL", "102;30"],
   mcp: ["MCP", "106;30"], memory: ["MEMORY", "104;30"], jev: ["JEV", "103;30"], human: ["HUMAN", "101;30"],
   rule: ["RULE", "47;30"], decide: ["DECIDE", "42;97;1"], stop: ["STOP", "41;97;1"], node: ["NODE", "100;97"], live: ["LIVE", "100;97"],
+  sub: ["SUB", "45;97;1"],
 } as const;
 export type Kind = keyof typeof TAGS;
 
@@ -46,10 +48,31 @@ export const tag = (kind: Kind) => {
   return color ? `\x1b[${code}m ${label.padEnd(6)} \x1b[0m` : `[${label.padEnd(6)}]`;
 };
 
-/** 콘솔 한 줄 + (있으면) 이어지는 줄들. 이어지는 줄은 꼬리표 폭만큼 들여 쓰고 │ 로 묶는다 */
-export function log(kind: Kind, text: string, more: string[] = []) {
-  console.log(`${tag(kind)} ${text}`);
-  for (const m of more) console.log(`         ${dim("│")} ${m}`);
+// ── 부하(Subagent) 안에 있는 동안은 모든 줄 앞에 보라색 세로선을 붙인다 → "지금은 부하가 일하는 중" 이 한눈에 보인다 ──
+let inside = ""; // 지금 들어가 있는 부하 이름 (비어 있으면 부모)
+const BAR = () => magenta("┃");
+/** 부하 안으로 들어간다 (처음 한 번만 띠를 친다. 이어가기(resume)로 다시 들어와도 안전) */
+export function enterSub(name: string, note: string) {
+  if (inside === name) return;
+  inside = name;
+  console.log(`${tag("sub")} ${magenta("┏━")} ${bold(name)} ${dim(note)}`);
+  send("sub_start", { name, note });
+}
+/** 부하에서 나온다. 띠를 닫고 들여쓰기를 푼다 */
+export function leaveSub(note: string) {
+  if (!inside) return;
+  console.log(`${tag("sub")} ${magenta("┗━")} ${bold(inside)} ${dim("끝 · " + note)}`);
+  send("sub_end", { name: inside, note });
+  inside = "";
+}
+export const insideSub = () => inside;
+
+/** 콘솔 한 줄 + (있으면) 이어지는 줄들. 이어지는 줄은 꼬리표 폭만큼 들여 쓰고 │ 로 묶는다
+ *  부하 안이면 줄마다 앞에 ┃ 가 붙는다. plain: true 면 부하 안이어도 붙이지 않는다 (부모 쪽 줄) */
+export function log(kind: Kind, text: string, more: string[] = [], opts: { plain?: boolean } = {}) {
+  const pre = inside && !opts.plain ? `${BAR()} ` : "";
+  console.log(`${pre}${tag(kind)} ${text}`);
+  for (const m of more) console.log(`${pre}         ${dim("│")} ${m}`);
 }
 
 /** 값의 '형태' 를 한 줄로. 예) { alert: {scenario,title,…}, clues: {from,ok,lines}[3], blocked: string[0] } */
@@ -80,9 +103,11 @@ const startedAt = new Map<string, number>(); // task id → 시작 시각 (걸�
 /** 노드가 돌려준 칸. LangGraph 0.3 은 [["칸", 값]] 쌍 배열, 1.x 는 { 칸: 값 } 객체로 준다 — 둘 다 받는다 */
 const asObject = (r: unknown): Record<string, unknown> => (Array.isArray(r) ? Object.fromEntries(r as [string, unknown][]) : ((r as Record<string, unknown>) ?? {}));
 
-/** debug 이벤트 하나를 받아 그린다. --watch 가 없으면 아무것도 하지 않는다. */
-export function showDebug(ev: { type: string; payload: Record<string, unknown> }) {
+/** debug 이벤트 하나를 받아 그린다. --watch 가 없으면 아무것도 하지 않는다.
+ *  inside: 부하(서브그래프) 안의 단계면 그 부하 이름 ("askRadar") — 터미널엔 "askRadar › agent" 로 찍고, 브라우저엔 노드 이름만 보낸다 */
+export function showDebug(ev: { type: string; payload: Record<string, unknown> }, inside = "") {
   const p = ev.payload;
+  const shown = inside ? `${inside} › ${String(p.name)}` : String(p.name);
   if (ev.type === "task") {
     startedAt.set(String(p.id), Date.now());
     send("node_start", { name: p.name, from: (p.triggers as string[])?.join(", "), input: p.input });
@@ -94,22 +119,23 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
   }
   if (WATCH === "off") return;
 
+  const plain = !inside || String(p.name) === inside; // 부모 그래프의 줄(부하 노드 자체 포함)은 세로선 없이
   if (ev.type === "task") {
     const input = p.input as Record<string, unknown>;
     const from = (p.triggers as string[])?.join(", ");
-    log("node", `${bold("▶ " + String(p.name))} ${dim("시작 · ← " + from)}`,
-      [`${dim("입력 형태")} ${shape(input)}`, ...Object.entries(input).map(([k, v]) => `${yellow(k)} ${pretty(v)}`)]);
+    log("node", `${bold("▶ " + shown)} ${dim("시작 · ← " + from)}`,
+      [`${dim("입력 형태")} ${shape(input)}`, ...Object.entries(input).map(([k, v]) => `${yellow(k)} ${pretty(v)}`)], { plain });
   }
 
   if (ev.type === "task_result") {
     const ms = Date.now() - (startedAt.get(String(p.id)) ?? Date.now());
     const result = asObject(p.result);
     const interrupts = (p.interrupts as { value: unknown }[]) ?? [];
-    log("node", `${bold("◀ " + String(p.name))} ${dim("끝 · " + ms + "ms")}`, [
+    log("node", `${bold("◀ " + shown)} ${dim("끝 · " + ms + "ms")}`, [
       `${dim("출력 형태")} ${shape(result)}`,
       ...Object.entries(result).map(([k, v]) => `${yellow(k)} ${pretty(v)}`),
       ...interrupts.map((i) => `${yellow("여기서 멈춤 — 사람에게 보낼 질문")} ${pretty(i.value)}`),
-    ]);
+    ], { plain });
   }
 }
 

@@ -30,9 +30,9 @@ export function send(type: string, data: Record<string, unknown> = {}) {
 export const waitAnswerFromPage = () => new Promise<string>((resolve) => { answerFromPage = resolve; });
 
 /** 서버를 띄우고 브라우저를 연다. 첫 브라우저가 붙을 때까지 최대 10초 기다린다 */
-export async function startLive(graph: { getGraphAsync(): Promise<{ drawMermaid(): string }> }) {
+export async function startLive(graph: { getGraphAsync(opts?: { xray?: boolean }): Promise<{ drawMermaid(): string }> }) {
   if (!LIVE) return;
-  const mermaid = (await graph.getGraphAsync()).drawMermaid();
+  const mermaid = (await graph.getGraphAsync({ xray: true })).drawMermaid(); // xray: 부하(서브그래프) 안까지 펼쳐 그린다
   const page = readFileSync(new URL("./live.html", import.meta.url), "utf8").replace("__MERMAID__", JSON.stringify(mermaid));
 
   http.createServer((req, res) => {

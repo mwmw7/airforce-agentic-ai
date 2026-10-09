@@ -11,3 +11,8 @@ traces/
 # LangGraph API
 .langgraph_api
 .hindsight/
+
+# 공개 저장소에서 제외 (강사 내부 작업 메모 · 실행 결과)
+CLAUDE.md
+AGENTS.md
+reports/

@@ -1,0 +1,565 @@
+$ tsx labs/agent/main.ts 3 --watch
+
+────────────────────────────────────────────────────────────────────────
+[REPORT] 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.
+[SETUP ] 모델 mock · Jev local · 기억 file
+         │ 모델 한 번 60초 · 실행 전체 180초 · 최대 8회 · 실행번호 loop-1-1791371658631 (멈추면 pnpm agent --resume loop-1-1791371658631)
+[TOOL  ] search_docs(보고 그대로)
+         │ 4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.
+         │ 5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.
+         │ 6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.
+[NODE  ] ▶ askRadar 시작 · ← branch:to:askRadar
+         │ 입력 형태 { report: string, steps: number, past: [], evidence: {} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 0
+         │ past []
+         │ evidence {}
+[NODE  ] ▶ searchDocs 시작 · ← branch:to:searchDocs
+         │ 입력 형태 { report: string, steps: number, past: [], evidence: {} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 0
+         │ past []
+         │ evidence {}
+[NODE  ] ◀ searchDocs 끝 · 1ms
+         │ 출력 형태 { evidence: {search_docs} }
+         │ evidence {
+         │     search_docs: [
+         │       '4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.',
+         │       '5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.',
+         │       '6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.'
+         │     ]
+         │   }
+[SUB   ] ┏━ askRadar 레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, past: [], evidence: {}, messages: [] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 0
+┃          │ past []
+┃          │ evidence {}
+┃          │ messages []
+┃ [MCP   ] 날씨 서버 연결 OK — 도구 1개 받음: look_weather
+┃ [LLM   ] [watch] radar.step1 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step1 모델이 답함 · 0ms
+┃          │ {
+         │     content: '',
+         │     toolCalls: [
+         │       {
+         │         id: 'call_mock_1',
+         │         name: 'look_radar',
+         │         args: { '어디': '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │       }
+         │     ]
+         │   }
+┃ [LLM   ] 1회째 → 도구 쓰기: look_radar  35ms
+┃ [NODE  ] ◀ askRadar › agent 끝 · 27ms
+┃          │ 출력 형태 { messages: {role,content}[3], steps: number, facts: string }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃          │ steps 1
+┃          │ facts ''
+┃ [TOOL  ] look_radar(어디: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
+┃          │ 지역 잠실
+┃          │   · 어디 잠실 위  |  뭐가 작은 비행체 약 40개  |  높이 아주 낮음  |  속도 느림  |  무전 조용함  |  메모 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음
+┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {}, messages: {role,content}[3] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 1
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {}
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃ [NODE  ] ◀ askRadar › tools 끝 · 2ms
+┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_radar} }
+┃          │ messages [
+         │     {
+         │       role: 'tool',
+         │       tool_call_id: 'call_mock_1',
+         │       content: '{"지역":"잠실","잡힌것":[{"어디":"잠실 위","뭐가":"작은 비행체 약 40개","높이":"아주 낮음","속도":"느림","무전":"'... 49 more characters
+         │     }
+         │   ]
+┃          │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ]
+         │   }
+┃ [LLM   ] [watch] radar.step2 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │       { role: 'assistant', content: null, tool_calls: [ [Object] ] },
+         │       ... 1 more item
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step2 모델이 답함 · 0ms
+┃          │ {
+         │     content: '',
+         │     toolCalls: [
+         │       {
+         │         id: 'call_mock_2',
+         │         name: 'look_closer',
+         │         args: { '어디': '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │       }
+         │     ]
+         │   }
+┃ [LLM   ] 2회째 → 도구 쓰기: look_closer  0ms
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar}, messages: {role,content}[4] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 1
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 1 more item
+         │   ]
+┃ [NODE  ] ◀ askRadar › agent 끝 · 1ms
+┃          │ 출력 형태 { messages: {role,content,tool_calls}[1], steps: number, facts: string }
+┃          │ messages [
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_2', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃          │ steps 1
+┃          │ facts ''
+┃ [TOOL  ] look_closer(어디: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
+┃          │ 어디 잠실 위  |  뭐가 작은 비행체 약 40개  |  자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만 공항 쪽으로 조금씩 밀리는 중
+┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar}, messages: {role,content}[5] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 2
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 2 more items
+         │   ]
+┃ [NODE  ] ◀ askRadar › tools 끝 · 2ms
+┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_closer} }
+┃          │ messages [
+         │     {
+         │       role: 'tool',
+         │       tool_call_id: 'call_mock_2',
+         │       content: `{"어디":"잠실 위","뭐가":"작은 비행체 약 40개","자세히":"확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 `... 27 more characters
+         │     }
+         │   ]
+┃          │ evidence {
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ]
+         │   }
+┃ [LLM   ] [watch] radar.step3 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │       { role: 'assistant', content: null, tool_calls: [ [Object] ] },
+         │       ... 3 more items
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step3 모델이 답함 · 0ms
+┃          │ {
+         │     content: '',
+         │     toolCalls: [
+         │       {
+         │         id: 'call_mock_3',
+         │         name: 'look_weather',
+         │         args: { '어디': '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │       }
+         │     ]
+         │   }
+┃ [LLM   ] 3회째 → 도구 쓰기: look_weather  0ms
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar,look_closer}, messages: {role,content}[6] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 2
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 3 more items
+         │   ]
+┃ [NODE  ] ◀ askRadar › agent 끝 · 1ms
+┃          │ 출력 형태 { messages: {role,content,tool_calls}[1], steps: number, facts: string }
+┃          │ messages [
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_3', type: 'function', function: [Object] } ]
+         │     }
+         │   ]
+┃          │ steps 1
+┃          │ facts ''
+┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar,look_closer}, messages: {role,content}[7] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 3
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 4 more items
+         │   ]
+┃ [MCP   ] look_weather(어디: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
+┃          │ 하늘 어둠  |  구름 미지  |  바람 불규칙  |  시야 제한적  |  비행 주의 필요  |  때 야간 (드론 떼 출현)  |  출처 LLM(ollama)
+┃ [NODE  ] ◀ askRadar › tools 끝 · 2181ms
+┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_weather} }
+┃          │ messages [
+         │     {
+         │       role: 'tool',
+         │       tool_call_id: 'call_mock_3',
+         │       content: '{"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때":"야간 (드론 떼 출현)","출처":'... 14 more characters
+         │     }
+         │   ]
+┃          │ evidence { look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ] }
+┃ [LLM   ] [watch] radar.step4 모델에게 보냄
+┃          │ {
+         │     mode: 'mock',
+         │     model: 'qwen3.5:latest',
+         │     timeout_sec: 60,
+         │     messages: [
+         │       {
+         │         role: 'system',
+         │         content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │       },
+         │       { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │       { role: 'assistant', content: null, tool_calls: [ [Object] ] },
+         │       ... 5 more items
+         │     ],
+         │     tools: [ 'look_radar', 'look_closer', 'look_weather' ]
+         │   }
+┃ [LLM   ] [watch] radar.step4 모델이 답함 · 0ms
+┃          │ {
+         │     content: '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters,
+         │     toolCalls: []
+         │   }
+┃ [LLM   ] 4회째 → 사실 정리 (도구 안 씀)  0ms
+┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
+┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar,look_closer,look_weather}, messages: {role,content}[8] }
+┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+┃          │ steps 3
+┃          │ facts ''
+┃          │ past []
+┃          │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ],
+         │     look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ]
+         │   }
+┃          │ messages [
+         │     {
+         │       role: 'system',
+         │       content: '너는 관제실의 레이더 담당이다. 보고를 받으면 보고에 나온 장소로 look_radar 를 봐라 (장소를 모르면 비워서 전체 목록을 본다). 관련'... 81 more characters
+         │     },
+         │     { role: 'user', content: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' },
+         │     {
+         │       role: 'assistant',
+         │       content: null,
+         │       tool_calls: [ { id: 'call_mock_1', type: 'function', function: [Object] } ]
+         │     },
+         │     ... 5 more items
+         │   ]
+[SUB   ] ┗━ askRadar 끝 · 모델 4회 호출, 사실 정리 완료 → 부모에게
+[NODE  ] ◀ askRadar › agent 끝 · 1ms
+         │ 출력 형태 { messages: {role,content}[1], steps: number, facts: string }
+         │ messages [
+         │     {
+         │       role: 'assistant',
+         │       content: '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+         │     }
+         │   ]
+         │ steps 1
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+[NODE  ] ◀ askRadar 끝 · 2239ms
+         │ 출력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar,look_closer,look_weather} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+         │ past []
+         │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ],
+         │     look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ]
+         │   }
+[MEMORY] [file] 같은 사례 없음 (가장 비슷한 것 일치도 0.08 < 0.9) → Jev 에게 묻는다
+[NODE  ] ▶ remember 시작 · ← join:searchDocs+askRadar:remember
+         │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar,look_closer,look_weather,search_docs} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+         │ past []
+         │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ],
+         │     look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ],
+         │     search_docs: [
+         │       '4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.',
+         │       '5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.',
+         │       '6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.'
+         │     ]
+         │   }
+[NODE  ] ◀ remember 끝 · 2ms
+         │ 출력 형태 { memory: 없음 }
+         │ memory null
+[MEMORY] [file] recall · Jev 참고용 비슷한 기억 (겹치는 단어 수) → 2건
+         │ 단어 6개 보고: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요!…
+         │ 단어 5개 보고: 한강 위로 거대한 오리 모양 풍선이 떠내려가고 있어요. 낮고 느린데 바람 따라 김포공항 쪽으로 가는 것 같아요. / 확인한…
+[JEV   ] [local] System One 판정 · local 규칙 판정기 · 질문 3개 한 번에 · 0ms
+         │ 보낸 근거 state report(53자) · facts(116자) · past(2건)
+         │ ① action   choice report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?
+         │      ▶ scramble  █████████░  94%  확신 90%
+         │        watch     ░░░░░░░░░░   4%
+         │        ignore    ░░░░░░░░░░   2%
+         │ ② danger   score  얼마나 위험해 보이나?
+         │      → 2.94 / 3  ■■■■  비상! 당장 뭔가 해야 함
+         │ ③ unknown  noul   정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다
+         │      → 예 (예일 확률) ████████░░  75%
+[RULE  ] Jev 는 의견, 결정은 코드 규칙 · 조건 scramble → 출격 준비! (최종 버튼은 지휘관이)
+[NODE  ] ▶ judge 시작 · ← branch:to:judge
+         │ 입력 형태 { report: string, steps: number, facts: string, memory: 없음, past: [], evidence: {look_radar,look_closer,look_weather,search_docs} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+         │ memory null
+         │ past []
+         │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ],
+         │     look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ],
+         │     search_docs: [
+         │       '4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.',
+         │       '5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.',
+         │       '6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.'
+         │     ]
+         │   }
+[NODE  ] ◀ judge 끝 · 1ms
+         │ 출력 형태 { judgment: {action,probabilities,confidence,danger,…}, past: string[2] }
+         │ judgment {
+         │     action: 'scramble',
+         │     probabilities: { scramble: 0.942, watch: 0.038, ignore: 0.019 },
+         │     confidence: 0.904,
+         │     danger: 3,
+         │     unknown: 0.75,
+         │     decision: '출격 준비! (최종 버튼은 지휘관이)'
+         │   }
+         │ past [
+         │     '2026-10-07 11:14 보고: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아'... 1027 more characters,
+         │     '2026-10-07 11:14 보고: 한강 위로 거대한 오리 모양 풍선이 떠내려가고 있어요. 낮고 느린데 바람 따라 김포공항 쪽으로 가는 것 같'... 602 more characters
+         │   ]
+[NODE  ] ▶ approve 시작 · ← branch:to:approve
+         │ 입력 형태 { report: string, steps: number, facts: string, judgment: {action,probabilities,confidence,danger,…}, memory: 없음, past: string[2], evidence: {look_radar,look_closer,look_weather,search_docs} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+         │ judgment {
+         │     action: 'scramble',
+         │     probabilities: { scramble: 0.942, watch: 0.038, ignore: 0.019 },
+         │     confidence: 0.904,
+         │     danger: 3,
+         │     unknown: 0.75,
+         │     decision: '출격 준비! (최종 버튼은 지휘관이)'
+         │   }
+         │ memory null
+         │ past [
+         │     '2026-10-07 11:14 보고: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아'... 1027 more characters,
+         │     '2026-10-07 11:14 보고: 한강 위로 거대한 오리 모양 풍선이 떠내려가고 있어요. 낮고 느린데 바람 따라 김포공항 쪽으로 가는 것 같'... 602 more characters
+         │   ]
+         │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ],
+         │     look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ],
+         │     search_docs: [
+         │       '4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.',
+         │       '5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.',
+         │       '6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.'
+         │     ]
+         │   }
+[NODE  ] ◀ approve 끝 · 0ms
+         │ 출력 형태 {  }
+         │ 여기서 멈춤 — 사람에게 보낼 질문 {
+         │     '문제': '종합 — 담당자가 결정합니다',
+         │     '요약': [ '## 보고', '- 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.', '## 레이더', ... 19 more items ],
+         │     '고르기': 'y(출격) / w(감시 강화) / n(무시)'
+         │   }
+[HUMAN ] 종합 — 담당자가 결정합니다
+         │ 보고
+         │   · 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.
+         │ 레이더
+         │   · 지역 잠실
+         │   · 잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음
+         │ 확대해서 본 것
+         │   · 어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만 공항 쪽으로 조금씩 밀리는 중
+         │ 날씨
+         │   · 하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)
+         │ 관련 규정
+         │   · 4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.
+         │   · 5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.
+         │   · 6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.
+         │ 기억
+         │   · 2026-10-07 11:14 보고: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아지고 있어요! / 확인한 사실: [m
+         │     ock] 도구 결과를 확인했습니다: {"하늘":"청량한 밤하늘에 별빛이 반짝이며 둥근 비행체가 고요히 떠 있
+         │   · 2026-10-07 11:14 보고: 한강 위로 거대한 오리 모양 풍선이 떠내려가고 있어요. 낮고 느린데 바람 따라 김포공항 쪽으로 가는 것 같아요. / 확인한 사실: [중단] 모
+         │     델을 이미 1번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다. / 종합 근거: / - ## 보고 / -
+         │ Jev 판정
+         │   · scramble · 확신 90% · 위험도 3단계 (비상! 당장 뭔가 해야 함) · 정체불명 75%
+         │ 코드 권고
+         │   · 출격 준비! (최종 버튼은 지휘관이)
+         │ 모델이 정리한 사실
+         │   · [mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때":"야간 (드론 떼 출현)","출처
+         │     ":"LLM(ollama)"}
+         │ y(출격) / w(감시 강화) / n(무시) > [HUMAN ] 답: w
+[MEMORY] [file] retain → .hindsight/control-room.json 에 1건 (실행번호 loop-1-1791371658631 · 같은 번호는 덮어씀)
+         │ 원문 보고: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요. / 확인한 사실: [mock] 도구 결과를 확인했습니다: {"…
+[NODE  ] ▶ approve 시작 · ← branch:to:approve
+         │ 입력 형태 { report: string, steps: number, facts: string, judgment: {action,probabilities,confidence,danger,…}, memory: 없음, past: string[2], evidence: {look_radar,look_closer,look_weather,search_docs} }
+         │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
+         │ steps 4
+         │ facts '[mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때'... 36 more characters
+         │ judgment {
+         │     action: 'scramble',
+         │     probabilities: { scramble: 0.942, watch: 0.038, ignore: 0.019 },
+         │     confidence: 0.904,
+         │     danger: 3,
+         │     unknown: 0.75,
+         │     decision: '출격 준비! (최종 버튼은 지휘관이)'
+         │   }
+         │ memory null
+         │ past [
+         │     '2026-10-07 11:14 보고: 서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요. 시민 제보가 쏟아'... 1027 more characters,
+         │     '2026-10-07 11:14 보고: 한강 위로 거대한 오리 모양 풍선이 떠내려가고 있어요. 낮고 느린데 바람 따라 김포공항 쪽으로 가는 것 같'... 602 more characters
+         │   ]
+         │ evidence {
+         │     look_radar: [ '지역 잠실', '잠실 위 · 작은 비행체 약 40개 · 아주 낮음 · 느림 · 조용함 · 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음' ],
+         │     look_closer: [
+         │       "어디 잠실 위 · 뭐가 작은 비행체 약 40개 · 자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만"... 17 more characters
+         │     ],
+         │     look_weather: [ '하늘 어둠 · 구름 미지 · 바람 불규칙 · 시야 제한적 · 비행 주의 필요 · 때 야간 (드론 떼 출현) · 출처 LLM(ollama)' ],
+         │     search_docs: [
+         │       '4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.',
+         │       '5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.',
+         │       '6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.'
+         │     ]
+         │   }
+[NODE  ] ◀ approve 끝 · 2ms
+         │ 출력 형태 { judgment: {action,probabilities,confidence,danger,…} }
+         │ judgment {
+         │     action: 'scramble',
+         │     probabilities: { scramble: 0.942, watch: 0.038, ignore: 0.019 },
+         │     confidence: 0.904,
+         │     danger: 3,
+         │     unknown: 0.75,
+         │     decision: '감시 강화 — 사람이 결정'
+         │   }
+[DECIDE] 감시 강화 — 사람이 결정  ← Jev scramble 90% + 코드 규칙
+         │ 사실 (가짜 모델(mock) 4회 호출) [mock] 도구 결과를 확인했습니다: {"하늘":"어둠","구름":"미지","바람":"불규칙","시야":"제한적","비행":"주의 필요","때":"야간 (드론 떼 출현)","출처":"LLM(ollama)"}
