@@ -37,11 +37,11 @@
 **2 내 도구** — `ask-radar.ts` 도구 목록(2-1) · runTool(2-2)
 ```diff
 +  { type: "function", function: { name: "look_flight_plan", description: "오늘 미리 통보되거나 허가된 비행 계획(훈련 · 드론 쇼 · 취재 헬기)을 조회한다. 레이더에 잡힌 것이 허가된 것인지 확인할 때 쓴다. (교육용 합성 자료)",
-+      parameters: { type: "object", properties: { 어디: { type: "string", description: "장소 또는 보고 문장 그대로. 예: 잠실 / 서쪽 훈련 구역" } }, required: ["어디"] } } },
++      parameters: { type: "object", properties: { where: { type: "string", description: "장소 또는 보고 문장 그대로. 예: 잠실 / 서쪽 훈련 구역" } }, required: ["where"] } } },
 ```
 ```diff
 +  if (name === "look_flight_plan") {
-+    const where = String(args.어디 ?? "");
++    const where = String(args.where ?? "");
 +    const plans: RadarRow[] = readJson("flight-plans.json");
 +    const found = plans.filter((p) => inRegion(p, where));
 +    return JSON.stringify({ 비행계획: found.length ? found.map(brief) : [`'${where.slice(0, 20)}' 에 통보된 비행 계획 없음`] });

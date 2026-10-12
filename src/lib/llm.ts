@@ -7,7 +7,7 @@
  * 어떤 모델을 쓸지는 .env 의 LLM_MODE 한 줄로 바꿉니다.
  *   relay  : 강사가 AWS Bedrock 에 올려 둔 모델 (기본. 주소와 조별 토큰만 붙이면 됨)
  *   ollama : 내 노트북의 Ollama (ollama pull qwen3:8b)
- *   cloud  : 워크숍 당일 배포되는 클라우드 키
+ *   cloud  : OpenRouter 같은 중계 서비스 (키 하나로 여러 회사 모델. LLM_MODEL 에 회사/모델 이름)
  *   mock   : 네트워크 없이 흐름만 확인 (정해진 답을 돌려줌)
  * 폐쇄망으로 옮길 때도 .env 의 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 세 줄만 바꾸면 됩니다.
  *
@@ -28,6 +28,7 @@ export type Tool = ChatCompletionTool;
 export const LLM_MODE = (process.env.LLM_MODE ?? "mock") as "relay" | "ollama" | "cloud" | "mock";
 export const LLM_MODEL = process.env.LLM_MODEL ?? "qwen3-32b";
 export const LLM_TIMEOUT_SEC = Number(process.env.LLM_TIMEOUT_SEC ?? 60); // 한 번 호출에 이만큼 기다리고 끊는다
+export const LLM_MAX_TOKENS = Number(process.env.LLM_MAX_TOKENS ?? 4096); // 한 번 답의 최대 길이 (도구 고르기·보고서 모두 충분)
 
 let client: OpenAI | null = null;
 // maxRetries: 0 → 늦으면 SDK 가 몰래 다시 부르지 않는다. 다시 부를지는 내 코드(또는 사람)가 정한다
@@ -88,6 +89,7 @@ async function realChat(messages: Msg[], tools?: Tool[]): Promise<ChatResult> {
     messages,
     tools: tools?.length ? tools : undefined,
     temperature: 0.2,
+    max_tokens: LLM_MAX_TOKENS, // 답 길이 상한. 중계 서비스(OpenRouter 등)는 이 값만큼 요금을 미리 잡아 두므로 안 적으면 모델 최대치(수만 토큰)로 잡혀 잔액 부족이 난다
   });
   const m = res.choices[0].message;
   // qwen3 계열은 답 앞에 <think>…</think> 를 붙이므로 떼어 낸다. 가끔 생각만 하고 본문을 비우기도 해서, 그때는 생각 글이라도 쓴다
