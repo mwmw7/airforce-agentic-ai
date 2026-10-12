@@ -69,7 +69,7 @@ def pick(name, pats, limit=40, w=76, start=None, stop=None):
     out = [l for l in ls if any(re.search(p, l) for p in pats)] if pats else ls
     return [cut(l.rstrip(), w) for l in out[:limit]]
 
-TAGS = ['REPORT','SETUP','LLM','TOOL','MCP','MEMORY','JEV','RULE','HUMAN','DECIDE','STOP','NODE','SUB','LIVE']
+TAGS = ['REPORT','SETUP','LLM','TOOL','MCP','MEMORY','JEV','RULE','HUMAN','DECIDE','STOP','NODE','SUB','LIVE','WRITE']
 def term(lines, extra_cls=''):
     """터미널 줄 → 색 입힌 <pre>"""
     out = []
@@ -348,7 +348,7 @@ add(3, '사람이 끼어들면 어디서 멈추나?',
   subgraph sub["askRadar (부하)"]
     AG[agent] -- "모델이 늦음" --> AH["askHuman<br/>interrupt: retry / skip / stop"]
   end
-  sub --> RM[remember] --> JD[judge] --> AP["approve<br/>interrupt: y / w / n"] --> E((END))'''),
+  sub --> RM[remember] --> JD[judge] --> AP["approve<br/>interrupt: y / w / n"] --> WR["writeReport<br/>LLM 브리핑 → reports/"] --> E((END))'''),
          bullets(['<code>interrupt(질문)</code> 한 줄이면 그래프가 거기서 멈추고 질문이 바깥으로 나온다',
                   '두 곳: 부하 안(모델이 늦을 때), 부모의 approve(언제나)',
                   'approve 는 레이더 · 확대 · 비행 계획 · 날씨 · 규정 · 기억 · Jev 를 한 화면에 모아 보여 주고 묻는다',
@@ -427,6 +427,7 @@ add(4, '운영 중 자료에 지시문이 섞여 오면?',
                 ['한 번 호출 · 실행 전체 시간', 'llm.ts · main.ts'],
                 ['사람 결정 없이는 끝나지 않음', 'main.ts approve interrupt'],
                 ['MCP 서버에 API 키를 주지 않음', 'mcp-servers/weather'],
+                ['보고서는 reports/ 안에만 저장', 'write-report.ts saveReport'],
                 ['Jev 에는 걸러낸 사실만', 'judge 는 facts · report 만 보냄']])), 'table')
 add(4, '실제 서비스(Deev)는 어떻게 거르나',
     cols(code(['// appendix/detect_define.ts — 1차 정규식 (영 · 한), 2차 TypeSafe',
@@ -453,6 +454,21 @@ add(4, '모델을 바꾸면?',
           'LLM_MODE=relay      LLM_BASE_URL=<강사가 나눠 주는 Bedrock 주소>   LLM_API_KEY=<조별 토큰>',
           'LLM_MODE=ollama     LLM_BASE_URL=http://localhost:11434/v1          LLM_MODEL=qwen3:8b']) +
     small('relay(Bedrock) 주소와 조별 토큰은 당일 안내'), 'cmd')
+add(4, '보고서는 누가 쓰나?',
+    cols(code(['// labs/agent/write-report.ts — 사람이 결정한 뒤 한 번',
+               '// 1. 바뀌면 안 되는 것(결정 · 시각)은 코드가 머리말에',
+               'const head = [`# 당직 브리핑 — ${id}`, `- 결정: ${state.judgment.decision}`, …];',
+               '',
+               '// 2. 문장만 LLM 이. 사실 목록 = approve 가 사람에게 보여 준 그 목록',
+               'body = await askLLM({ system: RULES, user: facts, mockText: facts });',
+               '//    실패하면(mock · 키 없음 · 시간 초과) 사실 목록을 그대로',
+               '',
+               '// 3. reports/ 안에만. ../ 가 섞이면 거부 (Sandbox)',
+               'if (!target.startsWith(REPORTS_DIR)) throw new Error("reports/ 밖에는 저장할 수 없습니다");']) +
+         bullets(['판정은 Jev, 결정은 사람, 문장만 LLM',
+                  '규칙: "사실 목록에 없는 건 쓰지 않는다 · 결정은 바꾸지 않는다"',
+                  '모델을 바꾸면(LLM_MODE) 문장이 달라진다 — 사실과 결정은 그대로']),
+         term(pick('14_report.txt', [r'^\[WRITE', r'^\s+│ (##|-) '], limit=14, w=70, start=r'^\[WRITE')) + small('보고 3 · 담당자 w · OpenRouter 모델. 파일은 reports/&lt;실행번호&gt;.md')), 'cmd')
 add(4, '실행 기록은 어디서 보나?',
     cols(code(['# .env',
                'LANGSMITH_TRACING=true',
@@ -464,7 +480,7 @@ add(4, '실행 기록은 어디서 보나?',
                   'LLM 호출은 보낸 메시지 · 받은 답 · 토큰 수까지',
                   '<code>pnpm see:studio</code> 는 같은 키로 LangGraph Studio 를 띄운다',
                   'Langfuse 로 보는 법은 14:30 이현우 특강에서']),
-         '<div class="placeholder img">LangSmith 트리 캡처 자리<br/><span>run → searchDocs · askRadar(agent, tools …) · remember · judge · approve</span></div>'), 'cmd')
+         '<div class="placeholder img">LangSmith 트리 캡처 자리<br/><span>run → searchDocs · askRadar(agent, tools …) · remember · judge · approve · writeReport</span></div>'), 'cmd')
 add(4, '오늘 만든 것과 요청 항목',
     table(['요청 항목', '오늘 코드', '단계'],
           [['Agent Loop · Planning · Tool Calling', 'ask-radar.ts agent ⇄ tools, 새 도구 look_flight_plan', '1 · 2'],
@@ -477,7 +493,7 @@ add(4, '오늘 만든 것과 요청 항목',
            ['State · Checkpoint · Retry', 'reducer 칠판, SqliteSaver, --resume', '7'],
            ['Context · Memory · Agentic Retrieval', 'Hindsight 찾기 · 남기기, 같은 사례면 Jev 생략', '8'],
            ['Trace · Evaluation · Observability', 'traces/*.jsonl, LangSmith, Langfuse(특강)', '시연'],
-           ['권한 · Prompt Injection · Sandbox', '상한 다섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달', '시연']], 'dense') +
+           ['권한 · Prompt Injection · Sandbox', '상한 여섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달, 보고서 reports/ 격리', '시연']], 'dense') +
     '<div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div>', 'table')
 
 # ───────── HTML ─────────
@@ -490,7 +506,7 @@ def section(i, b, title, body, kind):
 
 CSS = r'''
 :root{--bg:#0F141B;--panel:#161D26;--panel2:#1C2531;--text:#E7ECF2;--muted:#8C98A8;--amber:#F2B544;--line:#2A3542;--mag:#C97BDC;
- --t-report:#D9DEE5;--t-setup:#3A4553;--t-llm:#9C4FB5;--t-tool:#2E8B57;--t-mcp:#2A9BAA;--t-memory:#3F6FCC;--t-jev:#C9A52F;--t-human:#C64B4B;--t-rule:#B9C0C9;--t-decide:#1F8A4C;--t-stop:#B83232;--t-node:#3A4553;--t-sub:#8E2EA8;--t-live:#3A4553;}
+ --t-report:#D9DEE5;--t-setup:#3A4553;--t-llm:#9C4FB5;--t-tool:#2E8B57;--t-mcp:#2A9BAA;--t-memory:#3F6FCC;--t-jev:#C9A52F;--t-human:#C64B4B;--t-rule:#B9C0C9;--t-decide:#1F8A4C;--t-stop:#B83232;--t-node:#3A4553;--t-sub:#8E2EA8;--t-live:#3A4553;--t-write:#D9DEE5;}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans KR",system-ui,sans-serif;overflow:hidden}
 #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;cursor:pointer;user-select:none}

@@ -9,12 +9,14 @@ graph TD;
 	remember(remember)
 	judge(judge)
 	approve(approve)
+	writeReport(writeReport)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> searchDocs;
-	approve --> __end__;
+	approve --> writeReport;
 	askRadar --> remember;
 	judge --> approve;
 	searchDocs --> askRadar;
+	writeReport --> __end__;
 	remember -.-> judge;
 	remember -.-> approve;
 	classDef default fill:#f2f0ff,stroke:#6b5fd3,color:#000000,line-height:1.2;

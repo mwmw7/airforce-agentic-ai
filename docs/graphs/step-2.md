@@ -13,12 +13,14 @@ graph TD;
 	remember(remember)
 	judge(judge)
 	approve(approve)
+	writeReport(writeReport)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> searchDocs;
-	approve --> __end__;
+	approve --> writeReport;
 	askRadar_stop --> remember;
 	judge --> approve;
 	searchDocs --> askRadar___start__;
+	writeReport --> __end__;
 	remember -.-> judge;
 	remember -.-> approve;
 	subgraph askRadar

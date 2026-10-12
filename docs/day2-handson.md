@@ -97,4 +97,4 @@ Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강
 | 구현 | 모델 교체 (relay · ollama · cloud · mock) | `src/lib/llm.ts` · `LLM_MODE` |
 | 구현 | Trace: traces/*.jsonl + LangSmith, LangGraph Studio | `src/lib/trace.ts` · `langgraph.json` |
 | 구현 | 실시간 보기 (브라우저 · --watch) | `src/lib/live.ts` · `show.ts` |
-| 미구현 | LLM 보고서 작성 + 저장 폴더 격리 | 추후 |
+| 구현 | LLM 보고서 작성 + 저장 폴더 격리 (사실·결정은 코드, 문장은 LLM, `reports/` 밖 거부) | `labs/agent/write-report.ts` writeReport 노드 (완성 코드) |

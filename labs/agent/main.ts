@@ -1,14 +1,15 @@
 /**
- * labs/agent/main.ts — 관제실 Agent 의 부모 그래프. 보고 한 줄 → 자료 수집(동시) → 기억 → 판정 → 사람 결정
+ * labs/agent/main.ts — 관제실 Agent 의 부모 그래프. 보고 한 줄 → 자료 수집(동시) → 기억 → 판정 → 사람 결정 → 보고서
  *
  * 관제실에 짧은 보고 한 줄이 들어온다. "서울 상공에 정체불명 비행체가 떠 있어요"
  * 규정집 Worker 와 레이더 부하 Agent 가 동시에 자료를 모으고, 판정 모델이 의견을 내고, 최종 결정은 사람이 한다.
  *
  *            ┌─▶ searchDocs (Worker: 함수 하나, 규정집 찾기)              ─┐
  *   START ───┤                                                           ├─▶ remember ─┬─ 같은 사례 기억 있음 ──────┐ (Jev 생략)
- *            └─▶ askRadar   (Subagent: ask-radar.ts 의 agent ⇄ tools 루프) ─┘            └─ 없음 ─▶ judge (Jev) ───┴─▶ approve ─▶ END
+ *            └─▶ askRadar   (Subagent: ask-radar.ts 의 agent ⇄ tools 루프) ─┘            └─ 없음 ─▶ judge (Jev) ───┴─▶ approve ─▶ writeReport ─▶ END
  *                                                                                              approve = 레이더 · 규정 · 날씨 · 기억 · Jev 를 한눈에 모아 보여 주고
  *                                                                                                        사람이 출격 / 감시 / 무시 를 고른다 (언제나 마지막은 사람)
+ *                                                                                              writeReport = 사람의 결정 뒤 LLM 이 브리핑 문장을 써서 reports/ 에만 저장 (write-report.ts)
  *
  * 꼭 볼 것
  *   · Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐 (TODO 1)
@@ -17,6 +18,7 @@
  *   · LLM 은 사실을 모으고(부하), Jev 는 판정하고, 결정은 코드가 하고, 마지막 버튼은 사람이 누른다 — 역할이 다르다
  *   · Jev 는 의견(출격 / 감시 / 무시 + 확신도)만 준다. 결정은 그 아래 코드 규칙이 한다 (TODO 6)
  *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember, TODO 8)
+ *   · 보고서는 writeReport 가 쓴다. 사실과 결정은 코드가 채우고 LLM 은 문장만 다듬는다 (write-report.ts)
  *   · 실행 전체가 RUN_TIMEOUT_SEC 를 넘으면 끊는다. 부하 안에서 모델이 늦으면 부하가 사람에게 묻는다 (ask-radar.ts)
  *
  * 실행:  pnpm agent                           보고 1번
@@ -41,6 +43,7 @@ import { type Case, createBank, findSameCase, MEMORY_MODE, recall, retain, showM
 import { type Main as S, MainState } from "./state.js";
 import { searchDocsNode } from "./search-docs.js";
 import { MAX_STEPS, radarAgent, resetRadar } from "./ask-radar.js";
+import { writeReportNode } from "./write-report.js";
 
 // 실행 전체가 이 시간을 넘으면 끊는다 (호출 하나는 빨라도 여러 번 돌면 길어진다)
 const RUN_TIMEOUT_SEC = Number(process.env.RUN_TIMEOUT_SEC ?? 180);
@@ -162,7 +165,7 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
   //   · summary = 사람이 본 종합 근거(요약에서 "## 모델이 정리한 사실" 앞까지), human = 사람의 선택(label)
   // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 8)
   // 기억에 남기지 않는다 → 다음에 같은 보고가 와도 처음 보는 일
-  return { judgment: { ...j, decision } };
+  return { judgment: { ...j, decision }, summary: 요약 };
 }
 
 // ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm see:graph · Studio 가 가져다 쓴다)
@@ -176,6 +179,7 @@ export const graph = new StateGraph(MainState)
   .addNode("remember", rememberNode)
   .addNode("judge", judgeNode)
   .addNode("approve", approveNode)
+  .addNode("writeReport", writeReportNode)            // 사람이 결정한 뒤에만 LLM 이 보고서 문장을 쓴다
   // ===== TODO 5: 동시에 수집하고 합류하기 =====
   // 자리표시는 순차다: START → searchDocs → askRadar → remember (규정집이 끝나야 레이더가 출발한다)
   // 같은 출발점(START)에 선 두 개를 걸면 LangGraph 가 같은 단계에서 둘을 동시에 돌린다.
@@ -188,7 +192,8 @@ export const graph = new StateGraph(MainState)
   .addEdge("askRadar", "remember")
   .addConditionalEdges("remember", afterRemember, ["judge", "approve"])
   .addEdge("judge", "approve")   // Jev 가 뭐라 하든 마지막은 사람
-  .addEdge("approve", END)
+  .addEdge("approve", "writeReport")   // 출격이든 무시든 보고서는 남긴다
+  .addEdge("writeReport", END)
   // 멈췄다 이어가려면 진행 상황(checkpoint)을 저장할 곳이 필요하다. LangGraph 가 주는 SqliteSaver 를 꽂으면
   // 단계마다 checkpoints.sqlite 파일에 저장된다 → 프로그램을 껐다 켜도 --resume 으로 멈춘 곳부터 이어간다 (직접 SQL 은 한 줄도 없다)
   // 부하(askRadar) 안의 단계도 같은 파일에, 같은 실행번호 아래 저장된다

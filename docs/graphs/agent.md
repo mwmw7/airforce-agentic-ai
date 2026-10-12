@@ -1,4 +1,4 @@
-# 내 에이전트 — 보고 → [규정집 Worker ‖ 레이더 Subagent] → remember → judge → approve
+# 내 에이전트 — 보고 → [규정집 Worker ‖ 레이더 Subagent] → remember → judge → approve → writeReport
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'primaryColor': '#f2f0ff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#6b5fd3', 'lineColor': '#6b5fd3', 'textColor': '#000000', 'clusterBkg': '#fafaff', 'clusterBorder': '#6b5fd3'}, 'flowchart': {'curve': 'linear', 'htmlLabels': false}}}%%
@@ -13,13 +13,15 @@ graph TD;
 	remember(remember)
 	judge(judge)
 	approve(approve)
+	writeReport(writeReport)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> searchDocs;
 	__start__ --> askRadar___start__;
-	approve --> __end__;
+	approve --> writeReport;
 	askRadar_stop --> remember;
 	judge --> approve;
 	searchDocs --> remember;
+	writeReport --> __end__;
 	remember -.-> judge;
 	remember -.-> approve;
 	subgraph askRadar
