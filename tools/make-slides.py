@@ -309,7 +309,7 @@ add(2, '왜 나누나?',
           [['작업 기록이 부모에 안 남는다', '레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감', '20줄은 부하 칠판에만. 부모엔 facts 3줄 + evidence', '<code>--watch</code>: remember 입력에 messages 가 없다'],
            ['부하가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', '부하만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
            ['부하 단위로 갈아 끼운다', '루프 · 판정 · 승인이 한 파일에', '모델 · 키 · 도구를 부하만 바꾸거나 옆에 하나 더', '다음 단계'],
-           ['속도', '—', '<b>지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + Bedrock 일 때']]) +
+           ['속도', '—', '<b>지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + 원격 모델일 때']]) +
     small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, 칠판 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
 
 # ───────── 3. 단계 6 · 7 · 8 ─────────
@@ -451,9 +451,10 @@ add(4, '모델을 바꾸면?',
     cols(term(pick('02_run1_first.txt', [r'^\[SETUP \] 모델', r'^┃ \[LLM', r'^\[DECIDE'], limit=6)) + small('LLM_MODE=mock — 정해진 순서로 도구를 하나씩'),
          term(pick('13_ollama.txt', [r'^\[SETUP \] 모델', r'^┃ \[LLM', r'^\[DECIDE'], limit=6)) + small('LLM_MODE=ollama — 노트북 qwen3.5. 확대까지 2번만 보고 사실 정리, 호출마다 5 ~ 10초')) +
     code(['# .env — 슬롯만 바꾼다. 그래프 · 도구 · 판정 코드는 그대로',
-          'LLM_MODE=relay      LLM_BASE_URL=<강사가 나눠 주는 Bedrock 주소>   LLM_API_KEY=<조별 토큰>',
-          'LLM_MODE=ollama     LLM_BASE_URL=http://localhost:11434/v1          LLM_MODEL=qwen3:8b']) +
-    small('relay(Bedrock) 주소와 조별 토큰은 당일 안내'), 'cmd')
+          'LLM_MODE=cloud      LLM_MODEL=anthropic/claude-sonnet-5.5     # OpenRouter, 조별 키',
+          'LLM_MODE=cloud      LLM_MODEL=qwen/qwen3-32b                  # 같은 키, 이름만 바꿔 오픈 모델',
+          'LLM_MODE=ollama     LLM_BASE_URL=http://localhost:11434/v1    LLM_MODEL=qwen3:8b']) +
+    small('조별 OpenRouter 키는 당일 안내. 보고서(reports/)를 모델별로 나란히 열어 비교한다'), 'cmd')
 add(4, '보고서는 누가 쓰나?',
     cols(code(['// labs/agent/write-report.ts — 사람이 결정한 뒤 한 번',
                '// 1. 바뀌면 안 되는 것(결정 · 시각)은 코드가 머리말에',

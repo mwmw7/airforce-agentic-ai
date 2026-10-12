@@ -40,7 +40,7 @@ git diff hands-on main -- labs/agent/main.ts
 | git, VS Code | LangSmith 무료 계정 (LangGraph Studio · 실행 기록 보기) |
 | 강사가 나눠주는 조별 토큰 (`.env` 에 입력) | `uv` (Hindsight 기억 서버를 내 노트북에서 띄울 때, https://docs.astral.sh/uv/) |
 
-로컬 LLM 은 설치하지 않아도 됩니다. 모델은 강사가 AWS Bedrock 에 올려 두고 주소만 나눠 드립니다.
+로컬 LLM 은 설치하지 않아도 됩니다. 모델은 OpenRouter 로 부르고, 강사가 조별 키(지출 상한 걸린)만 나눠 드립니다.
 
 ### 1-2. 가장 빠른 길 — GitHub Codespaces (설치 없음, 권장)
 
@@ -230,8 +230,8 @@ Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weath
 
 | 설정 | 기본 (키 없이) | 강사 제공 | 폐쇄망으로 옮길 때 |
 |---|---|---|---|
-| `LLM_MODE` | `mock` (정해진 답) | `relay` — 강사 Bedrock 주소 + 조별 토큰 | vLLM/Ollama 등 OpenAI 호환 주소 |
-| `JEV_MODE` | `local` (규칙 판정기) | `typesafe` — Jev (TypeSafe SDK, `TYPESAFE_API_KEY`) | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
+| `LLM_MODE` | `mock` (정해진 답) | `cloud` — OpenRouter + 조별 키 | `relay` — vLLM/Bedrock/Ollama 등 OpenAI 호환 주소 |
+| `JEV_MODE` | `local` (규칙 판정기) | `openrouter` — Jev (OpenRouter Decisions API, 같은 조별 키를 `OPENROUTER_API_KEY` 에) | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
 | `MEMORY_MODE` | `file` (`.hindsight/*.json`) | `hindsight` — `pnpm memory:up` 또는 강사 서버 주소 | 자체 호스팅 Hindsight |
 
 모델 비교: `LLM_MODE=ollama` + `LLM_BASE_URL=http://localhost:11434/v1` + `LLM_MODEL=qwen3:8b` 로 바꾸면 같은 보고를 노트북 모델로 돌려 봅니다.
@@ -245,7 +245,7 @@ Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weath
 ```
 airforce-agentic-ai/
 ├─ src/lib/                 공용 모듈 — 폐쇄망으로 옮길 때 바꾸는 곳이 전부 여기
-│  ├─ llm.ts                 LLM (Bedrock 중계 / Ollama / 클라우드 / mock)
+│  ├─ llm.ts                 LLM (OpenRouter(cloud) / 자체 중계(relay) / Ollama / mock)
 │  ├─ jev.ts                 Jev 판정 모델 (TypeSafe SDK / OpenRouter / 로컬 규칙 판정기)
 │  ├─ memory.ts              장기 기억 (Hindsight 서버 / 파일) — createBank · retain · recall · reflect
 │  ├─ trace.ts               실행 기록 (traces/*.jsonl)

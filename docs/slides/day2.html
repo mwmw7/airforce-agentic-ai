@@ -438,7 +438,7 @@ linkStyle 1,5 stroke:#F2B544,stroke-width:3px</pre><p class="small">채운 뒤 (
 </section>
 <section class="slide k-table" data-i="22" data-block="2">
   <h1>왜 나누나?</h1>
-  <div class="body"><table class="tbl "><thead><tr><th>이점</th><th>하나의 루프였을 때</th><th>부하로 나누면</th><th>어디서 보이나</th></tr></thead><tbody><tr><td>작업 기록이 부모에 안 남는다</td><td>레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감</td><td>20줄은 부하 칠판에만. 부모엔 facts 3줄 + evidence</td><td><code>--watch</code>: remember 입력에 messages 가 없다</td></tr><tr><td>부하가 멈춰도 부모는 산다</td><td>MAX_STEPS 면 전체 종료</td><td>부하만 끝나고 규정집 결과로 판정까지</td><td><code>pnpm agent:limit</code></td></tr><tr><td>부하 단위로 갈아 끼운다</td><td>루프 · 판정 · 승인이 한 파일에</td><td>모델 · 키 · 도구를 부하만 바꾸거나 옆에 하나 더</td><td>다음 단계</td></tr><tr><td>속도</td><td>—</td><td><b>지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다</td><td>가지 2개 이상 + Bedrock 일 때</td></tr></tbody></table><p class="small">이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, 칠판 둘) · LangGraph 에겐 그냥 노드 하나</p></div>
+  <div class="body"><table class="tbl "><thead><tr><th>이점</th><th>하나의 루프였을 때</th><th>부하로 나누면</th><th>어디서 보이나</th></tr></thead><tbody><tr><td>작업 기록이 부모에 안 남는다</td><td>레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감</td><td>20줄은 부하 칠판에만. 부모엔 facts 3줄 + evidence</td><td><code>--watch</code>: remember 입력에 messages 가 없다</td></tr><tr><td>부하가 멈춰도 부모는 산다</td><td>MAX_STEPS 면 전체 종료</td><td>부하만 끝나고 규정집 결과로 판정까지</td><td><code>pnpm agent:limit</code></td></tr><tr><td>부하 단위로 갈아 끼운다</td><td>루프 · 판정 · 승인이 한 파일에</td><td>모델 · 키 · 도구를 부하만 바꾸거나 옆에 하나 더</td><td>다음 단계</td></tr><tr><td>속도</td><td>—</td><td><b>지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다</td><td>가지 2개 이상 + 원격 모델일 때</td></tr></tbody></table><p class="small">이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, 칠판 둘) · LangGraph 에겐 그냥 노드 하나</p></div>
   <footer><span class="blk b2">2교시 · 자료 · MCP · 동시 (단계 3 · 4 · 5)</span><span class="num">23 / 41</span></footer>
 </section>
 <section class="slide k-table" data-i="23" data-block="3">
@@ -598,8 +598,9 @@ if (safety.detected) return { ok: false, errorCode: ERROR_CODE.DvPromptInjec…<
 <span class="bar">┃ </span><span class="tag t-llm">LLM   </span> 2회째 → 도구 쓰기: look_closer  10324ms · 1322 토큰
 <span class="bar">┃ </span><span class="tag t-llm">LLM   </span> 3회째 → 사실 정리 (도구 안 씀)  7289ms · 1593 토큰
 <span class="tag t-decide">DECIDE</span> 출격 — 사람이 결정  ← Jev scramble 42% + 코드 규칙</pre><p class="small">LLM_MODE=ollama — 노트북 qwen3.5. 확대까지 2번만 보고 사실 정리, 호출마다 5 ~ 10초</p></div></div><pre class="code"># .env — 슬롯만 바꾼다. 그래프 · 도구 · 판정 코드는 그대로
-LLM_MODE=relay      LLM_BASE_URL=&lt;강사가 나눠 주는 Bedrock 주소&gt;   LLM_API_K…
-LLM_MODE=ollama     LLM_BASE_URL=http://localhost:11434/v1          LLM_MODE…</pre><p class="small">relay(Bedrock) 주소와 조별 토큰은 당일 안내</p></div>
+LLM_MODE=cloud      LLM_MODEL=anthropic/claude-sonnet-5.5     # OpenRouter, …
+LLM_MODE=cloud      LLM_MODEL=qwen/qwen3-32b                  # 같은 키, 이…
+LLM_MODE=ollama     LLM_BASE_URL=http://localhost:11434/v1    LLM_MODEL=qwen…</pre><p class="small">조별 OpenRouter 키는 당일 안내. 보고서(reports/)를 모델별로 나란히 열어 비교한다</p></div>
   <footer><span class="blk b4">운영</span><span class="num">38 / 41</span></footer>
 </section>
 <section class="slide k-cmd" data-i="38" data-block="4">

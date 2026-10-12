@@ -29,7 +29,7 @@
 | 시간 | 구분 | 꼭 다루는 내용 |
 |---|---|---|
 | 09:00~12:00 | 강의 2-A + 실습 2-A<br>외부 기술 소개와 연결 | · 규정집 Worker(함수)와 레이더 부하 Agent(Subagent, 안에서 도구 · MCP 를 골라 씀)를 **동시에** 돌려 자료 수집 (Task Decomposition · Subagent)<br>· 장기 기억(Hindsight): 어제 판단을 오늘 기억<br>· 판정 모델(Jev): 출격 여부 + 확신도<br>· 사람 승인(interrupt) 후 재개, 강제 종료 후 Checkpoint 재개<br>· LLM 은 보고서 작성에만 사용 (사실은 코드가, 문장은 LLM 이) |
-| 13:00~14:10 | 강의 2-B + 실습 2-B<br>운영 · 안전 · 개선 | · 문서 속 악성 지시(Prompt Injection) 걸러내기, 끄고 비교<br>· 담당자 결정 없이는 저장 금지, 보고서 폴더 격리, MCP 서버에 키 미전달 (Guardrail · Sandbox)<br>· 모델 교체(Bedrock · Ollama · 클라우드) 후 결과 비교<br>· 채점표로 수정 전후 비교 |
+| 13:00~14:10 | 강의 2-B + 실습 2-B<br>운영 · 안전 · 개선 | · 문서 속 악성 지시(Prompt Injection) 걸러내기, 끄고 비교<br>· 담당자 결정 없이는 저장 금지, 보고서 폴더 격리, MCP 서버에 키 미전달 (Guardrail · Sandbox)<br>· 모델 교체(OpenRouter 의 모델 이름 · Ollama) 후 결과 비교<br>· 채점표로 수정 전후 비교 |
 | 14:30~16:00 | 특강 (이현우 90분)<br>Langfuse | · Trace · Observability, 지연 · 사용량 · 비용 해석<br>· Dataset · 평가 기준 · 사람 검토 · 자동 평가<br>· 프롬프트 · 모델 · 코드 변경 전후 비교<br>· 오전 실습 결과를 그대로 띄워 시연 |
 
 휴식: 09:50~10:05, 11:00~11:15, 14:10~14:30
@@ -71,7 +71,7 @@
 
 ## 6. 준비물 (교육 1주 전 안내)
 
-Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (강사가 Bedrock 에 올린 모델 주소를 나눠 드립니다). 키가 하나도 없어도 mock 모드로 전 실습이 돌아갑니다.
+Node 22 · git · VS Code · pnpm. 로컬 LLM 설치는 필요 없습니다 (모델은 OpenRouter, 강사가 조별 키를 나눠 드립니다). 키가 하나도 없어도 mock 모드로 전 실습이 돌아갑니다.
 
 ---
 
