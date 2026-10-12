@@ -138,7 +138,7 @@ add(0, '시작은 링크 하나: Codespaces 에서 hands-on 브랜치 열기',
     cols('<figure class="shot"><img src="captures/codespace_start.png" alt="Codespaces 만들기 화면"><figcaption>링크를 열면 보이는 화면 — 저장소 · 브랜치 hands-on · 2-core 가 미리 골라져 있다. 초록 단추만 누른다</figcaption></figure>',
          cmd('https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on', 'GitHub 로그인만 있으면 된다') +
          bullets(['브랜치가 <b>hands-on</b> 인지 확인하고 <b>Create codespace</b>',
-                  '브라우저에 VS Code 가 뜨면 터미널에서 <code>pnpm install && pnpm setup:check</code> (.env 는 알아서 만들어 준다)',
+                  '브라우저에 VS Code 가 뜨면 설치 · .env · 환경 점검이 <b>자동으로</b> 끝난다 (<code>.devcontainer/</code>). "준비 끝" 이 보이면 <code>pnpm agent</code>',
                   '개인 계정은 달마다 2-core 60시간이 무료. 이틀 교육은 10시간이면 끝',
                   '30분 안 쓰면 자동으로 멈춘다. 다시 열면 그 자리부터 (점심 뒤)',
                   '노트북에 직접 하고 싶으면 다음 장의 <code>git clone</code>']) +

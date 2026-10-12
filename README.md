@@ -24,23 +24,6 @@ git diff hands-on main -- labs/agent/main.ts
 
 ## 1. 5분 시작 가이드
 
-### 1-0. 설치 없이 브라우저로 시작하기 (GitHub Codespaces, 권장)
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
-
-1. 개인 GitHub 계정으로 로그인한 뒤 위 버튼 → **Create codespace** (실습 브랜치 `hands-on` 으로 열립니다)
-2. 2~3분 기다리면 브라우저에 VS Code 가 열리고, 아래 터미널에서 설치·`.env`·환경 점검이 자동으로 끝납니다 (`.devcontainer/` 가 그 레시피)
-3. 터미널에서 `pnpm agent` — 날씨 MCP 는 터미널을 하나 더 열어(`+`) `pnpm mcp:weather`
-
-- Windows · Mac · Linux 상관없이 **브라우저만 있으면 됩니다.** 개인 계정 무료 한도(월 120 core-hours, 2코어 기준 60시간) 안에서 돌고, 한도를 넘어도 요금이 나가지 않고 멈춥니다
-- 30분 동안 아무것도 안 하면 잠듭니다(점심시간). 파일은 그대로, 켜 둔 `pnpm mcp:weather` 만 다시 켜세요
-- 토큰·키는 `.env` 에 넣거나, GitHub **Settings → Codespaces → Secrets** 에 같은 이름(`LLM_API_KEY` 등)으로 넣으면 `.env` 보다 우선합니다
-- 그래프 보기 (Codespace 에서)
-  - `pnpm see:run` — 돌리면서 보기. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
-  - `pnpm see:graph` — 그림만. `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기)
-  - `pnpm see:studio` — 공식 디버거. Codespace 에서는 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
-- 내 노트북에 직접 설치하려면 아래 1-1 부터
-
 ### 1-1. 준비물 (교육 1주 전에 미리)
 
 | 필수 | 선택 |
@@ -51,24 +34,24 @@ git diff hands-on main -- labs/agent/main.ts
 
 로컬 LLM 은 설치하지 않아도 됩니다. 모델은 강사가 AWS Bedrock 에 올려 두고 주소만 나눠 드립니다.
 
-### 1-2. 가장 빠른 길 — GitHub Codespaces (설치 없음)
+### 1-2. 가장 빠른 길 — GitHub Codespaces (설치 없음, 권장)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
 
-GitHub 계정만 있으면 됩니다. 위 배지(또는 https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on )를 열면 아래 화면이 뜹니다. 브랜치가 `hands-on`, 머신이 `2-core` 인지 확인하고 **Create codespace** 를 누르세요.
+GitHub 계정만 있으면 됩니다. Windows · Mac · Linux 상관없이 **브라우저만 있으면 됩니다.** 위 배지(또는 https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on )를 열면 아래 화면이 뜹니다. 브랜치가 `hands-on`, 머신이 `2-core` 인지 확인하고 **Create codespace** 를 누르세요.
 
 <img src="docs/slides/captures/codespace_start.png" alt="Codespaces 만들기 화면" width="640">
 
-브라우저에 VS Code 가 뜨면 터미널에서 두 줄만 칩니다.
-
-```bash
-pnpm install
-pnpm setup:check             # 환경 점검 (.env 도 알아서 만들어 준다)
-```
+2~3분 뒤 브라우저에 VS Code 가 열리고, 아래 터미널에서 **설치 · `.env` · 환경 점검이 자동으로 끝납니다** (`.devcontainer/` 가 그 레시피). "준비 끝" 이 보이면 `pnpm agent` 를 치세요. 날씨 MCP 는 터미널을 하나 더 열어(`+`) `pnpm mcp:weather`.
 
 - fork 는 필요 없습니다. 수업 중 강사가 고친 내용은 `git pull` 로 받습니다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생깁니다
-- 개인 계정은 달마다 2-core 기준 60시간이 무료입니다 (이틀 교육은 10시간 안팎). 30분 안 쓰면 자동으로 멈추고, 다시 열면 그 자리부터 이어집니다
+- 개인 계정은 달마다 2-core 기준 60시간이 무료입니다 (이틀 교육은 10시간 안팎). 한도를 넘어도 요금이 나가지 않고 멈춥니다
+- 30분 동안 아무것도 안 하면 잠듭니다(점심시간). 다시 열면 파일은 그대로, 켜 둔 `pnpm mcp:weather` 만 다시 켜세요
+- 토큰·키는 `.env` 에 넣거나, GitHub **Settings → Codespaces → Secrets** 에 같은 이름(`LLM_API_KEY` 등)으로 넣으면 `.env` 보다 우선합니다
 - `pnpm see:run`(3030) · 날씨 MCP(3333) · Studio(2024) 포트는 Codespaces 가 알아서 열어 줍니다
+  - `pnpm see:run` — 돌리면서 보기. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
+  - `pnpm see:graph` — 그림만. `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기 확장이 미리 깔려 있음)
+  - `pnpm see:studio` — 공식 디버거. 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
 
 ### 1-3. 노트북에 직접 설치
 
@@ -268,6 +251,7 @@ airforce-agentic-ai/
 ├─ data/                     교육용 합성 자료
 │  ├─ api/                    레이더 화면(radar-screen.json)
 │  └─ docs/rulebook.md        관제 규정 10줄
+├─ .devcontainer/            Codespaces 레시피 — Node 22 상자 + setup.sh(설치 · .env · 점검 자동)
 ├─ docs/graphs/              그래프 그림 (pnpm see:graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
 ├─ docs/slides/day2.html     2일차 강의 슬라이드 (40장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
