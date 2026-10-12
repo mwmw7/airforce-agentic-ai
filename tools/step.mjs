@@ -50,14 +50,27 @@ if (!process.argv.includes("--yes")) {
   if (ok !== "y") { console.log("그만둡니다."); process.exit(0); }
 }
 
-const kept = new Set(), blanks = new Set();
+const kept = new Set(), blanks = new Set(), spots = [];
 for (const f of files) {
   const r = makeBlanks(f.answer, keep, f.path);
   fs.writeFileSync(f.path, r.text);
   r.kept.forEach((t) => kept.add(t));
   r.blanks.forEach((t) => blanks.add(t));
+  // 이번에 풀 문제(TODO step, 4-1 · 4-2 포함)의 마커가 덮어쓴 파일의 몇 번째 줄에 있는지 적어 둔다
+  r.text.split("\n").forEach((line, i) => {
+    const m = line.match(/^\s*\/\/ ===== (TODO (\d+)[^:]*): (.*) =====/);
+    if (m && Number(m[2]) === step) spots.push({ at: `${f.path}:${i + 1}`, todo: m[1], what: m[3] });
+  });
 }
 const sort = (s) => [...s].sort((a, b) => parseFloat(a.slice(5).replace("-", ".")) - parseFloat(b.slice(5).replace("-", ".")));
 console.log(`채움: ${sort(kept).join(", ") || "없음"}`);
 console.log(`남은 빈칸: ${sort(blanks).join(", ") || "없음"}`);
-console.log(step > LAST ? "이제 pnpm agent 로 돌려 보세요." : `TODO ${step} 부터 시작하세요. 지금 상태 확인: pnpm agent`);
+if (step > LAST) {
+  console.log("이제 pnpm agent 로 돌려 보세요.");
+} else {
+  console.log(`\n고칠 곳 (파일:줄 — VS Code 터미널에서 Ctrl+클릭하면 그 줄로 갑니다):`);
+  spots.sort((a, b) => a.todo.localeCompare(b.todo, undefined, { numeric: true })); // 4-1 → 4-2 순서
+  const w = Math.max(...spots.map((s) => s.at.length));
+  spots.forEach((s) => console.log(`  ${s.at.padEnd(w)}  ${s.todo} — ${s.what}`));
+  console.log(`TODO ${step} 부터 시작하세요. 지금 상태 확인: pnpm agent`);
+}
