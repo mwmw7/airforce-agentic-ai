@@ -24,6 +24,23 @@ git diff hands-on main -- labs/agent/main.ts
 
 ## 1. 5분 시작 가이드
 
+### 1-0. 설치 없이 브라우저로 시작하기 (GitHub Codespaces, 권장)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
+
+1. 개인 GitHub 계정으로 로그인한 뒤 위 버튼 → **Create codespace** (실습 브랜치 `hands-on` 으로 열립니다)
+2. 2~3분 기다리면 브라우저에 VS Code 가 열리고, 아래 터미널에서 설치·`.env`·환경 점검이 자동으로 끝납니다 (`.devcontainer/` 가 그 레시피)
+3. 터미널에서 `pnpm agent` — 날씨 MCP 는 터미널을 하나 더 열어(`+`) `pnpm mcp:weather`
+
+- Windows · Mac · Linux 상관없이 **브라우저만 있으면 됩니다.** 개인 계정 무료 한도(월 120 core-hours, 2코어 기준 60시간) 안에서 돌고, 한도를 넘어도 요금이 나가지 않고 멈춥니다
+- 30분 동안 아무것도 안 하면 잠듭니다(점심시간). 파일은 그대로, 켜 둔 `pnpm mcp:weather` 만 다시 켜세요
+- 토큰·키는 `.env` 에 넣거나, GitHub **Settings → Codespaces → Secrets** 에 같은 이름(`LLM_API_KEY` 등)으로 넣으면 `.env` 보다 우선합니다
+- 그래프 보기 (Codespace 에서)
+  - `pnpm see:run` — 돌리면서 보기. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
+  - `pnpm see:graph` — 그림만. `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기)
+  - `pnpm see:studio` — 공식 디버거. Codespace 에서는 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
+- 내 노트북에 직접 설치하려면 아래 1-1 부터
+
 ### 1-1. 준비물 (교육 1주 전에 미리)
 
 | 필수 | 선택 |
