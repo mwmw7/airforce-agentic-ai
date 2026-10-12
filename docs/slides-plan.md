@@ -87,7 +87,7 @@
 - 33번 장: 시간 되감기 구현 여부
 - 36번 장: Bedrock endpoint 문구
 - 38번 장: 5-1 마무리 슬롯
-- writeReport · 채점표를 강의 전에 구현하면 4·5 블록에 각 1장 추가 (총 40장)
+- writeReport 는 2026-10-12 구현 → 운영 블록 '보고서는 누가 쓰나?' 1장 추가. 채점표는 범위 밖
 
 ## 캡처 목록 (mock 으로 먼저 뽑고, 실제 모델 캡처로 교체 가능)
 `pnpm agent` TODO 멈춤 · `[TOOL] look_radar` · `agent:limit` · `--watch` reducer · `[HUMAN] 종합` · `LLM_MOCK_SLOW` · MCP 연결 OK / 실패 · `[SUB] ┏━` 띠 · 순차 vs 동시 `--watch` · `[JEV]` 3질문 · `--all` 표 2개 · 같은 보고 두 번 · memory:ui · Ctrl+C → `--resume` · LangSmith 트리

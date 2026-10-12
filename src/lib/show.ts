@@ -38,7 +38,7 @@ const TAGS = {
   report: ["REPORT", "107;30"], setup: ["SETUP", "100;97"], llm: ["LLM", "105;30"], tool: ["TOOL", "102;30"],
   mcp: ["MCP", "106;30"], memory: ["MEMORY", "104;30"], jev: ["JEV", "103;30"], human: ["HUMAN", "101;30"],
   rule: ["RULE", "47;30"], decide: ["DECIDE", "42;97;1"], stop: ["STOP", "41;97;1"], node: ["NODE", "100;97"], live: ["LIVE", "100;97"],
-  sub: ["SUB", "45;97;1"],
+  sub: ["SUB", "45;97;1"], write: ["WRITE", "107;30"],
 } as const;
 export type Kind = keyof typeof TAGS;
 

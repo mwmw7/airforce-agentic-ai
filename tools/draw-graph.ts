@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { graph as agentGraph } from "../labs/agent/main.js";
 
 const drawings = [
-  { file: "agent.md", title: "내 에이전트 — 보고 → [규정집 Worker ‖ 레이더 Subagent] → remember → judge → approve", app: agentGraph },
+  { file: "agent.md", title: "내 에이전트 — 보고 → [규정집 Worker ‖ 레이더 Subagent] → remember → judge → approve → writeReport", app: agentGraph },
 ];
 
 mkdirSync("docs/graphs", { recursive: true });
