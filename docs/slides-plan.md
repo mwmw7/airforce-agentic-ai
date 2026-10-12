@@ -3,7 +3,7 @@
 작성: 2026-10-07 · 형식: HTML 슬라이드 16:9 · 다크 · 로고 없음 · 밀도 B(총 38장) · 터미널 캡처 사용 · 1일차와 독립
 > **2026-10-09 재구성:** 슬라이드를 "같이 하나씩 붙이기" 단계 0 ~ 8 순서(36장)로 다시 짰다. 아래 장 목록은 2026-10-07 판(빈칸 1 ~ 11)이라 번호가 다르다. 현재 순서는 `python3 tools/make-slides.py` 출력, 단계 정의는 `docs/exercises.md`.
 
-**구현: `docs/slides/day2.html` (생성기 `tools/make-slides.py`, 캡처 `docs/slides/captures/`). 문안을 고치면 생성기를 고치고 `pnpm slides`.**
+**구현: `docs/slides/day2.html` (생성기 `tools/make-slides.py`, 캡처 `docs/slides/captures/`). 문안을 고치면 생성기를 고치고 `pnpm slides`, PDF 는 `pnpm slides:pdf` (→ `day2.pdf`).**
 
 한 장의 틀은 고정: **질문(제목) → 그림 또는 diff → 실행 명령 → "이게 보이면 성공"**. 이론 불릿 없음.
 슬라이드 종류는 네 가지뿐: `그림` `diff` `명령` `표`. 괄호 안은 종류와 재료 출처.

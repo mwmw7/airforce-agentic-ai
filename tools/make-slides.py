@@ -498,6 +498,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:"IBM Pl
 .slide.on{display:flex}
 .k-dense pre{font-size:15.5px;line-height:1.38;padding:12px 16px}.k-dense .cmd{font-size:21px;padding:9px 16px}
 #stage.prerender .slide{display:flex;visibility:hidden}#stage.prerender .slide.on{visibility:visible}
+/* 인쇄(PDF): 장마다 1920x1080 한 페이지. pnpm slides:pdf 가 Chrome 헤드리스로 뽑는다 */
+@page{size:1920px 1080px;margin:0}
+@media print{html,body{overflow:visible;height:auto}#stage{position:static;transform:none !important;width:1920px;height:auto;cursor:default}
+ .slide{position:relative;inset:auto;display:flex !important;visibility:visible !important;width:1920px;height:1080px}
+ .slide + .slide{break-before:page}
+ #bar,#overview,#hint,.mermaidTooltip{display:none !important}}
 h1{font-size:54px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;margin-bottom:34px;max-width:1700px}
 .body{flex:1;min-height:0;font-size:27px;line-height:1.5;display:flex;flex-direction:column;gap:18px}
 .body > *{flex:0 0 auto}
@@ -581,7 +587,7 @@ addEventListener('keydown',(e)=>{
 addEventListener('resize',()=>{fit(); if(ov.classList.contains('on')) scaleCells();});
 addEventListener('hashchange',()=>{const n=(parseInt(location.hash.slice(1))||1)-1; if(n!==cur) go(n,false);});
 fit(); go((parseInt(location.hash.slice(1))||1)-1,false);
-if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'loose',htmlLabels:false,flowchart:{curve:'linear',htmlLabels:false,padding:14,nodeSpacing:40,rankSpacing:50},themeVariables:{background:'#0F141B',primaryColor:'#1C2531',primaryTextColor:'#E7ECF2',primaryBorderColor:'#3A4553',lineColor:'#8C98A8',secondaryColor:'#161D26',tertiaryColor:'#161D26',clusterBkg:'#131a22',clusterBorder:'#3A4553',edgeLabelBackground:'#0F141B',fontFamily:'IBM Plex Sans KR, sans-serif',fontSize:'20px'}}); stage.classList.add('prerender'); (document.fonts?Promise.all([document.fonts.load('20px "IBM Plex Sans KR"','agent searchDocs remember 보고 수집'),document.fonts.load('600 54px "IBM Plex Sans KR"','가 abc'),document.fonts.load('18px "IBM Plex Mono"','abc')]).then(()=>document.fonts.ready):Promise.resolve()).then(()=>mermaid.run({querySelector:'pre.mermaid'})).then(()=>{document.querySelectorAll('pre.mermaid').forEach(p=>p.style.color='inherit');}).finally(()=>stage.classList.remove('prerender'));}
+if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'loose',htmlLabels:false,flowchart:{curve:'linear',htmlLabels:false,padding:14,nodeSpacing:40,rankSpacing:50},themeVariables:{background:'#0F141B',primaryColor:'#1C2531',primaryTextColor:'#E7ECF2',primaryBorderColor:'#3A4553',lineColor:'#8C98A8',secondaryColor:'#161D26',tertiaryColor:'#161D26',clusterBkg:'#131a22',clusterBorder:'#3A4553',edgeLabelBackground:'#0F141B',fontFamily:'IBM Plex Sans KR, sans-serif',fontSize:'20px'}}); stage.classList.add('prerender'); (document.fonts?Promise.all([document.fonts.load('20px "IBM Plex Sans KR"','agent searchDocs remember 보고 수집'),document.fonts.load('600 54px "IBM Plex Sans KR"','가 abc'),document.fonts.load('18px "IBM Plex Mono"','abc')]).then(()=>document.fonts.ready):Promise.resolve()).then(()=>mermaid.run({querySelector:'pre.mermaid'})).then(()=>{document.querySelectorAll('pre.mermaid').forEach(p=>p.style.color='inherit');}).finally(()=>{stage.classList.remove('prerender'); document.body.dataset.ready='1';});} else document.body.dataset.ready='1';
 '''
 
 sections = '\n'.join(section(i, b, t, body, k) for i, (b, t, body, k) in enumerate(slides))

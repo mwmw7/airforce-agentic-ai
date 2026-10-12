@@ -27,7 +27,8 @@
     "see:steps": "node tools/draw-steps.mjs",
     "see:studio": "node tools/see-studio.mjs",
     "instructor:make-handson": "node tools/make-handson.mjs",
-    "slides": "python3 tools/make-slides.py"
+    "slides": "python3 tools/make-slides.py",
+    "slides:pdf": "node tools/make-slides-pdf.mjs"
   },
   "dependencies": {
     "@langchain/core": "^1.2.14",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@langchain/langgraph-cli": "1.5.1",
     "@types/node": "^22.0.0",
+    "playwright-core": "1.62.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

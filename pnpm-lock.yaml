@@ -206,6 +206,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.4
+      playwright-core:
+        specifier: 1.62.1
+        version: 1.62.1
       tsx:
         specifier: ^4.19.0
         version: 4.23.15
@@ -1506,6 +1509,11 @@ packages:
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
+
+  playwright-core@1.62.1:
+    resolution: {integrity: sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   postcss-modules-extract-imports@3.1.0:
     resolution: {integrity: sha512-k3kNe0aNFQDAZGbin48pL2VNidTF0w4/eASDsxlyspobzU3wZQLOGj7L9gfRe0Jo9/4uud09DsjFNH7winGv8Q==}
@@ -3045,6 +3053,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   pkce-challenge@5.0.1: {}
+
+  playwright-core@1.62.1: {}
 
   postcss-modules-extract-imports@3.1.0(postcss@8.5.28):
     dependencies:
