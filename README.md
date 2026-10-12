@@ -34,7 +34,26 @@ git diff hands-on main -- labs/agent/main.ts
 
 로컬 LLM 은 설치하지 않아도 됩니다. 모델은 강사가 AWS Bedrock 에 올려 두고 주소만 나눠 드립니다.
 
-### 1-2. 설치
+### 1-2. 가장 빠른 길 — GitHub Codespaces (설치 없음)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
+
+GitHub 계정만 있으면 됩니다. 위 배지(또는 https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on )를 열면 아래 화면이 뜹니다. 브랜치가 `hands-on`, 머신이 `2-core` 인지 확인하고 **Create codespace** 를 누르세요.
+
+<img src="docs/slides/captures/codespace_start.png" alt="Codespaces 만들기 화면" width="640">
+
+브라우저에 VS Code 가 뜨면 터미널에서 두 줄만 칩니다.
+
+```bash
+pnpm install && cp .env.example .env
+pnpm setup:check
+```
+
+- fork 는 필요 없습니다. 수업 중 강사가 고친 내용은 `git pull` 로 받습니다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생깁니다
+- 개인 계정은 달마다 2-core 기준 60시간이 무료입니다 (이틀 교육은 10시간 안팎). 30분 안 쓰면 자동으로 멈추고, 다시 열면 그 자리부터 이어집니다
+- `pnpm see:run`(3030) · 날씨 MCP(3333) · Studio(2024) 포트는 Codespaces 가 알아서 열어 줍니다
+
+### 1-3. 노트북에 직접 설치
 
 ```bash
 git clone https://github.com/mwmw7/airforce-agentic-ai.git
@@ -48,7 +67,7 @@ pnpm setup:check             # 환경 점검
 
 `[문제]` 가 없으면 준비 완료입니다. `[참고]` 는 "네트워크 없이 도는 대체 모드" 라는 뜻이라 실습에는 지장이 없습니다.
 
-### 1-3. 첫 실행
+### 1-4. 첫 실행
 
 ```bash
 pnpm mcp:weather                 # 터미널 1: 날씨 MCP 서버 (켜 둔 채로 둔다. 없으면 agent 는 날씨 없이 돈다)
