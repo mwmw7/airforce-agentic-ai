@@ -2,6 +2,14 @@
 
 2026. 10. 29(목) ~ 30(금) · TypeScript · LangGraph.js · MCP · Jev · Hindsight
 
+**실습 시작 (설치 없음, 브라우저만):** 아래 버튼 또는 주소를 열고 **Create codespace** — 자세한 안내는 [1-2 절](#1-2-가장-빠른-길--github-codespaces-설치-없음-권장)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
+
+```
+https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on
+```
+
 > 이 저장소의 모든 데이터(레이더 화면·기상·규정집)는 **교육용 합성 자료**이며 실제 공역·부대·기종·규정과 무관합니다.
 > Agent 는 **권고**까지만 수행하고, 결정은 항상 사람이 합니다.
 
