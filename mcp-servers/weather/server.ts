@@ -43,8 +43,17 @@ function ruleWeather(where: string): string {
   return JSON.stringify(w);
 }
 
+/** 서버 터미널에 한 줄. agent 쪽 화면과 구분되게 앞에 [weather MCP] 를 붙인다 */
+const log = (line: string) => console.log(`[weather MCP] ${new Date().toTimeString().slice(0, 8)} ${line}`);
+
 /** LLM 에게 날씨를 지어 달라고 한다. 답은 JSON 한 줄이어야 하고, 모양이 틀리거나 실패하면 규칙표로 돌아간다 */
 async function lookWeather(where: string): Promise<string> {
+  const started = Date.now();
+  const answer = await makeWeather(where);
+  log(`  → 답 ${JSON.parse(answer).출처 ?? "규칙표"} · ${Date.now() - started}ms: ${answer}`);
+  return answer;
+}
+async function makeWeather(where: string): Promise<string> {
   const fallback = ruleWeather(where);
   if (LLM_MODE === "mock") return fallback;
   try {
@@ -94,11 +103,19 @@ createServer(async (req, res) => {
     res.writeHead(404, { "Content-Type": "text/plain" }).end("MCP 서버입니다. POST /mcp 로 보내세요.");
     return;
   }
+  // 본문(JSON-RPC)을 먼저 읽어 무슨 요청인지 터미널에 보여 준다. agent 가 접속(initialize) → 목록(tools/list) → 실행(tools/call) 순으로 온다
+  let raw = "";
+  for await (const chunk of req) raw += chunk;
+  const body = raw ? JSON.parse(raw) : {};
+  for (const m of Array.isArray(body) ? body : [body]) {
+    if (m.method === "tools/call") log(`← ${m.method} ${m.params?.name}(${JSON.stringify(m.params?.arguments ?? {})})`);
+    else log(`← ${m.method ?? "(빈 요청 — pnpm setup:check 의 점검)"}`);
+  }
   const server = makeServer();
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined }); // 세션 없음
   res.on("close", () => { transport.close(); server.close(); });
   await server.connect(transport);
-  await transport.handleRequest(req, res);
+  await transport.handleRequest(req, res, body);                           // 읽어 둔 본문을 그대로 넘긴다
 }).listen(PORT, () => {
-  console.log(`[weather MCP] http://localhost:${PORT}/mcp 에서 기다리는 중 (Ctrl+C 로 끝)`);
+  log(`http://localhost:${PORT}/mcp 에서 기다리는 중 (Ctrl+C 로 끝). 요청이 오면 아래에 한 줄씩 찍힌다`);
 });
