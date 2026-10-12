@@ -81,10 +81,10 @@ function makeServer(): McpServer {
   // server.registerTool(이름, { description, inputSchema }, 실행 함수) 모양입니다.
   //   · 이름: "look_weather"
   //   · description: 모델이 읽고 "언제 쓸지" 정하는 설명. 예: "지금 날씨(하늘·구름·바람·시야·비행 가능 여부)를 한 번 본다"
-  //   · inputSchema: { 어디: z.string() } — 장소 또는 보고 문장 (zod 로 적는다. 모델이 이 설명을 보고 값을 채운다)
-  //   · 실행 함수: ({ 어디 }) 를 받아 lookWeather(어디) 결과를 { content: [{ type: "text", text: 결과 }] } 모양으로 돌려준다
+  //   · inputSchema: { where: z.string() } — 장소 또는 보고 문장 (zod 로 적는다. 모델이 이 설명을 보고 값을 채운다. 인자 이름은 영문으로)
+  //   · 실행 함수: ({ where }) 를 받아 lookWeather(where) 결과를 { content: [{ type: "text", text: 결과 }] } 모양으로 돌려준다
   // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 4)
-  // server.registerTool("look_weather", { description: "...", inputSchema: { 어디: z.string() } }, async ({ 어디 }) => ({ content: [{ type: "text", text: ... }] }));
+  // server.registerTool("look_weather", { description: "...", inputSchema: { where: z.string() } }, async ({ where }) => ({ content: [{ type: "text", text: ... }] }));
   return server;
 }
 

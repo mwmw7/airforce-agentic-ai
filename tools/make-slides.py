@@ -187,7 +187,7 @@ add(1, '1단계 전후 — 그래프에서 무엇이 바뀌었나?',
              '그림 다시 뽑기: <code>pnpm see:steps</code> → <code>docs/graphs/step-*.md</code>']), 'fig')
 add(1, '부하 안을 열면? — 1일차 그 루프',
     cols(mermaid('''flowchart LR
-  A["agent<br/>모델 호출"] -- "tool_calls: [{name: look_radar, arguments: {어디: 서울}}]" --> T["tools<br/>내 코드 runTool()"]
+  A["agent<br/>모델 호출"] -- "tool_calls: [{name: look_radar, arguments: {where: 서울}}]" --> T["tools<br/>내 코드 runTool()"]
   T -- "{ role: tool, tool_call_id, content: 결과 JSON }" --> A
   A -- "tool_calls 없음 → facts 2~3줄" --> E((END))'''),
          bullets(['모델은 <b>JSON 으로 "이 도구를 써 달라"</b> 고 말한다',

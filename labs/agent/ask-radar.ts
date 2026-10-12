@@ -47,13 +47,13 @@ const brief = ({ 자세히, _notice, 지역, ...row }: RadarRow) => row; // '자
 
 const localTools: Tool[] = [
   { type: "function", function: { name: "look_radar", description: "레이더에서 한 지역을 본다. 보고에 나온 장소(서울, 한강, 잠실, 김포, 인천, 동해 …)를 넣으면 그 지역에 잡힌 것들만 보여 준다. 장소를 모르면 비워 두면 전체 목록이 나온다. 자세한 건 안 보인다. (교육용 합성 자료)",
-      parameters: { type: "object", properties: { 어디: { type: "string", description: "보고에 나온 장소 또는 보고 문장 그대로. 예: 서울 / 한강 위 풍선" } } } } },
+      parameters: { type: "object", properties: { where: { type: "string", description: "보고에 나온 장소 또는 보고 문장 그대로. 예: 서울 / 한강 위 풍선" } } } } },
   { type: "function", function: { name: "look_closer", description: "레이더 화면에서 한 자리만 확대해 자세히 본다. 수상한 게 있으면 꼭 써 보라. (교육용 합성 자료)",
-      parameters: { type: "object", properties: { 어디: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["어디"] } } },
+      parameters: { type: "object", properties: { where: { type: "string", description: "look_radar 목록의 '어디' 값. 예: 잠실 위" } }, required: ["where"] } } },
   // ===== TODO 2-1: 내 도구 만들기 — 모델이 읽을 설명 =====
   // look_flight_plan 도구를 목록에 넣으세요. 모양은 위 look_closer 와 같습니다 (name · description · parameters).
   //   · description 이 모델의 선택을 정한다: "오늘 미리 통보·허가된 비행 계획을 조회한다. 레이더에 잡힌 것이 허가된 것인지 확인할 때 쓴다"
-  //   · parameters: 어디(장소) 하나. 예: 잠실 / 서쪽 훈련 구역
+  //   · parameters: where(장소) 하나. 예: 잠실 / 서쪽 훈련 구역 — 인자 이름은 영문으로 (Claude 계열은 한글 인자 이름을 거부한다)
   // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 2)
   // { type: "function", function: { name: "look_flight_plan", description: "…", parameters: { … } } },
 ];
@@ -86,7 +86,7 @@ async function radarFor(report: string): Promise<RadarRow[]> {
 async function runTool(name: string, args: Record<string, unknown>, report: string): Promise<string> {
   const rows = await radarFor(report);
   if (name === "look_radar") {
-    const where = String(args.어디 ?? "");
+    const where = String(args.where ?? "");
     const found = rows.filter((r) => inRegion(r, where));
     const matched = [...new Set(found.flatMap((r) => r.지역).filter((k) => where.includes(k)))]; // 문장에서 걸린 장소 열쇠말만
     if (found.length) return JSON.stringify({ 지역: matched.join("·"), 잡힌것: found.map(brief) });
@@ -94,7 +94,7 @@ async function runTool(name: string, args: Record<string, unknown>, report: stri
     return JSON.stringify({ 결과: where ? `'${where.slice(0, 20)}' 에 잡힌 것 없음 → 전체 목록` : "장소 없음 → 전체 목록", 지금_잡힌_것들: rows.map((r) => `${r.어디}: ${r.뭐가}`) });
   }
   if (name === "look_closer") {
-    const where = String(args.어디 ?? "");
+    const where = String(args.where ?? "");
     const row = rows.find((r) => inRegion(r, where));                                        // "잠실 위" → 지역 열쇠말 "잠실" 로 찾는다
     return row ? JSON.stringify({ 어디: row.어디, 뭐가: row.뭐가, 자세히: row.자세히 }) : JSON.stringify({ 결과: `레이더에 '${where}' 자리는 없음` });
   }
@@ -156,7 +156,7 @@ async function toolsNode(state: S): Promise<Partial<S>> {
   const calls = last?.role === "assistant" ? (last.tool_calls ?? []) : [];
 
   // 도구를 하나씩 실행하고 결과를 { role: "tool", tool_call_id, content } 로 모델에게 돌려준다 (1일차 Agent Loop 그대로)
-  //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 푼다 (예: {"어디":"잠실 위"})
+  //   · call.function.arguments 는 JSON "글자" 이므로 JSON.parse 로 푼다 (예: {"where":"잠실 위"})
   const results: Msg[] = [];
   for (const call of calls) {
     const args = JSON.parse(call.function.arguments || "{}");
