@@ -101,6 +101,8 @@ createServer(async (req, res) => {
   for (const m of Array.isArray(body) ? body : [body]) {
     if (m.method === "tools/call") log(`← ${m.method} ${m.params?.name}(${JSON.stringify(m.params?.arguments ?? {})})`);
     else log(`← ${m.method ?? "(빈 요청 — pnpm setup:check 의 점검)"}`);
+    // 받은 그대로(JSON-RPC 메시지)를 아래에 보여 준다. MCP 는 결국 이런 JSON 을 HTTP 로 주고받는 약속이다
+    for (const line of JSON.stringify(m, null, 2).split("\n")) console.log(`               │ ${line}`);
   }
   const server = makeServer();
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined }); // 세션 없음
