@@ -1,10 +1,10 @@
 /**
  * tools/doctor.ts — [실습 0-1] 환경 점검
  *   pnpm setup:check
- * Node 버전, .env, 모드별 연결(LLM / Jev / LangSmith) 을 확인하고 실습이 바로 가능한지 알려줍니다.
+ * .env 가 없으면 .env.example 을 복사해 만들어 주고, Node 버전·모드별 연결(LLM / Jev / LangSmith) 을 확인합니다.
  */
-import "dotenv/config";
 import fs from "node:fs";
+import { config as loadEnv } from "dotenv";
 
 const ok = (m: string) => console.log(`  [OK]   ${m}`);
 const warn = (m: string) => console.log(`  [참고] ${m}`);
@@ -16,8 +16,10 @@ console.log("\n공군 Agentic AI 교육 · 환경 점검\n");
 const major = Number(process.versions.node.split(".")[0]);
 major >= 22 ? ok(`Node ${process.versions.node}`) : bad(`Node ${process.versions.node} — 22 이상 필요 (https://nodejs.org)`);
 
-// .env
-fs.existsSync(".env") ? ok(".env 있음") : warn(".env 없음 — `cp .env.example .env` 하세요 (없어도 mock/local 모드로 실행됩니다)");
+// .env — 없으면 견본(.env.example)을 복사해 만든다. 당일 토큰은 이 파일에 적는다
+if (fs.existsSync(".env")) ok(".env 있음");
+else { fs.copyFileSync(".env.example", ".env"); ok(".env 없어서 .env.example 을 복사해 만들었음 (키 없이 mock/local 모드)"); }
+loadEnv(); // 복사한 뒤에 읽어야 아래 점검이 .env 값을 본다
 
 // LLM
 const llmMode = process.env.LLM_MODE ?? "mock";

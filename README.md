@@ -45,8 +45,8 @@ GitHub 계정만 있으면 됩니다. 위 배지(또는 https://codespaces.new/m
 브라우저에 VS Code 가 뜨면 터미널에서 두 줄만 칩니다.
 
 ```bash
-pnpm install && cp .env.example .env
-pnpm setup:check
+pnpm install
+pnpm setup:check             # 환경 점검 (.env 도 알아서 만들어 준다)
 ```
 
 - fork 는 필요 없습니다. 수업 중 강사가 고친 내용은 `git pull` 로 받습니다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생깁니다
@@ -61,8 +61,7 @@ cd airforce-agentic-ai
 git checkout hands-on        # 실습용 브랜치 (빈칸 버전)
 corepack enable && corepack prepare pnpm@12.6.0 --activate   # pnpm 이 없다면 (Node 22 내장 corepack)
 pnpm install
-cp .env.example .env         # 토큰은 당일 강사가 배포. 없어도 mock 모드로 전부 실행됩니다
-pnpm setup:check             # 환경 점검
+pnpm setup:check             # 환경 점검 + .env 생성 (토큰은 당일 강사가 배포. 없어도 mock 모드로 전부 실행됩니다)
 ```
 
 `[문제]` 가 없으면 준비 완료입니다. `[참고]` 는 "네트워크 없이 도는 대체 모드" 라는 뜻이라 실습에는 지장이 없습니다.
