@@ -5,6 +5,7 @@
  *
  * Hindsight 는 기억을 정리할 때 자기도 LLM 을 쓴다. 따로 키를 받지 않고 .env 의 LLM 설정(LLM_BASE_URL · LLM_API_KEY · LLM_MODEL)을 그대로 넘긴다.
  *   LLM_MODE=ollama 면 ollama 공급자로, 그 외(relay · cloud)는 OpenAI 호환 공급자로 연결한다.
+ *   OpenRouter 면 HINDSIGHT_LLM_MODEL 을 따로 둔다 (claude-haiku-4.5 · qwen3-32b 확인). claude-*-5.5 는 사실 추출이 404 로 실패한다 (.env.example 참고)
  */
 import "dotenv/config";
 import { consoleLogger, HindsightServer } from "@vectorize-io/hindsight-all";
