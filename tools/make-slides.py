@@ -134,8 +134,17 @@ add(0, '소개', '''
   </table>
   <div class="mail">branden@tooning.io</div>
 </div>''', 'text')
+add(0, '시작은 링크 하나: Codespaces 에서 hands-on 브랜치 열기',
+    cols('<figure class="shot"><img src="captures/codespace_start.png" alt="Codespaces 만들기 화면"><figcaption>링크를 열면 보이는 화면 — 저장소 · 브랜치 hands-on · 2-core 가 미리 골라져 있다. 초록 단추만 누른다</figcaption></figure>',
+         cmd('https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on', 'GitHub 로그인만 있으면 된다') +
+         bullets(['브랜치가 <b>hands-on</b> 인지 확인하고 <b>Create codespace</b>',
+                  '브라우저에 VS Code 가 뜨면 터미널에서 <code>pnpm install && cp .env.example .env</code>',
+                  '개인 계정은 달마다 2-core 60시간이 무료. 이틀 교육은 10시간이면 끝',
+                  '30분 안 쓰면 자동으로 멈춘다. 다시 열면 그 자리부터 (점심 뒤)',
+                  '노트북에 직접 하고 싶으면 다음 장의 <code>git clone</code>']) +
+         small('fork 는 안 해도 된다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생긴다'), ratio='r64'), 'cmd')
 add(0, '오늘의 규칙: 같이 하나씩 붙이고, 매번 다시 돌린다',
-    cols(cmd('git clone -b hands-on https://github.com/mwmw7/airforce-agentic-ai') + cmd('pnpm install && cp .env.example .env') + cmd('pnpm agent', '빈칸이 비어 있어도 끝까지 돈다') +
+    cols(cmd('git clone -b hands-on https://github.com/mwmw7/airforce-agentic-ai', '노트북이면. Codespaces 는 앞 장') + cmd('pnpm install && cp .env.example .env') + cmd('pnpm agent', '빈칸이 비어 있어도 끝까지 돈다') +
          bullets(['문제는 <b>TODO 1 ~ 8</b>. 단계 번호 = TODO 번호. 파일 안에서 <code>// ===== TODO n</code> 을 찾는다',
                   '강사가 화면에서 치면 같이 친다. 채운 뒤 <code>pnpm agent</code> → 화면에 새 줄이 생긴다',
                   '키가 하나도 없어도 mock 모드로 전부 돈다']),
