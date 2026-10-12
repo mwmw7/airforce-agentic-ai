@@ -4,7 +4,7 @@
  *   완성본 코드를 pnpm step N 과 같은 변환(blanks.mjs)으로 임시 폴더에 만들고, 거기서 draw-graph.ts 를 돌린다
  *   내 파일은 건드리지 않는다
  *   그래프 모양이 바뀌는 건 TODO 1(부하를 서브그래프로) · TODO 5(동시 실행 · 합류) 두 번뿐 → 단계 2 · 6 에서 그림이 바뀐다
- *   출력: docs/graphs/step-1.md ~ step-8.md, step-done.md (+ steps.md 한눈에 보기)
+ *   출력: docs/graphs/step-1.md ~ step-8.md, step-done.md
  *
  * 사용:  pnpm see:steps      (main 브랜치에서. 정답이 있어야 단계를 만들 수 있다)
  */
@@ -36,7 +36,6 @@ if (!marked.length) {
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "draw-steps-"));
 fs.mkdirSync("docs/graphs", { recursive: true });
-const results = [];
 try {
   for (let step = 1; step <= LAST + 1; step++) {
     const name = step > LAST ? "done" : String(step);
@@ -50,19 +49,8 @@ try {
     const mermaid = drawing.slice(drawing.indexOf("```mermaid"));
     const title = step > LAST ? "전부 정답 (pnpm step done)" : step === 1 ? "처음 상태 — 전부 빈칸 (pnpm step 1)" : `${step}번을 풀 차례 — ${step === 2 ? "1" : `1 ~ ${step - 1}`} 정답 (pnpm step ${step})`;
     fs.writeFileSync(`docs/graphs/step-${name}.md`, `# 단계 ${name}: ${title}\n\n${mermaid}`);
-    results.push({ name, title, mermaid });
     console.log(`[그림] docs/graphs/step-${name}.md`);
   }
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }
-
-// 한눈에 보기: 앞 단계와 모양이 같으면 "변화 없음" 으로 접는다
-const lines = ["# 단계별 그래프 모양", "", "`pnpm see:steps` 로 생성. 앞 단계와 모양이 같으면 그림을 생략한다.", ""];
-results.forEach((r, i) => {
-  const same = i > 0 && r.mermaid === results[i - 1].mermaid;
-  lines.push(`## 단계 ${r.name}: ${r.title}`, "");
-  lines.push(same ? "_앞 단계와 모양이 같다 (바뀐 건 노드 안의 코드)_" : r.mermaid.trimEnd(), "");
-});
-fs.writeFileSync("docs/graphs/steps.md", lines.join("\n"));
-console.log("[그림] docs/graphs/steps.md (한눈에 보기)");
