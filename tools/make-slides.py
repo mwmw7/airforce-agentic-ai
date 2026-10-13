@@ -97,7 +97,8 @@ def diff_raw(before, after):
     out = ['<span class="del">- ' + html.escape(cut(l, 74)) + '</span>' for l in before] + ['<span class="add">+ ' + html.escape(cut(l, 74)) + '</span>' for l in after]
     return '<pre class="diff">' + ''.join(out) + '</pre>'
 def cmd(c, note=''):
-    return f'<div class="cmd"><span class="prompt">$</span> {html.escape(c)}' + (f'<span class="note">{html.escape(note)}</span>' if note else '') + '</div>'
+    return (f'<div class="cmd"><span class="prompt">$</span> <span class="c">{html.escape(c)}</span>' + (f'<span class="note">{html.escape(note)}</span>' if note else '')
+            + '<button class="copy" title="명령 복사">복사</button></div>')  # 명령만 복사한다 (설명은 빼고)
 def ok(text): return f'<div class="ok"><span>이게 보이면 성공</span>{text}</div>'
 def para(text): return f'<p>{text}</p>'
 def mermaid(src): return f'<pre class="mermaid">{html.escape(src)}</pre>'
@@ -517,7 +518,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:"IBM Pl
 #stage.prerender .slide{display:flex;visibility:hidden}#stage.prerender .slide.on{visibility:visible}
 /* 인쇄(PDF): 장마다 1920x1080 한 페이지. pnpm slides:pdf 가 Chrome 헤드리스로 뽑는다 */
 @page{size:1920px 1080px;margin:0}
-@media print{html,body{overflow:visible;height:auto}#stage{position:static;transform:none !important;width:1920px;height:auto;cursor:default}
+@media print{.cmd .copy{display:none}html,body{overflow:visible;height:auto}#stage{position:static;transform:none !important;width:1920px;height:auto;cursor:default}
  .slide{position:relative;inset:auto;display:flex !important;visibility:visible !important;width:1920px;height:1080px}
  .slide + .slide{break-before:page}
  #bar,#overview,#hint,.mermaidTooltip{display:none !important}}
@@ -540,6 +541,7 @@ pre.term .tag{display:inline-block;color:#fff;padding:0 6px;border-radius:3px;fo
 .t-decide{background:var(--t-decide)}.t-stop{background:var(--t-stop)}.t-node{background:var(--t-node)}.t-sub{background:var(--t-sub)}.t-live{background:var(--t-live)}
 pre .bar,pre .mag{color:var(--mag);font-weight:700}pre .dim{color:#5B6676}pre .amber{color:var(--amber);font-weight:600}
 .cmd{font-family:"IBM Plex Mono",monospace;font-size:24px;background:var(--panel2);border-left:4px solid var(--amber);padding:12px 20px;border-radius:0 6px 6px 0}
+.cmd{position:relative;padding-right:84px}.cmd .copy{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:600 15px/1 "Noto Sans KR",sans-serif;color:var(--muted);background:transparent;border:1px solid var(--muted);border-radius:5px;padding:5px 10px;cursor:pointer}.cmd .copy:hover,.cmd .copy.done{color:var(--amber);border-color:var(--amber)}
 .cmd .prompt{color:var(--amber);margin-right:10px}.cmd .note{color:var(--muted);font-size:19px;margin-left:18px}
 .ok{border:1px solid var(--amber);border-radius:6px;padding:12px 18px;font-size:23px;line-height:1.45}
 .ok > span{display:block;color:var(--amber);font-size:17px;margin-bottom:4px}
@@ -592,6 +594,7 @@ function scaleCells(){ov.querySelectorAll('.cell').forEach(c=>{const w=c.clientW
 function closeOverview(){ov.classList.remove('on');}
 stage.addEventListener('click',(e)=>{const r=stage.getBoundingClientRect(); if(e.clientX < r.left + r.width/2) go(cur-1); else go(cur+1);});
 ov.addEventListener('click',closeOverview);
+addEventListener('click',(e)=>{const b=e.target.closest('.cmd .copy'); if(!b) return; navigator.clipboard.writeText(b.parentElement.querySelector('.c').textContent).then(()=>{b.textContent='복사됨'; b.classList.add('done'); setTimeout(()=>{b.textContent='복사'; b.classList.remove('done');},1200);});});
 addEventListener('keydown',(e)=>{
   if(e.key==='o'||e.key==='O'){ov.classList.contains('on')?closeOverview():openOverview(); return;}
   if(e.key==='Escape'){closeOverview(); return;}
