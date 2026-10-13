@@ -374,12 +374,12 @@ add(3, '어제 판단을 오늘 기억하면?',
   M -- "일치 0.9 이상" --> AP["approve<br/>그때 판정 그대로"]
   M -- "없음" --> J["judge<br/>Jev + recall"]
   J --> AP
-  AP -- "사람 결정 + 근거 요약 saveCase 8-2" --> H[("Hindsight<br/>기억 서버 또는 파일")]
+  AP -- "사람 결정 + 근거 요약 saveCase 8-2" --> H[("Hindsight<br/>서버 또는 .hindsight/*.json")]
   H -. "findSameCase · recall" .-> M'''),
          bullets(['기억은 두 번 쓴다: 판정 전에 <b>찾고</b>(8-1), 사람 결정 뒤에 <b>남긴다</b>(8-2)',
                   '남기는 건 approve 가 끝난 뒤 — 그래서 7단계(이어가기)가 먼저다',
                   '같은 사례면 Jev 를 부르지 않는다. 그때의 판정과 사람의 선택이 그대로 올라온다',
-                  '서버가 없으면 <code>MEMORY_MODE=file</code> 로 JSON 파일에 똑같이 남긴다']), ratio='r64'), 'fig')
+                  'Hindsight 서버가 없으면 <code>MEMORY_MODE=file</code> 로 JSON 파일에 똑같이 남긴다']), ratio='r64'), 'fig')
 add(3, step_tag(8, '기억 찾기 · 남기기'),
     cols(diff('TODO 8', 0, w=88) + diff('TODO 8', 1, w=88) + cmd('pnpm agent 1', '두 번'),
          term(pick('02_run1_first.txt', [r'^\[MEMORY', r'^\[JEV   \]', r'^\[DECIDE'], limit=4)) + small('첫 번째: 기억 없음 → Jev 판정') +
@@ -389,21 +389,22 @@ add(3, '사람이 가르친다',
     cols(term(pick('07_mcp_off.txt', [r'^\[MEMORY', r'^\s+│ 그때', r'^\[DECIDE'], limit=5)) + cmd('pnpm agent 2', '담당자가 w(감시 강화)를 고른 뒤 다시') +
          bullets(['기억에 남는 건 Jev 의견이 아니라 <b>사람의 최종 선택</b>과 그때 본 근거 요약이다',
                   '다음에 같은 보고가 오면 사람이 고른 쪽으로 떠오른다',
-                  '기억 서버 안은 <code>pnpm memory:ui</code> 로 들여다본다 (localhost:18888)']),
+                  'Hindsight 안은 <code>pnpm memory:ui</code> 로 들여다본다 (localhost:18888)']),
          '<div class="placeholder">pnpm memory:ui 대시보드 캡처 자리<br/><span>점 = 사실 · 요약, 선 = 시간 · 의미 · 엔티티</span></div>'), 'cmd')
-add(3, '기억 파일 vs 기억 서버 — 무엇이 다른가?',
-    table(['', '<code>MEMORY_MODE=file</code> (기본)', '<code>MEMORY_MODE=hindsight</code>'],
+add(3, 'Hindsight 를 켜면 무엇이 달라지나? — MEMORY_MODE file vs hindsight',
+    table(['', '<code>MEMORY_MODE=file</code> (기본, Hindsight 서버 없음)', '<code>MEMORY_MODE=hindsight</code> (Hindsight 서버)'],
           [['저장', '<code>.hindsight/control-room.json</code> 한 파일', 'Hindsight 서버 (<code>pnpm memory:up</code>, localhost:8888)'],
-           ['준비물', '없음', '서버 데몬 · <code>uv</code> · 서버가 쓸 LLM'],
-           ['retain 남기기', '원문 한 줄을 파일에 붙임, 바로 반영', '맡기고 바로 돌아옴(async). 서버가 뒤에서 사실 추출 → 엔티티 연결 → 링크 → 요약(consolidation)'],
+           ['준비물', '없음', 'Hindsight 데몬 · <code>uv</code> · Hindsight 가 쓸 LLM'],
+           ['retain 남기기', '원문 한 줄을 파일에 붙임, 바로 반영', '맡기고 바로 돌아옴(async). Hindsight 가 뒤에서 사실 추출 → 엔티티 연결 → 링크 → 요약(consolidation)'],
            ['recall 찾기 (Jev 참고)', '겹치는 <b>단어 수</b>', '의미 · 단어 · 그래프 · 시간 네 갈래 + 리랭커. 표현이 달라도 찾는다'],
            ['같은 사례? (remember)', '원문 보고 겹침 <code>overlap</code> ≥ 0.9', '후보는 Hindsight 가 찾고, 판단은 <b>같은 <code>overlap</code></b>'],
-           ['reflect', '기억 목록을 그대로', '서버 LLM 이 기억을 근거로 한 문단'],
-           ['실행 끝 화면', '없음', '서버가 한 일(사실 · 엔티티 · 요약)을 숫자로']], 'dense') +
+           ['reflect', '기억 목록을 그대로', 'Hindsight 의 LLM 이 기억을 근거로 한 문단'],
+           ['실행 끝 화면', '없음', 'Hindsight 가 한 일(사실 · 엔티티 · 요약)을 숫자로']], 'dense') +
     bullets(['부르는 함수는 똑같다 (<code>createBank · retain · recall · findSameCase</code>) → 그래프 코드는 한 줄도 안 바뀐다',
              '"같은 사례면 Jev 생략" 은 두 모드 모두 <b>코드 규칙</b>이 정한다 → 키 없이도 "어제 판단을 오늘 기억" 체험은 같다',
-             '차이는 찾는 힘과 정리: 파일은 메모장에서 단어 찾기, 서버는 보관소가 정리 · 연결해 두었다가 뜻으로 찾아 준다',
-             '주의: hindsight 의 retain 은 비동기 — 실행 끝 <code>[MEMORY] 서버 작업 끝</code> 을 본 뒤 다음 실행']), 'table')
+             '차이는 찾는 힘과 정리: file 은 메모장에서 단어 찾기, Hindsight 는 정리 · 연결해 두었다가 뜻으로 찾아 준다',
+             '주의: Hindsight 의 retain 은 비동기 — 실행 끝 <code>[MEMORY] 서버 작업 끝</code> 을 본 뒤 다음 실행',
+             '<code>MEMORY_MODE=off</code> 면 둘 다 안 한다 — 기억 없는 Agent 와 비교할 때']), 'table')
 add(3, '되감으면?',
     cols(code(['const history = [];',
                'for await (const snap of graph.getStateHistory(config)) history.push(snap);',
