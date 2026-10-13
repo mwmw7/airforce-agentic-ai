@@ -39,7 +39,8 @@ else process.env.OPENROUTER_API_KEY ? ok("JEV_MODE=openrouter, 키 있음") : ba
 
 // 장기 기억 (Hindsight)
 const memMode = process.env.MEMORY_MODE ?? "file";
-if (memMode === "file") warn("MEMORY_MODE=file — .hindsight/*.json 에 저장. 실제 Hindsight 는 pnpm memory:up 후 MEMORY_MODE=hindsight");
+if (memMode === "off") ok("MEMORY_MODE=off — 기억 없이 돈다 (매번 Jev 에게 묻는다)");
+else if (memMode === "file") warn("MEMORY_MODE=file — .hindsight/*.json 에 저장. 실제 Hindsight 는 pnpm memory:up 후 MEMORY_MODE=hindsight");
 else {
   try {
     const r = await fetch(`${process.env.HINDSIGHT_BASE_URL ?? "http://localhost:8888"}/health`);
