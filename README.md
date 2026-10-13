@@ -232,7 +232,7 @@ Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weath
 |---|---|---|---|
 | `LLM_MODE` | `mock` (정해진 답) | `cloud` — OpenRouter + 조별 키 | `relay` — vLLM/Bedrock/Ollama 등 OpenAI 호환 주소 |
 | `JEV_MODE` | `local` (규칙 판정기) | `openrouter` — Jev (OpenRouter Decisions API, 같은 조별 키를 `OPENROUTER_API_KEY` 에) | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
-| `MEMORY_MODE` | `file` (`.hindsight/*.json`) | `hindsight` — `pnpm memory:up` 또는 강사 서버 주소 | 자체 호스팅 Hindsight |
+| `MEMORY_MODE` | `file` (`.hindsight/*.json`) · `off` (기억 없음) | `hindsight` — `pnpm memory:up` 또는 강사 서버 주소 | 자체 호스팅 Hindsight |
 
 모델 비교: `LLM_MODE=ollama` + `LLM_BASE_URL=http://localhost:11434/v1` + `LLM_MODEL=qwen3:8b` 로 바꾸면 같은 보고를 노트북 모델로 돌려 봅니다.
 

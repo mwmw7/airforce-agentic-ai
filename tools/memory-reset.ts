@@ -3,6 +3,7 @@
  *   pnpm memory:reset
  *   · MEMORY_MODE=hindsight : 서버의 bank(HINDSIGHT_BANK, 기본 control-room)를 지운다. 다음 실행 때 createBank 가 새로 만든다
  *   · MEMORY_MODE=file      : .hindsight/<bank>.json 을 지운다
+ *   · MEMORY_MODE=off       : 지울 것이 없다
  *   · 둘 다 지우려면 pnpm memory:reset --all
  *   checkpoints.sqlite(멈춘 실행 저장)도 같이 지운다. 옛 실행번호로 --resume 할 일이 없게
  */

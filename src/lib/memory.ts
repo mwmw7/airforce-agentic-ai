@@ -10,6 +10,7 @@
  *
  * MEMORY_MODE=hindsight → Hindsight 서버 (pnpm memory:up 으로 내 노트북에 띄우거나, 강사 서버 주소)
  * MEMORY_MODE=file      → .hindsight/<bank>.json 에 저장 (서버 없이, 교육생 기본값). 부르는 법은 같다
+ * MEMORY_MODE=off       → 기억 없음. 찾기는 빈손, 맡기기는 안 한다 (기억 없는 Agent 와 비교할 때)
  *
  * 비유: 기억 보관소가 따로 있고, 우리 코드는 맡기기(retain)와 꺼내기(recall)만 한다.
  */
@@ -19,7 +20,8 @@ import { HindsightClient } from "@vectorize-io/hindsight-client";
 import { traceable } from "langsmith/traceable";
 import { bold, dim, log } from "./show.js";
 
-export const MEMORY_MODE = (process.env.MEMORY_MODE ?? "file") as "hindsight" | "file";
+export const MEMORY_MODE = (process.env.MEMORY_MODE ?? "file") as "hindsight" | "file" | "off";
+const OFF = MEMORY_MODE === "off";
 const BANK = process.env.HINDSIGHT_BANK ?? "control-room";
 const MISSION = "관제실 보조. 들어온 보고와 그때 내린 결정을 기억해 두었다가, 비슷한 보고가 다시 오면 떠올린다.";
 // 무엇을 뽑아 기억할지 (retain 때 Hindsight 의 LLM 에게 주는 지시). 막연하면 기억도 막연해진다
@@ -66,6 +68,7 @@ function overlap(a: string, b: string): number {
 
 /** 기억 공간 만들기. 이미 있으면 그대로 둔다 (Hindsight 는 createBank 가 그렇게 동작한다) */
 export async function createBank(): Promise<void> {
+  if (OFF) return;
   if (hindsight) {
     await hindsight.createBank(BANK, { reflectMission: MISSION, retainMission: RETAIN_MISSION });
     if (before) return; // 숫자는 실행마다 한 번만 보여 준다
@@ -80,6 +83,7 @@ export async function createBank(): Promise<void> {
 
 /** 기억 맡기기: 판단 한 건을 넣는다. 같은 id(실행번호)로 다시 넣으면 덮어쓴다 (사람이 승인한 뒤 결과를 고쳐 쓸 때) */
 export const retain = traceable(async function retain(c: Case): Promise<void> {
+  if (OFF) return;
   // 요약하지 않고 원문 그대로 넣는다. Hindsight 가 여기서 사실·엔티티·관계(그래프)를 뽑는다
   // 사람이 결정한 뒤(approve)라면 그때 본 종합 근거와 사람의 선택까지 함께 남긴다 → 다음에 "왜 그렇게 했나" 까지 떠오른다
   const text = [
@@ -115,6 +119,7 @@ export const retain = traceable(async function retain(c: Case): Promise<void> {
 
 /** 관련 기억 꺼내기: 질문과 관련 있는 기억을 몇 줄 돌려준다. 없으면 빈 배열 */
 export const recall = traceable(async function recall(query: string, topN = 3): Promise<string[]> {
+  if (OFF) return [];
   const started = Date.now();
   if (hindsight) {
     // budget 기본(mid) · 사실과 요약(observation) 모두. 네 갈래(의미 · 단어 · 그래프 · 시간)로 찾아 합친다
@@ -137,6 +142,7 @@ export const recall = traceable(async function recall(query: string, topN = 3): 
  *  "같은 사례" 는 모델 점수가 아니라 코드 규칙으로 정한다: 기억에 붙여 둔 원문 보고(metadata.report)와 지금 보고의 단어 겹침(overlap).
  *  Hindsight 는 후보를 찾아 주는 역할, 같은지 아닌지는 우리가 센다 → 모델이 한국어에 약해도 엉뚱한 사례를 "같다" 고 하지 않는다 */
 export const findSameCase = traceable(async function findSameCase(report: string): Promise<{ case: Case; time: string; score: number } | null> {
+  if (OFF) return null;
   if (hindsight) {
     // budget "low" = 빠른 검색 (50~100ms). 원래 사실만(observation 제외) — metadata 가 붙어 있는 건 원래 사실이다
     const started = Date.now();
@@ -195,6 +201,7 @@ export async function showMemoryWork(): Promise<void> {
 
 /** 기억을 바탕으로 한 문단 답하기 (시연용). file 모드는 LLM 이 없으니 기억 목록을 그대로 돌려준다 */
 export async function reflect(query: string): Promise<string> {
+  if (OFF) return "기억 꺼짐 (MEMORY_MODE=off)";
   if (hindsight) return (await hindsight.reflect(BANK, query)).text;
   const found = await recall(query, 5);
   return found.length ? `기억 ${found.length}건:\n${found.join("\n")}` : "관련 기억 없음";
