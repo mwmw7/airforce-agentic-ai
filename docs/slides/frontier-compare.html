@@ -6,7 +6,7 @@
 <title>Agent 구현 비교 덱</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: a 1920×1080 stage scaled to the viewport; one topic per slide, three equal columns (핸즈온 · Claude Code · opencode), code at the bottom of each column. */
+/* Layout: a 1920×1080 stage scaled to the viewport; one topic per slide, three equal columns (핸즈온 · Claude Code · Opencode), code at the bottom of each column. */
 :root {
   --bg: #e9edf2;
   --stage: #ffffff;
@@ -126,14 +126,14 @@ table.sum.dense th, table.sum.dense td { padding: 8px 14px; }
 <!-- 0 cover -->
 <section class="slide cover" data-id="cover">
   <div class="eyebrow">공군 AI센터 · Agentic AI 설계·구현 실무 · 2일차 부록</div>
-  <h1>Agent 구현 비교<br>핸즈온 · Claude Code · opencode</h1>
+  <h1>Agent 구현 비교<br>핸즈온 · Claude Code · Opencode</h1>
   <p class="sub">같은 문제(루프 · 도구 · 중단 · 사람 개입 · 상태 · 권한)를 세 코드가 어떻게 풀었는지, 실제 코드와 파일 위치를 나란히 둡니다. 에이전트 동작에 관한 부분만 다룹니다.</p>
   <div class="legend">
     <span class="l1"><i></i>핸즈온 <code class="i">labs/agent</code> · LangGraph.js 1.x · 약 1,000줄</span>
     <span class="l2"><i></i>Claude Code <code class="i">src/</code> · 약 51만 줄 · 도구 54개</span>
-    <span class="l3"><i></i>opencode <code class="i">packages/core/src</code> · 약 6.7만 줄 · Effect-TS</span>
+    <span class="l3"><i></i>Opencode <code class="i">packages/core/src</code> · 약 6.7만 줄 · Effect-TS</span>
   </div>
-  <div class="notice">Claude Code 는 유출본(2026-03-31)입니다. 가운데 열의 코드는 구조만 옮긴 <b>의사코드</b>이고 줄 번호는 원본 참조용입니다. 핸즈온은 2026-10-13 <code class="i">main</code>, opencode 는 MIT(HEAD 15b24ae12d) 원문입니다.</div>
+  <div class="notice">Claude Code 는 유출본(2026-03-31)입니다. 가운데 열의 코드는 구조만 옮긴 <b>의사코드</b>이고 줄 번호는 원본 참조용입니다. 핸즈온은 2026-10-13 <code class="i">main</code>, Opencode 는 MIT(HEAD 15b24ae12d) 원문입니다.</div>
   <p class="keys">→ / Space 다음 · ← 이전 · Home / End · C 코드 접기 · 숫자 1~9 로 바로 이동</p>
 </section>
 
@@ -179,7 +179,7 @@ deps: react@19 (canary) · @anthropic-ai/sdk · zod@3 · @modelcontextprotocol/s
 bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code"
 터미널 렌더러: src/ink/ (Ink fork) + src/components/ (React, 395 파일)</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>package.json · packages/core/package.json</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>package.json · packages/core/package.json</small></div><div class="body">
       <p class="claim">TypeScript + <b>Effect-TS</b>, 런타임은 <b>Bun 1.4.2 고정</b>. 서버로 만들고 UI 는 클라이언트다.</p>
       <ul>
         <li><b>실행</b> <code class="i">packageManager: bun@1.4.2</code>, turbo 모노레포(core · server · cli · tui · app · desktop · sdk · ai)</li>
@@ -202,14 +202,14 @@ bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code
 "solid-js": <span class="hl-str">"catalog:"</span>, "@opentui/solid": <span class="hl-str">"catalog:"</span></code></pre></figure>
     </div></div>
   </div>
-  <div class="verdict"><b>비교.</b> 핸즈온은 "프레임워크가 루프를 가진다", Claude Code 는 "내가 루프를 쓰고 React 로 그린다", opencode 는 "Effect 가 동시성과 오류를 가지고 나는 이벤트를 발행한다". 런타임은 교육용 Node(어디서나 돈다) 대 제품용 Bun(빠른 시작·단일 바이너리)으로 갈린다.</div>
+  <div class="verdict"><b>비교.</b> 핸즈온은 "프레임워크가 루프를 가진다", Claude Code 는 "내가 루프를 쓰고 React 로 그린다", Opencode 는 "Effect 가 동시성과 오류를 가지고 나는 이벤트를 발행한다". 런타임은 교육용 Node(어디서나 돈다) 대 제품용 Bun(빠른 시작·단일 바이너리)으로 갈린다.</div>
 </section>
 
 <!-- 1 summary -->
 <section class="slide" data-id="s0">
   <div class="hd"><span class="no">00</span><h2>에이전트 설계 한 장</h2><p class="q">루프는 셋이 같다. 다른 것은 루프를 담는 그릇, 상태를 남기는 방식, 도구 호출 앞뒤에 끼운 검사의 두께다.</p></div>
   <table class="sum">
-    <thead><tr><th style="width:16%"></th><th>핸즈온</th><th>Claude Code</th><th>opencode</th></tr></thead>
+    <thead><tr><th style="width:16%"></th><th>핸즈온</th><th>Claude Code</th><th>Opencode</th></tr></thead>
     <tbody>
       <tr><th>루프의 그릇</th><td><b>그래프</b> — StateGraph 노드·엣지, 칠판 reducer</td><td><b>while(true) 제너레이터</b> 하나 (query.ts)</td><td><b>Effect 프로그램</b> — drain 루프 + 스텝마다 fiber fork</td></tr>
       <tr><th>상태 저장</th><td>칠판 스냅샷 → SqliteSaver 체크포인트</td><td>messages[] → JSONL 추가 기록 (parentUuid 트리)</td><td>SQLite <b>이벤트 로그</b> → 프로젝터가 메시지 테이블 생성</td></tr>
@@ -253,7 +253,7 @@ bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code
     <span class="hl-kw">if</span> (maxTurns &amp;&amp; ++turn &gt; maxTurns): <span class="hl-kw">return</span> { reason: <span class="hl-str">"max_turns"</span> }
     state.messages = [...msgs, assistant, ...results]</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>session/runner/llm.ts:188-195</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>session/runner/llm.ts:188-195</small></div><div class="body">
       <p class="claim">루프 = <code class="i">drain</code> 이 스텝 경계마다 <code class="i">runStep</code> 호출. 스텝 결과는 태그 유니언.</p>
       <ul><li><code class="i">Completed | Retry | Continue | Compacted | RecoverFull</code> (step.ts:32-42)</li><li>스텝 안에서 <code class="i">tool-call</code> 이벤트마다 fiber 를 fork → 스트리밍 중 실행</li></ul>
 <figure class="code"><figcaption><b>core/src/session/runner/llm.ts</b><span>:188-195</span></figcaption><pre><code><span class="hl-kw">while</span> (<span class="hl-kw">true</span>) {
@@ -266,7 +266,7 @@ bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code
 }</code></pre></figure>
     </div></div>
   </div>
-  <div class="verdict"><b>비교.</b> 핸즈온은 분기가 엣지로 그려져 눈에 보이고, Claude Code 는 return/continue 문에 흩어져 있고, opencode 는 태그 유니언으로 명시된다. 핸즈온의 askHuman·stop 노드가 Claude Code 의 aborted_*·max_turns, opencode 의 MAX_STEPS_PROMPT 에 해당한다.</div>
+  <div class="verdict"><b>비교.</b> 핸즈온은 분기가 엣지로 그려져 눈에 보이고, Claude Code 는 return/continue 문에 흩어져 있고, Opencode 는 태그 유니언으로 명시된다. 핸즈온의 askHuman·stop 노드가 Claude Code 의 aborted_*·max_turns, Opencode 의 MAX_STEPS_PROMPT 에 해당한다.</div>
 </section>
 
 <!-- 2 termination -->
@@ -296,7 +296,7 @@ bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code
 …
 <span class="hl-kw">if</span> (!needsFollowUp) <span class="hl-kw">return</span> { reason: <span class="hl-str">"completed"</span> }</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>publish-llm-event.ts:619-622</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>publish-llm-event.ts:619-622</small></div><div class="body">
       <p class="claim">로컬 도구가 하나라도 불렸으면 계속. inbox 에 대기 입력이 있으면 다시 돈다.</p>
       <ul><li><code class="i">!providerExecuted</code>: 프로바이더가 서버에서 실행한 도구(웹검색 등)는 이어갈 이유가 아니다</li></ul>
 <figure class="code"><figcaption><b>core/src/session/runner/publish-llm-event.ts</b><span>:619-622</span></figcaption><pre><code>needsContinuation: Iterable.<span class="hl-fn">some</span>(
@@ -309,7 +309,7 @@ bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code
 
 <!-- 3 cap -->
 <section class="slide" data-id="s3">
-  <div class="hd"><span class="no">03</span><h2>상한과 강제 중단</h2><p class="q">누가 멈추나. 핸즈온·Claude Code 는 끊고, opencode 는 도구를 빼앗고 한 번 더 말하게 한다.</p></div>
+  <div class="hd"><span class="no">03</span><h2>상한과 강제 중단</h2><p class="q">누가 멈추나. 핸즈온·Claude Code 는 끊고, Opencode 는 도구를 빼앗고 한 번 더 말하게 한다.</p></div>
   <div class="grid">
     <div class="cell k1"><div class="head">핸즈온 <small>ask-radar.ts:31, 211-215</small></div><div class="body">
       <p class="claim">MAX_STEPS 8 (env). 넘으면 <code class="i">stop</code> 노드가 부하만 끝낸다. 부모는 규정집 결과로 계속.</p>
@@ -334,7 +334,7 @@ bunfig [define]: MACRO.VERSION · MACRO.PACKAGE_URL = "@anthropic-ai/claude-code
 state = { messages: [...msgs, ...assistant, ...toolResults],
           turnCount: nextTurnCount, transition: <span class="hl-str">"next_turn"</span> }</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>llm.ts:223-241 · step.ts:96-97</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>llm.ts:223-241 · step.ts:96-97</small></div><div class="body">
       <p class="claim"><code class="i">steps</code> 도달 시 "더는 도구를 못 쓴다" 를 assistant 메시지로 넣고 <code class="i">toolChoice:"none"</code> 으로 한 번 더 부른다.</p>
       <ul><li>내장 에이전트엔 <code class="i">steps</code> 미설정 → 사실상 상한 없음</li><li>새 사용자 입력이 오면 카운터 리셋 (llm.ts:178)</li></ul>
 <figure class="code"><figcaption><b>core/src/session/runner/llm.ts</b><span>:223-241 요지</span></figcaption><pre><code><span class="hl-cm">// steps 가 agent.steps 에 도달하면</span>
@@ -347,7 +347,7 @@ toolChoice = <span class="hl-str">"none"</span>          <span class="hl-cm">// 
 
 <!-- 4 tool def -->
 <section class="slide" data-id="s4">
-  <div class="hd"><span class="no">04</span><h2>도구 정의</h2><p class="q">모델에게 무엇을 보여주나. 핸즈온 2요소, Claude Code 2요소 + 안전 메타 6종, opencode 2요소 + 권한 액션.</p></div>
+  <div class="hd"><span class="no">04</span><h2>도구 정의</h2><p class="q">모델에게 무엇을 보여주나. 핸즈온 2요소, Claude Code 2요소 + 안전 메타 6종, Opencode 2요소 + 권한 액션.</p></div>
   <div class="grid">
     <div class="cell k1"><div class="head">핸즈온 <small>ask-radar.ts:41-55</small></div><div class="body">
       <p class="claim">OpenAI 함수 호출 스키마 그대로. 실행은 별도 <code class="i">runTool()</code> if 체인.</p>
@@ -377,7 +377,7 @@ toolChoice = <span class="hl-str">"none"</span>          <span class="hl-cm">// 
   maxResultSizeChars        <span class="hl-cm">// 넘으면 파일로</span>
 }</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>schema/src/tool.ts:14-20, 92-101</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>schema/src/tool.ts:14-20, 92-101</small></div><div class="body">
       <p class="claim">도구 = 평범한 객체. <code class="i">execute</code> 는 Effect 를 돌려주고, 취소는 fiber 중단.</p>
       <ul><li>읽기전용/동시실행 플래그 없음 — 전부 동시에 뜨고 권한 규칙이 막는다</li><li>등록은 플러그인의 <code class="i">ctx.tool.transform(editor ⇒ editor.add({…}))</code>, 같은 이름은 나중 등록이 이김</li></ul>
 <figure class="code"><figcaption><b>packages/schema/src/tool.ts</b><span>:14-20, 92-101</span></figcaption><pre><code><span class="hl-kw">export interface</span> Context {
@@ -429,7 +429,7 @@ toolChoice = <span class="hl-str">"none"</span>          <span class="hl-cm">// 
   safe 배치  → <span class="hl-fn">all</span>(…, MAX_CONCURRENCY=<span class="hl-num">10</span>)
   unsafe 배치 → 하나씩</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>session/runner/step.ts:126-138</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>session/runner/step.ts:126-138</small></div><div class="body">
       <p class="claim">전부 동시(fiber). 직렬화는 권한 <code class="i">ask</code> 가 fiber 를 멈추는 것으로 자연히.</p>
       <ul><li>결과는 <code class="i">truncate</code> 를 거쳐 이벤트로 발행 → 프로젝터가 기록</li></ul>
 <figure class="code"><figcaption><b>core/src/session/runner/step.ts</b><span>:126-138</span></figcaption><pre><code><span class="hl-kw">if</span> (event.type !== <span class="hl-str">"tool-call"</span> || event.providerExecuted) <span class="hl-kw">return</span>
@@ -472,7 +472,7 @@ validateInput 실패 → tool_result(이유)                                    
 PreToolUse 훅 → 권한 → tool.<span class="hl-fn">call</span>() → PostToolUse 훅
 <span class="hl-kw">catch</span> (e)          → PostToolUseFailure 훅, tool_result({ is_error: <span class="hl-kw">true</span> })  <span class="hl-cm">// :1589-1725</span></code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>tool.ts:281-283 · runtime.ts:29-45</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>tool.ts:281-283 · runtime.ts:29-45</small></div><div class="body">
       <p class="claim">모든 외부 오류를 <code class="i">Tool.Error</code> 로 변환 → 실패한 tool 결과로, 루프 계속. 입력 자동 수리 플러그인.</p>
       <ul><li><code class="i">ToolInputRepairPlugin</code>: 문자열 JSON, <code class="i">"20"</code>→숫자 수리 (plugin/tool-input-repair.ts)</li></ul>
 <figure class="code"><figcaption><b>core/src/tool.ts</b><span>:281-283</span></figcaption><pre><code><span class="hl-kw">return</span> <span class="hl-kw">yield*</span> <span class="hl-kw">new</span> Tool.<span class="hl-fn">Error</span>({
@@ -511,7 +511,7 @@ PreToolUse 훅 → 권한 → tool.<span class="hl-fn">call</span>() → PostToo
 <span class="hl-cm">// 529 overloaded: foreground 만 재시도, background 는 bail  (:57-89)</span>
 <span class="hl-cm">// 3회 연속 529 → FallbackTriggeredError → fallback model   (:326-350)</span></code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>session/runner/retry.ts:42-56</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>session/runner/retry.ts:42-56</small></div><div class="body">
       <p class="claim">2초에서 지수 증가, 간격 10초 상한, 10회, 지터. 타임아웃은 3회만. 스트리밍 중 끊기면 "이어서" 합성 메시지.</p>
       <ul><li>컨텍스트 초과는 재시도 대신 compaction</li></ul>
 <figure class="code"><figcaption><b>core/src/session/runner/retry.ts</b><span>:42-56</span></figcaption><pre><code><span class="hl-cm">// Exponential from 2s capped at 10s per gap, for 10 retries: 2, 4, 8, then 10 × 7</span>
@@ -532,7 +532,7 @@ PreToolUse 훅 → 권한 → tool.<span class="hl-fn">call</span>() → PostToo
 
 <!-- 8 prompt -->
 <section class="slide" data-id="s8">
-  <div class="hd"><span class="no">08</span><h2>시스템 프롬프트</h2><p class="q">핸즈온의 한 문장과 opencode 의 15줄은 같은 층이다. Frontier 가 긴 것은 뒤에 붙는 instructions(CLAUDE.md · AGENTS.md · 환경 · 날짜)다.</p></div>
+  <div class="hd"><span class="no">08</span><h2>시스템 프롬프트</h2><p class="q">핸즈온의 한 문장과 Opencode 의 15줄은 같은 층이다. Frontier 가 긴 것은 뒤에 붙는 instructions(CLAUDE.md · AGENTS.md · 환경 · 날짜)다.</p></div>
   <div class="grid">
     <div class="cell k1"><div class="head">핸즈온 <small>ask-radar.ts:133-141</small></div><div class="body">
       <p class="claim">문장 하나. 첫 호출 때 <code class="i">[system, user(report)]</code> 로 대화를 연다. 규정집은 Worker 가 evidence 로 대신.</p>
@@ -557,7 +557,7 @@ PreToolUse 훅 → 권한 → tool.<span class="hl-fn">call</span>() → PostToo
   ...resolvedDynamicSections,   <span class="hl-cm">// 세션 지침·memory·env·언어·output style·MCP 지침</span>
 ].<span class="hl-fn">filter</span>(Boolean)</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>runner/prompt/system.txt · model-request.ts:108-119</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>runner/prompt/system.txt · model-request.ts:108-119</small></div><div class="body">
       <p class="claim">1부: 에이전트 <code class="i">system</code> 또는 <b>15줄</b> system.txt. 2부: 날짜·env + AGENTS.md + skills + MCP 지침.</p>
       <ul><li>GPT 는 1부 교체(gpt.txt), Claude 는 2줄 추가(anthropic.txt)</li></ul>
 <figure class="code"><figcaption><b>core/src/session/runner/prompt/system.txt</b><span>전문 15줄</span></figcaption><pre><code>You are an AI agent running in OpenCode, a coding agent harness. Help the user accomplish their goals using the tools you have available.
@@ -604,7 +604,7 @@ MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = <span class="hl-num">3</span>
 TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content cleared]"</span>
 대상 도구: Read · Bash · Grep · Glob · WebSearch · WebFetch · Edit · Write</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>tool-output.ts:75-90 · compaction.ts:104-135</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>tool-output.ts:75-90 · compaction.ts:104-135</small></div><div class="body">
       <p class="claim">실행 시점에 2,000줄/50KiB 넘으면 파일로 저장하고 머리만. 매 스텝 전 <code class="i">auto</code>, 초과 거절 시 70→50→35% 축소 재시도.</p>
       <ul><li>요약 템플릿 7절, 최근 15k 토큰은 원문</li></ul>
 <figure class="code"><figcaption><b>core/src/tool-output.ts</b><span>:75-90</span></figcaption><pre><code><span class="hl-kw">if</span> (lines.length &lt;= limits.maxLines &amp;&amp; totalBytes &lt;= limits.maxBytes)
@@ -653,7 +653,7 @@ TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content c
     maxTurns: def.maxTurns })
   <span class="hl-kw">return</span> 마지막 assistant 메시지의 텍스트 블록만   <span class="hl-cm">// agentToolUtils.ts:300-316</span></code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>tool/plugin/subagent.ts:129-137</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>tool/plugin/subagent.ts:129-137</small></div><div class="body">
       <p class="claim"><b>새 세션</b>(parentID) + 자기 프롬프트 + 자기 권한표. 받는 컨텍스트는 한 줄 + prompt 뿐(항상 fresh).</p>
       <ul><li>깊이 기본 1, primary 에이전트는 부하 불가</li><li>돌려받기: <code class="i">&lt;subagent sessionID=… state="completed"&gt;</code> 최종 텍스트</li></ul>
 <figure class="code"><figcaption><b>core/src/tool/plugin/subagent.ts</b><span>:129-137</span></figcaption><pre><code><span class="hl-kw">const</span> limit = Config.<span class="hl-fn">latest</span>(<span class="hl-kw">yield*</span> config.<span class="hl-fn">entries</span>(), <span class="hl-str">"experimental"</span>)?.subagent_depth ?? <span class="hl-num">1</span>
@@ -697,7 +697,7 @@ TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content c
   handler = coordinator | swarmWorker | interactive      <span class="hl-cm">// 실행 맥락</span>
   <span class="hl-kw">return</span> handler.<span class="hl-fn">enqueue</span>(<span class="hl-fn">confirmDialog</span>(tool.<span class="hl-fn">description</span>(input)))  <span class="hl-cm">// 사용자 답 대기</span></code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>permission.ts:245-253, 265-325</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>permission.ts:245-253, 265-325</small></div><div class="body">
       <p class="claim"><code class="i">Deferred</code> 를 만들고 <code class="i">permission.asked</code> 이벤트 발행 → UI 가 그림 → HTTP reply 가 resolve.</p>
       <ul><li>답: once / always(패턴 저장) / reject. reject 에 메시지를 붙이면 <code class="i">CorrectedError</code> 로 모델에게</li><li>메시지 없는 reject 는 defect 로 터널링해 도구 코드가 삼킬 수 없게</li></ul>
 <figure class="code"><figcaption><b>core/src/permission.ts</b><span>:245-253</span></figcaption><pre><code><span class="hl-kw">if</span> (result.effect === <span class="hl-str">"allow"</span>) <span class="hl-kw">return</span>
@@ -735,7 +735,7 @@ TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content c
 3.  passthrough                         → ask
 후처리: dontAsk 면 ask→deny · auto 면 분류기</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>permission.ts:87-97, 158-189</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>permission.ts:87-97, 158-189</small></div><div class="body">
       <p class="claim">규칙 = <code class="i">{action, resource, effect}</code> 둘 다 glob. <b>마지막 매치가 이김, 기본 ask.</b> deny 는 저장 승인보다 먼저.</p>
       <ul><li>기본 ruleset: <code class="i">*: allow</code> + <code class="i">.env*</code> 읽기 ask (schema/agent.ts:46-51)</li><li>plan = edit deny 규칙, explore = deny-all 후 읽기만 허용</li></ul>
 <figure class="code"><figcaption><b>core/src/permission.ts</b><span>:87-97</span></figcaption><pre><code><span class="hl-kw">export function</span> <span class="hl-fn">evaluate</span>(action: <span class="hl-kw">string</span>, resource: <span class="hl-kw">string</span>, ...rulesets: Permission.Ruleset[]): Permission.Rule {
@@ -779,7 +779,7 @@ TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content c
 }
 <span class="hl-kw">await</span> <span class="hl-fn">appendEntry</span>(entry)   <span class="hl-cm">// ~/.claude/projects/&lt;cwd&gt;/&lt;sessionId&gt;.jsonl</span></code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>bus.ts:416-428 · projector.ts · snapshot.ts:95-97</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>bus.ts:416-428 · projector.ts · snapshot.ts:95-97</small></div><div class="body">
       <p class="claim">러너는 메시지를 쓰지 않는다. <b>이벤트</b>를 발행하면 같은 트랜잭션에서 로그 추가 + 프로젝터가 읽기 모델 갱신.</p>
       <ul><li>재시작 시 "running" 으로 남은 도구·compaction 을 실패 처리 후 계속</li><li>그림자 git 으로 스텝 전후 파일 트리 캡처 → revert</li></ul>
 <figure class="code"><figcaption><b>core/src/bus.ts</b><span>:416-428</span></figcaption><pre><code><span class="hl-kw">if</span> (persist)
@@ -823,7 +823,7 @@ TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content c
 세션 시작: 관련 메모리 검색 → 동적 프롬프트 섹션 "memory"
 저장: 모델이 Write 도구로 파일 작성</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>config/plugin/instruction.ts · skill/</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>config/plugin/instruction.ts · skill/</small></div><div class="body">
       <p class="claim">명시적 장기 기억 없음. AGENTS.md(지시) · skills(절차) · 세션 export/import 가 대체.</p>
 <figure class="code"><figcaption><b>core/src/skill/instructions.ts</b><span>:16-33 요지</span></figcaption><pre><code><span class="hl-cm">// SKILL.md 카탈로그를 instructions 로 주입</span>
 &lt;available_skills&gt;
@@ -862,7 +862,7 @@ TIME_BASED_MC_CLEARED_MESSAGE = <span class="hl-str">"[Old tool result content c
   <span class="hl-fn">checkPermissions</span>:  () =&gt; passthrough   <span class="hl-cm">// 항상 ask, allow 규칙 추가 제안</span>
 }))</code></pre></figure>
     </div></div>
-    <div class="cell k3"><div class="head">opencode <small>tool/mcp.ts:16-17, 43-55</small></div><div class="body">
+    <div class="cell k3"><div class="head">Opencode <small>tool/mcp.ts:16-17, 43-55</small></div><div class="body">
       <p class="claim">이름 <code class="i">서버_도구</code>. 도구 이름이 곧 권한 액션 → <code class="i">"github_*": "deny"</code> 가능. 기본 CodeMode.</p>
       <ul><li>stdio(local) · Streamable HTTP(remote, OAuth)</li><li><code class="i">tools/list_changed</code> 에 재로드</li></ul>
 <figure class="code"><figcaption><b>core/src/tool/mcp.ts</b><span>:16-17, 43-55</span></figcaption><pre><code><span class="hl-kw">export const</span> namespace = (server: <span class="hl-kw">string</span>) =&gt; server.<span class="hl-fn">replace</span>(/[^a-zA-Z0-9_-]/g, <span class="hl-str">"_"</span>)
@@ -883,7 +883,7 @@ editor.<span class="hl-fn">add</span>({
 <section class="slide" data-id="s16">
   <div class="hd"><span class="no">16</span><h2>공군 제시 항목 기준 대응표</h2><p class="q">권 대위 제시 강의 틀의 각 항목이 세 코드의 어디에 있는지.</p></div>
   <table class="sum dense">
-    <thead><tr><th style="width:17%">항목</th><th>핸즈온</th><th>Claude Code</th><th>opencode</th></tr></thead>
+    <thead><tr><th style="width:17%">항목</th><th>핸즈온</th><th>Claude Code</th><th>Opencode</th></tr></thead>
     <tbody>
       <tr><th>Agent Loop</th><td>그래프 agent⇄tools</td><td>queryLoop while(true)</td><td>drain / runStep</td></tr>
       <tr><th>Planning</th><td>모델이 도구 고름 + Jev 판정</td><td>Plan 모드(권한 집합) + TodoWrite/Task 도구</td><td>plan 에이전트(edit deny)</td></tr>
