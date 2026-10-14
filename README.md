@@ -107,36 +107,36 @@ Studio 의 Input 에는 보고 한 줄만 넣습니다.
 
 ## 2. 내 에이전트 — 한눈에
 
-관제실에 보고 한 줄이 들어오면, **규정집 Worker 와 레이더 부하 Agent(Subagent)가 동시에** 자료를 모으고, 전에 똑같은 보고를 판단한 기억이 있으면 그 판단을 그대로 쓰고(Jev 생략), 없으면 판정 모델이 의견을 냅니다. **언제나 마지막은 사람**이 모든 근거를 한눈에 보고 출격 / 감시 / 무시 를 고릅니다. 사람이 고른 뒤에야 LLM 이 그 사실로 브리핑 보고서를 써서 `reports/` 에만 남깁니다.
+관제실에 보고 한 줄이 들어오면, **규정집 Worker 와 레이더 Subagent 가 동시에** 자료를 모으고, 전에 똑같은 보고를 판단한 기억이 있으면 그 판단을 그대로 쓰고(Jev 생략), 없으면 판정 모델이 의견을 냅니다. **언제나 마지막은 사람**이 모든 근거를 한눈에 보고 출격 / 감시 / 무시 를 고릅니다. 사람이 고른 뒤에야 LLM 이 그 사실로 브리핑 보고서를 써서 `reports/` 에만 남깁니다.
 
 ```
          ┌─▶ searchDocs  (Worker: 함수 하나, 규정집 찾기)                      ─┐
 START ───┤                                                                    ├─▶ remember ─┬─ 같은 사례 기억 있음 ──────┐ (Jev 생략)
-         └─▶ askRadar    (Subagent: 부하 Agent, 안에서 agent ⇄ tools 를 반복) ─┘             └─ 없음 ─▶ judge (Jev) ───┴─▶ approve ─▶ writeReport ─▶ END
+         └─▶ askRadar    (Subagent, 안에서 agent ⇄ tools 를 반복) ─┘             └─ 없음 ─▶ judge (Jev) ───┴─▶ approve ─▶ writeReport ─▶ END
                                                                                      approve = 레이더 · 확대 · 날씨 · 규정 · 기억 · Jev 를 모아 보여 주고 사람이 결정
                                                                                      writeReport = 사람의 결정 뒤 LLM 이 브리핑 문장을 써서 reports/ 에만 저장
 
 askRadar 안 (labs/agent/ask-radar.ts):
   START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
-                  ├─ 다 확인했다     ─▶ END   (facts · evidence 만 들고 부모에게 돌아간다. 대화 기록은 부하 안에 남는다)
-                  ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤 — 부하만 멈추고 부모는 계속)
+                  ├─ 다 확인했다     ─▶ END   (facts · evidence 만 들고 부모에게 돌아간다. 대화 기록은 Subagent 안에 남는다)
+                  ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤 — Subagent 만 멈추고 부모는 계속)
                   └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → END / stop → stop
 ```
 
-Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐입니다. 터미널에서는 부하가 도는 동안 `[SUB] ┏━ askRadar` 띠가 열리고, 그 사이 모든 줄 앞에 보라색 `┃` 가 붙었다가 `┗━ askRadar 끝` 에서 닫힙니다. searchDocs 는 띠 밖에서 한 줄에 끝나고, `--watch` 면 띠 안에 `askRadar › agent`, `askRadar › tools` 가 여러 줄 찍힙니다.
+Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. 안에 모델 루프가 있으면 우리가 Subagent라고 부를 뿐입니다. 터미널에서는 Subagent 가 도는 동안 `[SUB] ┏━ askRadar` 띠가 열리고, 그 사이 모든 줄 앞에 보라색 `┃` 가 붙었다가 `┗━ askRadar 끝` 에서 닫힙니다. searchDocs 는 띠 밖에서 한 줄에 끝나고, `--watch` 면 띠 안에 `askRadar › agent`, `askRadar › tools` 가 여러 줄 찍힙니다.
 
 | 단계 (노드) | 하는 일 | 배우는 것 |
 |---|---|---|
 | `searchDocs` (Worker) | 보고 한 줄로 규정집에서 관련 규정을 찾아 근거에 넣기. 모델 호출 없음, 함수 하나 | Task Decomposition — 정해진 일은 함수가 |
-| `askRadar` (Subagent) | 아래 agent ⇄ tools 루프를 통째로 감싼 부하 그래프. 부모에겐 facts · evidence · steps 만 돌려준다 | Subagent · Context 분리 (팀장 칠판은 결론만) |
-| `agent` (부하 안) | 모델에게 "도구를 더 쓸래, 사실을 정리할래?" 묻기 | Agent Loop · Tool Calling |
-| `tools` (부하 안) | 모델이 고른 도구를 **내 코드가** 실행. 로컬 도구(레이더 보기·확대)와 MCP 도구(날씨)가 한 목록에 섞여 있다 | 모델은 부르겠다고 말할 뿐, 실행은 내 코드 |
+| `askRadar` (Subagent) | 아래 agent ⇄ tools 루프를 통째로 감싼 Subagent 그래프. 부모에겐 facts · evidence · steps 만 돌려준다 | Subagent · Context 분리 (팀장 칠판은 결론만) |
+| `agent` (Subagent 안) | 모델에게 "도구를 더 쓸래, 사실을 정리할래?" 묻기 | Agent Loop · Tool Calling |
+| `tools` (Subagent 안) | 모델이 고른 도구를 **내 코드가** 실행. 로컬 도구(레이더 보기·확대)와 MCP 도구(날씨)가 한 목록에 섞여 있다 | 모델은 부르겠다고 말할 뿐, 실행은 내 코드 |
 | `remember` | 기억에서 같은 사례 찾기(`findSameCase`). 보고 겹침 0.9 이상이면 그때의 판정을 그대로 쓰고 Jev 를 건너뜀 | 장기 기억으로 판단하기 (같은 사례 = 코드 규칙) |
 | `judge` | 비슷한 기억을 참고로(recall) Jev 에게 3가지 질문(출격/감시/무시 · 위험도 · 정체불명 확률), 끝나면 기억에 남김(retain) | 판정 모델 · 장기 기억 |
 | `approve` | **언제나** 멈춰서 레이더 · 확대 · 날씨 · 규정 · 기억 · Jev 의견 · 코드 권고를 한눈에 보여 주고, 사람이 y(출격) / w(감시) / n(무시) 를 고름. 사람의 답이 기억에 남음 | Human-in-the-Loop (`interrupt`) |
 | `writeReport` | 사람이 결정한 뒤 한 번. 결정 · 시각은 코드가 머리말에 박고, LLM 은 approve 가 보여 준 사실 목록으로 브리핑 문장만 씀. `reports/<실행번호>.md` 에만 저장(밖을 가리키면 거부). 모델이 실패하거나 mock 이면 사실 목록을 그대로 저장 | 사실은 코드가, 문장은 LLM 이 · Sandbox |
-| `askHuman` (부하 안) | 모델이 늦으면 멈추고 retry / skip / stop 묻기. 부하 안의 interrupt 도 부모 실행번호로 저장·재개된다 | 시간 초과 · 사람 개입 |
-| `stop` (부하 안) | MAX_STEPS 를 넘기면 부하만 강제 종료. 부모는 규정집 결과만 들고 판정으로 | Harness — 멈추는 건 코드 · 장애 격리 |
+| `askHuman` (Subagent 안) | 모델이 늦으면 멈추고 retry / skip / stop 묻기. Subagent 안의 interrupt 도 부모 실행번호로 저장·재개된다 | 시간 초과 · 사람 개입 |
+| `stop` (Subagent 안) | MAX_STEPS 를 넘기면 Subagent 만 강제 종료. 부모는 규정집 결과만 들고 판정으로 | Harness — 멈추는 건 코드 · 장애 격리 |
 
 그림: `docs/graphs/agent.md` (`pnpm see:graph` 로 다시 생성)
 
@@ -168,8 +168,8 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 | 단계 | 같이 붙이는 것 | 파일 (TODO) | 화면에 생기는 것 | 개념 |
 |---|---|---|---|---|
 | 0 | (없음) 환경 · 구조 · 첫 실행 | — | 보고만 있고 근거가 빈 담당자 화면 | 전체 구조 |
-| 1 | 레이더 부하 데려오기 `addNode("askRadar", radarAgent)` | `main.ts` (1) | `[SUB] ┏━ askRadar` 띠, 레이더 · 확대 줄 | Subagent · Agent Loop |
-| 2 | 부하에게 새 도구 `look_flight_plan` — 설명 + 실행 | `ask-radar.ts` (2-1 · 2-2) | `[TOOL] look_flight_plan`, 비행 계획 줄 | Tool Calling — 설명이 선택을 정한다 |
+| 1 | 레이더 Subagent 데려오기 `addNode("askRadar", radarAgent)` | `main.ts` (1) | `[SUB] ┏━ askRadar` 띠, 레이더 · 확대 줄 | Subagent · Agent Loop |
+| 2 | Subagent 에게 새 도구 `look_flight_plan` — 설명 + 실행 | `ask-radar.ts` (2-1 · 2-2) | `[TOOL] look_flight_plan`, 비행 계획 줄 | Tool Calling — 설명이 선택을 정한다 |
 | 3 | 규정집 줄마다 점수 매기기 | `search-docs.ts` (3) | 관련 규정 줄 (`pnpm agent 2`) | RAG |
 | 4 | 날씨를 MCP 로 — 서버에 등록 + 목록 받기 · 실행 | `server.ts` (4-1) · `mcp.ts` (4-2) | 날씨 줄 (`pnpm mcp:weather` 켜고). 끄면 "날씨 없이 계속" | MCP |
 | 5 | 순차를 동시로 + 합류 | `main.ts` (5) | `--watch` 에서 searchDocs · askRadar 가 같이 시작 | Task Decomposition · 병렬 |
@@ -196,7 +196,7 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 | 3 | 규정집 줄마다 점수 매기기 | `labs/agent/search-docs.ts` | RAG (찾아서 넣는다) | `pnpm agent 2` |
 | 4 | MCP 서버에 `look_weather` 도구 등록 | `mcp-servers/weather/server.ts` | MCP Server | `pnpm mcp:inspect` → `http://localhost:3333/mcp` |
 | 5 | MCP 도구 목록 받기 · 실행하기 | `labs/agent/mcp.ts` | MCP Client | `pnpm mcp:weather` + `pnpm agent` |
-| 7 | 부하 Agent(서브그래프)를 노드로 꽂기 (`addNode("askRadar", radarAgent)`) | `labs/agent/main.ts` 조립부 | Subagent — LangGraph 에겐 그냥 노드 | `pnpm agent` → 담당자 화면에 레이더 · 확대 · 날씨 줄이 생기면 성공 |
+| 7 | Subagent(서브그래프)를 노드로 꽂기 (`addNode("askRadar", radarAgent)`) | `labs/agent/main.ts` 조립부 | Subagent — LangGraph 에겐 그냥 노드 | `pnpm agent` → 담당자 화면에 레이더 · 확대 · 날씨 줄이 생기면 성공 |
 | 8 | 순차를 동시로: `addEdge(START, …)` 두 줄 + 합류 `addEdge([…], "remember")` | 〃 | Task Decomposition · 병렬 실행 | `pnpm agent --watch` → searchDocs 와 askRadar 가 같이 시작하면 성공 |
 | 9 | 사람의 답으로 멈춘 곳부터 이어가기 (`Command({ resume })`) | `labs/agent/main.ts` 실행부 | Checkpointer · HITL | `pnpm agent` → Ctrl+C → `pnpm agent --resume <번호>` |
 
@@ -253,8 +253,8 @@ airforce-agentic-ai/
 │  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm see:run)
 ├─ labs/agent/
 │  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve → writeReport (빈칸 1 · 5 · 6 · 7 · 8)
-│  ├─ ask-radar.ts           레이더 부하 Agent(Subagent) — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop, 도구 look_flight_plan (빈칸 2)
-│  ├─ state.ts               부모 칠판(State). 부하는 여기에 자기 칸(대화)을 더해 쓴다 — 겹치는 칸만 부모로 돌아온다
+│  ├─ ask-radar.ts           레이더 Subagent — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop, 도구 look_flight_plan (빈칸 2)
+│  ├─ state.ts               부모 칠판(State). Subagent 는 여기에 자기 칸(대화)을 더해 쓴다 — 겹치는 칸만 부모로 돌아온다
 │  ├─ search-docs.ts         규정집 찾아보기 + Worker 노드 (빈칸 3)
 │  ├─ write-report.ts        사람의 결정 뒤 LLM 브리핑 보고서 → reports/ 에만 저장 (완성 코드)
 │  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 4-2)

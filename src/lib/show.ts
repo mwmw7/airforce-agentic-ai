@@ -12,8 +12,8 @@
  *
  * 콘솔 한 줄은 모두 같은 모양이다:  [꼬리표] 내용  — 꼬리표 색만 보면 누가 한 일인지 안다
  *   REPORT 보고 · SETUP 설정 · LLM 모델 · TOOL 내 도구 · MCP MCP 도구 · MEMORY 기억(Hindsight/file)
- *   JEV 판정 모델 · RULE 코드 규칙 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch) · SUB 부하(Subagent) 시작·끝
- *   부하 안에서 찍히는 줄은 전부 앞에 보라색 ┃ 가 붙는다 → 어디까지가 부하의 일인지 한눈에
+ *   JEV 판정 모델 · RULE 코드 규칙 · HUMAN 사람 · DECIDE 결정 · STOP 중단 · NODE 단계 입출력(--watch) · SUB Subagent 시작·끝
+ *   Subagent 안에서 찍히는 줄은 전부 앞에 보라색 ┃ 가 붙는다 → 어디까지가 Subagent 의 일인지 한눈에
  */
 import { inspect } from "node:util";
 import { send } from "./live.js";
@@ -48,17 +48,17 @@ export const tag = (kind: Kind) => {
   return color ? `\x1b[${code}m ${label.padEnd(6)} \x1b[0m` : `[${label.padEnd(6)}]`;
 };
 
-// ── 부하(Subagent) 안에 있는 동안은 모든 줄 앞에 보라색 세로선을 붙인다 → "지금은 부하가 일하는 중" 이 한눈에 보인다 ──
-let inside = ""; // 지금 들어가 있는 부하 이름 (비어 있으면 부모)
+// ── Subagent 안에 있는 동안은 모든 줄 앞에 보라색 세로선을 붙인다 → "지금은 Subagent 가 일하는 중" 이 한눈에 보인다 ──
+let inside = ""; // 지금 들어가 있는 Subagent 이름 (비어 있으면 부모)
 const BAR = () => magenta("┃");
-/** 부하 안으로 들어간다 (처음 한 번만 띠를 친다. 이어가기(resume)로 다시 들어와도 안전) */
+/** Subagent 안으로 들어간다 (처음 한 번만 띠를 친다. 이어가기(resume)로 다시 들어와도 안전) */
 export function enterSub(name: string, note: string) {
   if (inside === name) return;
   inside = name;
   console.log(`${tag("sub")} ${magenta("┏━")} ${bold(name)} ${dim(note)}`);
   send("sub_start", { name, note });
 }
-/** 부하에서 나온다. 띠를 닫고 들여쓰기를 푼다 */
+/** Subagent 에서 나온다. 띠를 닫고 들여쓰기를 푼다 */
 export function leaveSub(note: string) {
   if (!inside) return;
   console.log(`${tag("sub")} ${magenta("┗━")} ${bold(inside)} ${dim("끝 · " + note)}`);
@@ -68,7 +68,7 @@ export function leaveSub(note: string) {
 export const insideSub = () => inside;
 
 /** 콘솔 한 줄 + (있으면) 이어지는 줄들. 이어지는 줄은 꼬리표 폭만큼 들여 쓰고 │ 로 묶는다
- *  부하 안이면 줄마다 앞에 ┃ 가 붙는다. plain: true 면 부하 안이어도 붙이지 않는다 (부모 쪽 줄) */
+ *  Subagent 안이면 줄마다 앞에 ┃ 가 붙는다. plain: true 면 Subagent 안이어도 붙이지 않는다 (부모 쪽 줄) */
 export function log(kind: Kind, text: string, more: string[] = [], opts: { plain?: boolean } = {}) {
   const pre = inside && !opts.plain ? `${BAR()} ` : "";
   console.log(`${pre}${tag(kind)} ${text}`);
@@ -104,7 +104,7 @@ const startedAt = new Map<string, number>(); // task id → 시작 시각 (걸�
 const asObject = (r: unknown): Record<string, unknown> => (Array.isArray(r) ? Object.fromEntries(r as [string, unknown][]) : ((r as Record<string, unknown>) ?? {}));
 
 /** debug 이벤트 하나를 받아 그린다. --watch 가 없으면 아무것도 하지 않는다.
- *  inside: 부하(서브그래프) 안의 단계면 그 부하 이름 ("askRadar") — 터미널엔 "askRadar › agent" 로 찍고, 브라우저엔 노드 이름만 보낸다 */
+ *  inside: Subagent(서브그래프) 안의 단계면 그 Subagent 이름 ("askRadar") — 터미널엔 "askRadar › agent" 로 찍고, 브라우저엔 노드 이름만 보낸다 */
 export function showDebug(ev: { type: string; payload: Record<string, unknown> }, inside = "") {
   const p = ev.payload;
   const shown = inside ? `${inside} › ${String(p.name)}` : String(p.name);
@@ -119,7 +119,7 @@ export function showDebug(ev: { type: string; payload: Record<string, unknown> }
   }
   if (WATCH === "off") return;
 
-  const plain = !inside || String(p.name) === inside; // 부모 그래프의 줄(부하 노드 자체 포함)은 세로선 없이
+  const plain = !inside || String(p.name) === inside; // 부모 그래프의 줄(Subagent 노드 자체 포함)은 세로선 없이
   if (ev.type === "task") {
     const input = p.input as Record<string, unknown>;
     const from = (p.triggers as string[])?.join(", ");

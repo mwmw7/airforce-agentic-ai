@@ -29,7 +29,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │       '6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.'
          │     ]
          │   }
-[SUB   ] ┏━ askRadar 레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다
+[SUB   ] ┏━ askRadar 레이더 Subagent — 여기부터 ┃ 줄은 Subagent 의 일. 부모는 facts · evidence · steps 만 받는다
 ┃ [NODE  ] ▶ askRadar › agent 시작 · ← branch:to:agent
 ┃          │ 입력 형태 { report: string, steps: number, past: [], evidence: {}, messages: [] }
 ┃          │ report '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.'
@@ -59,7 +59,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │       {
          │         id: 'call_mock_1',
          │         name: 'look_radar',
-         │         args: { '어디': '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │         args: { where: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
          │       }
          │     ]
          │   }
@@ -80,7 +80,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │   ]
 ┃          │ steps 1
 ┃          │ facts ''
-┃ [TOOL  ] look_radar(어디: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
+┃ [TOOL  ] look_radar(where: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
 ┃          │ 지역 잠실
 ┃          │   · 어디 잠실 위  |  뭐가 작은 비행체 약 40개  |  높이 아주 낮음  |  속도 느림  |  무전 조용함  |  메모 줄 맞춰 날아다님. 드론 쇼 같은데 오늘 허가 기록은 못 찾음
 ┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
@@ -137,7 +137,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │       {
          │         id: 'call_mock_2',
          │         name: 'look_closer',
-         │         args: { '어디': '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │         args: { where: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
          │       }
          │     ]
          │   }
@@ -175,7 +175,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │   ]
 ┃          │ steps 1
 ┃          │ facts ''
-┃ [TOOL  ] look_closer(어디: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
+┃ [TOOL  ] look_closer(where: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
 ┃          │ 어디 잠실 위  |  뭐가 작은 비행체 약 40개  |  자세히 확대해 보니 불빛이 글자 모양으로 바뀜 ('생일 축하'). 광고용 드론 쇼 같음. 다만 공항 쪽으로 조금씩 밀리는 중
 ┃ [NODE  ] ▶ askRadar › tools 시작 · ← branch:to:tools
 ┃          │ 입력 형태 { report: string, steps: number, facts: string, past: [], evidence: {look_radar}, messages: {role,content}[5] }
@@ -236,7 +236,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │       {
          │         id: 'call_mock_3',
          │         name: 'look_weather',
-         │         args: { '어디': '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
+         │         args: { where: '잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.' }
          │       }
          │     ]
          │   }
@@ -302,7 +302,7 @@ $ tsx labs/agent/main.ts 3 --watch
          │     },
          │     ... 4 more items
          │   ]
-┃ [MCP   ] look_weather(어디: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
+┃ [MCP   ] look_weather(where: 잠실 상공에 밤중에 드론 수십 대가 떼로 날고 있어요. 허가받은 드론 쇼인지 아닌지 모르겠어요.)
 ┃          │ 하늘 어둠  |  구름 미지  |  바람 불규칙  |  시야 제한적  |  비행 주의 필요  |  때 야간 (드론 떼 출현)  |  출처 LLM(ollama)
 ┃ [NODE  ] ◀ askRadar › tools 끝 · 2181ms
 ┃          │ 출력 형태 { messages: {role,tool_call_id,content}[1], evidence: {look_weather} }

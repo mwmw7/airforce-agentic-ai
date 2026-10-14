@@ -1,5 +1,5 @@
 /**
- * labs/agent/ask-radar.ts — 레이더 담당 부하 Agent (Subagent). 부모 그래프(main.ts)의 노드 하나로 꽂힌다
+ * labs/agent/ask-radar.ts — 레이더 담당 Subagent. 부모 그래프(main.ts)의 노드 하나로 꽂힌다
  *   입력: 보고 한 줄  →  처리: 모델이 도구(레이더 · 확대 · 비행 계획 · 날씨)를 골라 가며 확인 (agent ⇄ tools 반복)  →  출력: 사실 2~3줄 + 근거
  *
  *   START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
@@ -8,15 +8,15 @@
  *                   └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → END / stop → stop
  *
  * 왜 따로 떼는가 (Subagent)
- *   · 이 안에서 모델과 주고받은 긴 대화(messages)는 부하의 칠판에만 남는다. 부모에게는 facts · evidence · steps 만 돌아간다 — 팀장 칠판은 결론만
- *   · LangGraph 입장에선 그냥 노드 하나다. 안에 모델 루프가 있으면 우리가 "부하 Agent" 라고 부를 뿐이다
- *   · Worker(search-docs.ts, 함수 하나)와 나란히 놓고 --watch 로 보면 차이가 보인다: Worker 는 한 줄, 부하는 여러 줄
+ *   · 이 안에서 모델과 주고받은 긴 대화(messages)는 Subagent 의 칠판에만 남는다. 부모에게는 facts · evidence · steps 만 돌아간다 — 팀장 칠판은 결론만
+ *   · LangGraph 입장에선 그냥 노드 하나다. 안에 모델 루프가 있으면 우리가 "Subagent" 라고 부를 뿐이다
+ *   · Worker(search-docs.ts, 함수 하나)와 나란히 놓고 --watch 로 보면 차이가 보인다: Worker 는 한 줄, Subagent 는 여러 줄
  *
  * 꼭 볼 것
  *   · 1일차에 만든 그 루프다: 모델은 "이 도구를 써 달라" 고 말할 뿐, 실제로 실행하는 건 tools 단계(내 코드)다
  *   · 언제 멈출지(MAX_STEPS)도 모델이 아니라 route 함수(내 코드)가 정한다 (pnpm agent:limit 로 확인)
  *   · 도구 하나 더 붙이기 = 설명(모델이 읽는 것) 하나 + 실행 한 갈래 (TODO 2)
- *   · 모델이 늦으면(LLM_TIMEOUT_SEC) 끊고 사람에게 묻는다. 부하 안의 interrupt 도 부모 실행번호로 이어진다
+ *   · 모델이 늦으면(LLM_TIMEOUT_SEC) 끊고 사람에게 묻는다. Subagent 안의 interrupt 도 부모 실행번호로 이어진다
  */
 import { readFileSync } from "node:fs";
 import { Annotation, END, interrupt, START, StateGraph } from "@langchain/langgraph";
@@ -28,10 +28,10 @@ import { MainState } from "./state.js";
 // 모델을 최대 몇 번까지 부를지. 이 숫자를 넘으면 내 코드가 멈춘다
 export const MAX_STEPS = Number(process.env.MAX_STEPS ?? 8);
 
-// ── 1. 부하의 칠판: 부모 칠판(MainState) + 부하만 쓰는 칸. 겹치는 칸(facts · evidence · steps)만 부모로 돌아간다 ──
+// ── 1. Subagent 의 칠판: 부모 칠판(MainState) + Subagent 만 쓰는 칸. 겹치는 칸(facts · evidence · steps)만 부모로 돌아간다 ──
 const RadarState = Annotation.Root({
   ...MainState.spec,
-  messages: Annotation<Msg[]>({ reducer: (prev, next) => [...prev, ...next], default: () => [] }),  // 모델과 주고받은 대화 — 부하 안에만 남는다
+  messages: Annotation<Msg[]>({ reducer: (prev, next) => [...prev, ...next], default: () => [] }),  // 모델과 주고받은 대화 — Subagent 안에만 남는다
   stuck: Annotation<string>(),                                                                        // 모델이 늦었을 때 그 이유 (비어 있으면 정상)
   humanChoice: Annotation<string>(),                                                                  // 사람이 고른 것: retry / skip / stop
 });
@@ -130,7 +130,7 @@ const SYSTEM = "너는 관제실의 레이더 담당이다. 보고를 받으면 
 
 /** agent: 모델을 한 번 부른다. 답변이든 도구 요청이든 모델의 말로 기록에 남긴다 */
 async function agentNode(state: S): Promise<Partial<S>> {
-  enterSub("askRadar", "레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다");
+  enterSub("askRadar", "레이더 Subagent — 여기부터 ┃ 줄은 Subagent 의 일. 부모는 facts · evidence · steps 만 받는다");
   const step = state.steps + 1;
   // 첫 호출이면 대화를 연다: 역할 설명 + 보고 한 줄. (입력에 report 만 있어도 돌아간다 — Studio 에서 { "report": "..." } 만 넣으면 됨)
   const opening: Msg[] = state.messages.length ? [] : [{ role: "system", content: SYSTEM }, { role: "user", content: state.report }];
@@ -197,19 +197,19 @@ export function oneLine(text: string): string[] {
   return lines.map((l) => l.slice(0, 120));
 }
 
-/** askHuman: 모델이 늦었을 때 그래프를 멈추고 사람에게 묻는다 (Human-in-the-Loop). 부하 안의 interrupt 도 부모의 실행번호로 저장·재개된다 */
+/** askHuman: 모델이 늦었을 때 그래프를 멈추고 사람에게 묻는다 (Human-in-the-Loop). Subagent 안의 interrupt 도 부모의 실행번호로 저장·재개된다 */
 async function askHumanNode(state: S): Promise<Partial<S>> {
-  enterSub("askRadar", "레이더 부하 Agent (Subagent) — 이어가기"); // Ctrl+C 뒤 --resume 으로 여기부터 다시 올 수 있다
+  enterSub("askRadar", "레이더 Subagent — 이어가기"); // Ctrl+C 뒤 --resume 으로 여기부터 다시 올 수 있다
   // interrupt(질문) 에서 그래프가 멈추고 질문이 실행부(main.ts)로 전달된다. 사람이 답하면 이 함수가 다시 돌고, 이번엔 interrupt 가 그 답을 돌려준다
   const answer = interrupt({ 문제: state.stuck, 고르기: "retry(다시 부르기) / skip(사실 없이 판정으로) / stop(그만)" }) as string;
   const facts = answer === "skip" ? `(모델 답 없음 — 담당자가 건너뛰어 사실 없이 판정. 이유: ${state.stuck})` : state.facts;
   return { humanChoice: answer, stuck: "", facts };
 }
 
-/** stop: 내 코드가 반복을 끊을 때 들르는 단계. 부하만 끝나고 부모는 계속 간다 (규정집 결과만으로 판정) */
+/** stop: 내 코드가 반복을 끊을 때 들르는 단계. Subagent 만 끝나고 부모는 계속 간다 (규정집 결과만으로 판정) */
 async function stopNode(state: S): Promise<Partial<S>> {
   const why = state.humanChoice === "stop" ? "담당자가 그만하라고 했습니다" : `모델을 이미 ${MAX_STEPS}번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다`;
-  log("stop", `${why}. 레이더 부하만 끝내고 부모는 계속 갑니다`);
+  log("stop", `${why}. 레이더 Subagent 만 끝내고 부모는 계속 갑니다`);
   leaveSub("강제 중단");
   return { facts: `[중단] ${why}.` };
 }
@@ -234,8 +234,8 @@ function afterHuman(state: S): "agent" | typeof END | "stop" {
   return END;
 }
 
-// ── 5. 조립: 부하 그래프. compile() 한 것을 부모가 addNode("askRadar", radarAgent) 로 꽂는다 ──
-//   checkpointer 는 넣지 않는다 — 부모의 것이 그대로 내려온다 (부하 안에서 멈춰도 부모 실행번호로 이어진다)
+// ── 5. 조립: Subagent 그래프. compile() 한 것을 부모가 addNode("askRadar", radarAgent) 로 꽂는다 ──
+//   checkpointer 는 넣지 않는다 — 부모의 것이 그대로 내려온다 (Subagent 안에서 멈춰도 부모 실행번호로 이어진다)
 export const radarAgent = new StateGraph(RadarState)
   .addNode("agent", agentNode)
   .addNode("tools", toolsNode)

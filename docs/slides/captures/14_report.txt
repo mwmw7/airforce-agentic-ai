@@ -8,7 +8,7 @@ $ tsx labs/agent/main.ts 3 --answer w
          │ 4. 드론 여러 대가 밤에 함께 날면 먼저 허가받은 드론 쇼인지 확인한다. 허가가 있으면 무시한다.
          │ 5. 허가 없는 드론 떼는 감시하고, 사람이 많은 곳 위라면 경찰에 알린다.
          │ 6. 사전에 통보된 훈련기가 예정된 코스를 날고 무전이 정상이면 무시한다.
-[SUB   ] ┏━ askRadar 레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다
+[SUB   ] ┏━ askRadar 레이더 Subagent — 여기부터 ┃ 줄은 Subagent 의 일. 부모는 facts · evidence · steps 만 받는다
 ┃ [MCP   ] 날씨 서버 연결 실패 (http://localhost:3333/mcp) — 다른 터미널에서 pnpm mcp:weather 를 먼저 켜세요. 날씨 없이 계속합니다.
 ┃ [LLM   ] 1회째 → 도구 쓰기: look_radar, look_flight_plan  1786ms · 1186 토큰
 ┃ [TOOL  ] look_radar(where: 잠실)

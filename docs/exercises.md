@@ -15,8 +15,8 @@
 | 단계 | 같이 붙이는 것 | 파일 · TODO | 쓰는 양 | 확인 명령 | 붙인 뒤 화면 | 배우는 것 |
 |---|---|---|---|---|---|---|
 | 0 | (없음) 환경 점검 · 구조 · 첫 실행 | — | — | `pnpm setup:check` · `pnpm agent` | 보고만 있고 근거가 빈 담당자 화면. Jev 줄은 "확신 0%" , 마지막에 `[STOP] 답을 받았지만 이어가지 않았습니다 — TODO 7` | 전체 구조, 빈칸 규칙 |
-| 1 | 레이더 부하 데려오기 | `main.ts` TODO 1 | 1줄 | `pnpm agent` | `[SUB] ┏━ askRadar` 띠 안에서 agent ⇄ tools 가 여러 줄, 레이더 · 확대 줄 | Subagent — LangGraph 에겐 그냥 노드. 안을 열면 1일차 Loop (도구 실행 · MAX_STEPS) |
-| 2 | 부하에게 새 도구 `look_flight_plan` | `ask-radar.ts` TODO 2-1(설명) · 2-2(실행) | 3줄 + 5줄 | `pnpm agent 3` | `[TOOL] look_flight_plan`, 비행 계획 줄 "잠실 드론 쇼 · 신청 없음" | Tool — 설명(description)이 모델의 선택을 정한다 |
+| 1 | 레이더 Subagent 데려오기 | `main.ts` TODO 1 | 1줄 | `pnpm agent` | `[SUB] ┏━ askRadar` 띠 안에서 agent ⇄ tools 가 여러 줄, 레이더 · 확대 줄 | Subagent — LangGraph 에겐 그냥 노드. 안을 열면 1일차 Loop (도구 실행 · MAX_STEPS) |
+| 2 | Subagent 에게 새 도구 `look_flight_plan` | `ask-radar.ts` TODO 2-1(설명) · 2-2(실행) | 3줄 + 5줄 | `pnpm agent 3` | `[TOOL] look_flight_plan`, 비행 계획 줄 "잠실 드론 쇼 · 신청 없음" | Tool — 설명(description)이 모델의 선택을 정한다 |
 | 3 | 규정 한 줄에 점수 매기기 | `search-docs.ts` TODO 3 | 3줄 | `pnpm agent 2` | 관련 규정 줄 "풍선 … 감시" | RAG — 찾아서 넣어 쓰게 한다 |
 | 4 | 날씨를 MCP 로 | `server.ts` TODO 4-1 · `mcp.ts` TODO 4-2 (두 칸) | 5줄 + 4줄 + 3줄 | 터미널 1 `pnpm mcp:weather`, 터미널 2 `pnpm agent` (`pnpm mcp:inspect` 로 서버만 따로) | `[MCP] look_weather`, 날씨 줄. 서버를 끄면 "날씨 없이 계속" | MCP 서버 · 클라이언트, 외부 의존이 죽어도 Agent 는 산다 |
 | 5 | 순차를 동시로 + 합류 | `main.ts` TODO 5 | 3줄 | `pnpm agent --watch` | searchDocs 와 askRadar 가 같이 시작, `← join:searchDocs+askRadar` | Task Decomposition · 병렬. 왜 나누나 (Context 분리) |
@@ -28,9 +28,9 @@
 
 ## 단계별 코드 (붙이기 전 → 후)
 
-**1 레이더 부하** — `main.ts` 조립부
+**1 레이더 Subagent** — `main.ts` 조립부
 ```diff
--  .addNode("askRadar", async () => ({ facts: "(TODO 1: 레이더 부하가 아직 없어서 확인한 사실이 없습니다)" }))
+-  .addNode("askRadar", async () => ({ facts: "(TODO 1: 레이더 Subagent 가 아직 없어서 확인한 사실이 없습니다)" }))
 +  .addNode("askRadar", radarAgent)   // ask-radar.ts 의 compile() 된 그래프
 ```
 
@@ -100,8 +100,8 @@
 | 할 것 | 명령 | 보는 포인트 |
 |---|---|---|
 | 노드마다 칠판이 어떻게 바뀌나 | `pnpm agent 1 --watch` | agent 가 `steps: 1` 을 내놓아도 칠판은 1, 2, 3 으로 늘어난다 (reducer) |
-| Worker 와 Subagent 의 차이 | `pnpm agent 1` (watch 없이도) | `[SUB] ┏━ askRadar` 띠가 열리고 닫힐 때까지 모든 줄 앞에 보라색 ┃ — 그 사이가 부하의 일. searchDocs 는 띠 밖에서 한 줄에 끝, 띠 안에는 `askRadar › agent/tools` 가 여러 줄. 부하 칠판엔 messages 가 길게, 부모(remember 입력)엔 facts · evidence · steps 만 (Context 분리) |
-| 부하가 멈춰도 부모는 산다 | `pnpm agent:limit` | 부하만 `[STOP]`, 부모는 규정집 결과만 들고 판정 → 담당자 화면까지 간다 |
+| Worker 와 Subagent 의 차이 | `pnpm agent 1` (watch 없이도) | `[SUB] ┏━ askRadar` 띠가 열리고 닫힐 때까지 모든 줄 앞에 보라색 ┃ — 그 사이가 Subagent 의 일. searchDocs 는 띠 밖에서 한 줄에 끝, 띠 안에는 `askRadar › agent/tools` 가 여러 줄. Subagent 칠판엔 messages 가 길게, 부모(remember 입력)엔 facts · evidence · steps 만 (Context 분리) |
+| Subagent 가 멈춰도 부모는 산다 | `pnpm agent:limit` | Subagent 만 `[STOP]`, 부모는 규정집 결과만 들고 판정 → 담당자 화면까지 간다 |
 | 같은 보고를 두 번 | `pnpm agent 2` 두 번 | 두 번째는 `같은 사례 찾음 → Jev 생략`, 종합 화면 "기억" 줄에 그때 결정 |
 | 사람이 가르친다 | 보고 2 에서 `w` 선택 후 다시 보고 2 | 기억이 "감시 강화" 로 떠오른다 |
 | 기억 서버 안 들여다보기 | `pnpm memory:up` → `pnpm memory:ui` → localhost:18888 | 점(사실·요약) 과 선(시간·의미·엔티티) |
