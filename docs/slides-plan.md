@@ -1,6 +1,7 @@
 # 2일차 강의 슬라이드 계획 — 장 단위 목록
 
 작성: 2026-10-07 · 형식: HTML 슬라이드 16:9 · 다크 · 로고 없음 · 밀도 B(총 38장) · 터미널 캡처 사용 · 1일차와 독립
+> **2026-10-14 재구성:** 단계마다 "`pnpm step N` 표지 1장 + 실습 1장" (47장). 1일차 자료와 겹치는 개념 4장(루프 · 누가 멈추나 · State 쌓임 · interrupt 위치)은 빼고 "1일차에서 가져오는 것" 표 1장으로 대신했다. 번역어 "부하" 는 쓰지 않는다 (Subagent).
 > **2026-10-09 재구성:** 슬라이드를 "같이 하나씩 붙이기" 단계 0 ~ 8 순서(36장)로 다시 짰다. 아래 장 목록은 2026-10-07 판(빈칸 1 ~ 11)이라 번호가 다르다. 현재 순서는 `python3 tools/make-slides.py` 출력, 단계 정의는 `docs/exercises.md`.
 
 **구현: `docs/slides/day2.html` (생성기 `tools/make-slides.py`, 캡처 `docs/slides/captures/`). 문안을 고치면 생성기를 고치고 `pnpm slides`, PDF 는 `pnpm slides:pdf` (→ `day2.pdf`).**
@@ -64,10 +65,10 @@
 
 | # | 제목 | 종류 | 내용 |
 |---|---|---|---|
-| 29 | 사람이 끼어들면 어디서 멈추나? | 그림 | interrupt() 두 곳: 부하 안 askHuman(늦을 때), 부모 approve(언제나). "Agent 는 권고까지, 버튼은 사람" |
+| 29 | 사람이 끼어들면 어디서 멈추나? | 그림 | interrupt() 두 곳: Subagent 안 askHuman(늦을 때), 부모 approve(언제나). "Agent 는 권고까지, 버튼은 사람" |
 | 30 | 빈칸 9 | diff | `Command({ resume })` before/after · 성공: 답 넣으면 같은 줄에서 이어진다 |
 | 31 | 껐다 켜면? | 명령 | 담당자 확인에서 Ctrl+C → `pnpm agent --resume <번호>` 캡처. SqliteSaver, "직접 SQL 은 한 줄도 없다" |
-| 32 | 부하 안에서 멈춰도? | 명령 | `LLM_MOCK_SLOW=1` → Ctrl+C → `--resume` 캡처. 부하의 interrupt 도 부모 실행번호로 |
+| 32 | Subagent 안에서 멈춰도? | 명령 | `LLM_MOCK_SLOW=1` → Ctrl+C → `--resume` 캡처. Subagent 의 interrupt 도 부모 실행번호로 |
 | 33 | 되감으면? (시연) | 명령 | `getStateHistory` 로 지난 체크포인트 목록 → 하나 골라 다른 답으로 재생. (구현 미정 — 미구현이면 "다음 단계" 한 줄) |
 
 ## 5. 운영 (13:30~14:10, 5장)

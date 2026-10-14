@@ -2,7 +2,7 @@
  * labs/agent/main.ts — 관제실 Agent 의 부모 그래프. 보고 한 줄 → 자료 수집(동시) → 기억 → 판정 → 사람 결정 → 보고서
  *
  * 관제실에 짧은 보고 한 줄이 들어온다. "서울 상공에 정체불명 비행체가 떠 있어요"
- * 규정집 Worker 와 레이더 부하 Agent 가 동시에 자료를 모으고, 판정 모델이 의견을 내고, 최종 결정은 사람이 한다.
+ * 규정집 Worker 와 레이더 Subagent 가 동시에 자료를 모으고, 판정 모델이 의견을 내고, 최종 결정은 사람이 한다.
  *
  *            ┌─▶ searchDocs (Worker: 함수 하나, 규정집 찾기)              ─┐
  *   START ───┤                                                           ├─▶ remember ─┬─ 같은 사례 기억 있음 ──────┐ (Jev 생략)
@@ -12,25 +12,25 @@
  *                                                                                              writeReport = 사람의 결정 뒤 LLM 이 브리핑 문장을 써서 reports/ 에만 저장 (write-report.ts)
  *
  * 꼭 볼 것
- *   · Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 다. 안에 모델 루프가 있으면 우리가 부하(Subagent)라고 부를 뿐 (TODO 1)
+ *   · Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 다. 안에 모델 루프가 있으면 우리가 Subagent라고 부를 뿐 (TODO 1)
  *   · 같은 출발점에 선을 두 개 걸면 LangGraph 가 같은 단계에서 동시에 돌리고, 출발점을 배열로 묶은 선이 "둘 다 끝나면" 합류다 (TODO 5)
- *   · 부하의 긴 대화(messages)는 부하 칠판에만 남고, 부모 칠판에는 facts · evidence · steps 만 돌아온다 — 팀장 칠판은 결론만 (state.ts)
- *   · LLM 은 사실을 모으고(부하), Jev 는 판정하고, 결정은 코드가 하고, 마지막 버튼은 사람이 누른다 — 역할이 다르다
+ *   · Subagent 의 긴 대화(messages)는 Subagent 칠판에만 남고, 부모 칠판에는 facts · evidence · steps 만 돌아온다 — 팀장 칠판은 결론만 (state.ts)
+ *   · LLM 은 사실을 모으고(Subagent), Jev 는 판정하고, 결정은 코드가 하고, 마지막 버튼은 사람이 누른다 — 역할이 다르다
  *   · Jev 는 의견(출격 / 감시 / 무시 + 확신도)만 준다. 결정은 그 아래 코드 규칙이 한다 (TODO 6)
  *   · 똑같은 보고를 전에 판단한 적이 있으면 기억(Hindsight)이 답한다 — Jev 를 다시 부르지 않는다 (remember, TODO 8)
  *   · 보고서는 writeReport 가 쓴다. 사실과 결정은 코드가 채우고 LLM 은 문장만 다듬는다 (write-report.ts)
- *   · 실행 전체가 RUN_TIMEOUT_SEC 를 넘으면 끊는다. 부하 안에서 모델이 늦으면 부하가 사람에게 묻는다 (ask-radar.ts)
+ *   · 실행 전체가 RUN_TIMEOUT_SEC 를 넘으면 끊는다. Subagent 안에서 모델이 늦으면 Subagent 가 사람에게 묻는다 (ask-radar.ts)
  *
  * 실행:  pnpm agent                           보고 1번
  *        pnpm agent 3                         보고 3번
  *        pnpm agent "한강에 오리 풍선이 떠요"    내가 쓴 보고
- *        pnpm agent:limit                     MAX_STEPS=1 로 부하를 강제 중단 → 부하만 멈추고 부모는 규정집만으로 판정까지 간다
- *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부). 부하 안의 단계는 askRadar › agent 처럼 찍힌다
- *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → 부하 안에서 사람에게 묻는 화면이 뜬다
+ *        pnpm agent:limit                     MAX_STEPS=1 로 Subagent 를 강제 중단 → Subagent 만 멈추고 부모는 규정집만으로 판정까지 간다
+ *        pnpm agent --watch                   단계마다 들어간 값·나온 값 보기 (--watch=full 이면 전부). Subagent 안의 단계는 askRadar › agent 처럼 찍힌다
+ *        LLM_MOCK_SLOW=1 pnpm agent           모델이 늦는 상황 시연 → Subagent 안에서 사람에게 묻는 화면이 뜬다
  *        pnpm see:run                         브라우저(http://localhost:3030)에서 실시간으로 보기. 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝)
  *        pnpm agent --resume <실행번호>       담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (checkpoints.sqlite)
  *        pnpm agent --all                     보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 답한다 (--answer w 를 주면 자동). JEV_MODE 바꿔 두 번 돌려 비교
- *        pnpm see:studio                      LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). 부하는 접힌 노드로 보인다
+ *        pnpm see:studio                      LangGraph Studio 에서 보기 (입력: { "report": "보고 한 줄" }). Subagent 는 접힌 노드로 보인다
  */
 import readline from "node:readline/promises";
 import { Command, END, interrupt, type LangGraphRunnableConfig, START, StateGraph } from "@langchain/langgraph";
@@ -171,11 +171,11 @@ async function approveNode(state: S, config: LangGraphRunnableConfig): Promise<P
 // ── 2. 조립: 단계들을 선으로 잇는다 ── (export: pnpm see:graph · Studio 가 가져다 쓴다)
 export const graph = new StateGraph(MainState)
   .addNode("searchDocs", searchDocsNode)               // Worker: 함수 하나
-  // ===== TODO 1: 레이더 부하 Agent(서브그래프)를 노드로 꽂기 =====
+  // ===== TODO 1: 레이더 Subagent(서브그래프)를 노드로 꽂기 =====
   // ask-radar.ts 의 radarAgent(compile 된 그래프)를 "askRadar" 라는 이름의 노드로 넣으세요. 함수 대신 그래프를 넣어도 LangGraph 에겐 똑같은 노드입니다.
-  //   · 비워 두면 아래 자리표시(레이더 없는 가짜 부하)로 돌아간다 → approve 화면에 레이더 · 확대 · 날씨 줄이 없다. 부하가 없으면 눈이 없다
+  //   · 비워 두면 아래 자리표시(레이더 없는 가짜 Subagent)로 돌아간다 → approve 화면에 레이더 · 확대 · 날씨 줄이 없다. Subagent 가 없으면 눈이 없다
   // [여기에 코드를 작성하세요] — 정답은 main 브랜치의 같은 파일 (따라잡기: pnpm step 1)
-  .addNode("askRadar", async () => ({ facts: "(TODO 1: 레이더 부하가 아직 없어서 확인한 사실이 없습니다)" }))
+  .addNode("askRadar", async () => ({ facts: "(TODO 1: 레이더 Subagent 가 아직 없어서 확인한 사실이 없습니다)" }))
   .addNode("remember", rememberNode)
   .addNode("judge", judgeNode)
   .addNode("approve", approveNode)
@@ -196,7 +196,7 @@ export const graph = new StateGraph(MainState)
   .addEdge("writeReport", END)
   // 멈췄다 이어가려면 진행 상황(checkpoint)을 저장할 곳이 필요하다. LangGraph 가 주는 SqliteSaver 를 꽂으면
   // 단계마다 checkpoints.sqlite 파일에 저장된다 → 프로그램을 껐다 켜도 --resume 으로 멈춘 곳부터 이어간다 (직접 SQL 은 한 줄도 없다)
-  // 부하(askRadar) 안의 단계도 같은 파일에, 같은 실행번호 아래 저장된다
+  // Subagent(askRadar) 안의 단계도 같은 파일에, 같은 실행번호 아래 저장된다
   .compile({ checkpointer: SqliteSaver.fromConnString("checkpoints.sqlite") });
 
 // ── 3. 실행: 보고 하나를 넣고 돌린다 ──
@@ -265,11 +265,11 @@ if (process.argv[1]?.endsWith("main.ts")) {
     let result = {} as S;
 
     /** 그래프를 돌린다. values: 단계마다 칠판 전체 / debug: 들어간 값·나온 값 (--watch 터미널, --live 브라우저)
-     *  subgraphs: true → 부하(askRadar) 안의 단계도 흘러나온다. 그때는 맨 앞에 "어느 부하 안인지"(namespace)가 붙는다 */
+     *  subgraphs: true → Subagent(askRadar) 안의 단계도 흘러나온다. 그때는 맨 앞에 "어느 Subagent 안인지"(namespace)가 붙는다 */
     async function run(what: unknown) {
       for await (const [ns, mode, chunk] of await graph.stream(what as never, { ...config, streamMode: ["values", "debug"], subgraphs: true })) {
         if (mode === "debug") showDebug(chunk as never, ns.length ? "askRadar" : "");
-        else if (ns.length === 0 && !("__interrupt__" in (chunk as object))) result = chunk; // 칠판은 부모 것만 받는다 (부하 칠판은 부하 안에). 멈춤 알림 조각은 칠판이 아니라 건너뛴다
+        else if (ns.length === 0 && !("__interrupt__" in (chunk as object))) result = chunk; // 칠판은 부모 것만 받는다 (Subagent 칠판은 Subagent 안에). 멈춤 알림 조각은 칠판이 아니라 건너뛴다
       }
     }
     async function runWithHuman() {

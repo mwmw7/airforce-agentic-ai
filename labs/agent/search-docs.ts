@@ -34,7 +34,7 @@ export function searchDocs(question: string, topN = 3): string[] {
 }
 
 /** searchDocs 노드 (Worker): 보고 한 줄로 규정집을 찾아 근거(evidence)에 넣는다. 모델 호출 없음 — 함수 하나가 곧 노드다
- *  부모 그래프에서 레이더 부하(ask-radar.ts)와 같은 단계에 동시에 출발한다 */
+ *  부모 그래프에서 레이더 Subagent(ask-radar.ts)와 같은 단계에 동시에 출발한다 */
 export async function searchDocsNode(state: { report: string }): Promise<{ evidence: Record<string, string[]> }> {
   const found = searchDocs(state.report);
   log("tool", `${bold("search_docs")}${dim("(보고 그대로)")}`, found.length ? found : ["관련 규정 없음"]);

@@ -12,7 +12,7 @@ const drawings = [
 
 mkdirSync("docs/graphs", { recursive: true });
 for (const { file, title, app } of drawings) {
-  const mermaid = (await app.getGraphAsync({ xray: true })).drawMermaid() // 그래프 구조 → Mermaid 글자. xray: 부하(서브그래프) 안까지 펼쳐 그린다
+  const mermaid = (await app.getGraphAsync({ xray: true })).drawMermaid() // 그래프 구조 → Mermaid 글자. xray: Subagent(서브그래프) 안까지 펼쳐 그린다
     // 기본 그림은 배경만 연보라로 정해, 뷰어가 다크 테마면 글자가 묻힌다
     // → 그림 안에서 테마(base)와 글자 · 배경 · 선 색을 고정해 어느 뷰어에서든 똑같이 보이게 한다
     .replace("%%{init: {'flowchart': {'curve': 'linear'}}}%%",

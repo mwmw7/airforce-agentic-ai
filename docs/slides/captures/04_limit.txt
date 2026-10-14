@@ -7,10 +7,10 @@ $ tsx labs/agent/main.ts 2
 [TOOL  ] search_docs(보고 그대로)
          │ 3. 풍선, 연, 새 떼는 위협이 아니다. 공항 쪽으로 가면 공항에 알리고 감시한다.
          │ 2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 풍선이나 연일 가능성이 크므로 감시한다.
-[SUB   ] ┏━ askRadar 레이더 부하 Agent (Subagent) — 여기부터 ┃ 줄은 부하의 일. 부모는 facts · evidence · steps 만 받는다
+[SUB   ] ┏━ askRadar 레이더 Subagent — 여기부터 ┃ 줄은 Subagent 의 일. 부모는 facts · evidence · steps 만 받는다
 ┃ [MCP   ] 날씨 서버 연결 OK — 도구 1개 받음: look_weather
 ┃ [LLM   ] 1회째 → 도구 쓰기: look_radar  36ms
-┃ [STOP  ] 모델을 이미 1번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다. 레이더 부하만 끝내고 부모는 계속 갑니다
+┃ [STOP  ] 모델을 이미 1번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다. 레이더 Subagent 만 끝내고 부모는 계속 갑니다
 [SUB   ] ┗━ askRadar 끝 · 강제 중단
 [MEMORY] [file] 같은 사례 없음 (가장 비슷한 것 일치도 0.03 < 0.9) → Jev 에게 묻는다
 [MEMORY] [file] recall · Jev 참고용 비슷한 기억 (겹치는 단어 수) → 1건

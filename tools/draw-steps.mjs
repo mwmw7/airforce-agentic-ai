@@ -3,7 +3,7 @@
  * tools/draw-steps.mjs — 단계별 그래프 그림 뽑기 (수업에서 단계끼리 비교용)
  *   완성본 코드를 pnpm step N 과 같은 변환(blanks.mjs)으로 임시 폴더에 만들고, 거기서 draw-graph.ts 를 돌린다
  *   내 파일은 건드리지 않는다
- *   그래프 모양이 바뀌는 건 TODO 1(부하를 서브그래프로) · TODO 5(동시 실행 · 합류) 두 번뿐 → 단계 2 · 6 에서 그림이 바뀐다
+ *   그래프 모양이 바뀌는 건 TODO 1(Subagent 를 서브그래프로) · TODO 5(동시 실행 · 합류) 두 번뿐 → 단계 2 · 6 에서 그림이 바뀐다
  *   출력: docs/graphs/step-1.md ~ step-8.md, step-done.md
  *
  * 사용:  pnpm see:steps      (main 브랜치에서. 정답이 있어야 단계를 만들 수 있다)
