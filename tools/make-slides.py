@@ -480,7 +480,10 @@ add(4, '오늘 만든 것과 요청 항목',
            ['Context · Memory · Agentic Retrieval', 'Hindsight 찾기 · 남기기, 같은 사례면 Jev 생략', '8'],
            ['Trace · Evaluation · Observability', 'traces/*.jsonl, LangSmith, Langfuse(특강)', '시연'],
            ['권한 · Prompt Injection · Sandbox', '상한 여섯 곳, Deev 실제 탐지 코드, MCP 서버에 키 미전달, 보고서 reports/ 격리', '시연']], 'dense') +
-    '<div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div>', 'table')
+    '<div class="placeholder slot">마무리 5분 자리 (미결): Claude Code · opencode 구조 대응표 / AWS AI-DLC · Kiro / 대기업 Agentic AI 동향</div>' +
+    '<div class="links">추가 자료 · '
+    '<a href="frontier-compare.html" target="_blank">Agent 구현 비교 덱 (핸즈온 · Claude Code · Opencode)</a> · '
+    '<a href="https://docs.google.com/presentation/d/15TWur3FoEh3LOYjRo4MU0xIS1G_zKfNKfi6kquwkwcE/edit?usp=sharing" target="_blank">타사 Shader Agent 예시 (Google Slides)</a></div>', 'table')
 
 # ───────── HTML ─────────
 def section(i, b, title, body, kind):
@@ -547,6 +550,7 @@ table.tbl.plain td{border:none;padding:8px 18px 8px 0;font-size:26px}table.tbl.p
 .placeholder{border:1px dashed var(--line);border-radius:6px;padding:40px 24px;color:var(--muted);text-align:center;font-size:22px;line-height:1.5}
 .placeholder span{font-size:18px}.placeholder.img{min-height:420px;display:flex;flex-direction:column;justify-content:center}
 .placeholder.slot{text-align:left;padding:14px 18px;font-size:19px}
+.links{margin-top:14px;font-size:19px;color:var(--muted)}.links a{color:var(--amber);text-decoration:underline;text-underline-offset:4px}
 figure.shot{display:flex;flex-direction:column;align-items:center;gap:10px}figure.shot img{max-height:640px;max-width:100%;border-radius:8px;border:1px solid var(--line)}figure.shot figcaption{font-size:18px;color:var(--muted);text-align:center;line-height:1.4}
 pre.mermaid{background:transparent;border:none;padding:0;display:flex;justify-content:center;align-items:flex-start;color:transparent;width:100%}
 pre.mermaid svg{width:100% !important;max-width:none !important;height:auto;max-height:560px}
@@ -577,7 +581,7 @@ function go(i, push=true){cur=Math.max(0,Math.min(N-1,i)); slides.forEach((s,k)=
 function openOverview(){const g=ov.querySelector('.grid'); g.innerHTML=''; slides.forEach((s,k)=>{const c=document.createElement('div'); c.className='cell'+(k===cur?' cur':''); const m=document.createElement('div'); m.className='mini'; const clone=s.cloneNode(true); clone.classList.add('on'); m.appendChild(clone); c.appendChild(m); const n=document.createElement('div'); n.className='n'; n.textContent=k+1; const t=document.createElement('div'); t.className='t'; t.textContent=s.querySelector('h1').textContent; c.appendChild(t); c.appendChild(n); c.onclick=(e)=>{e.stopPropagation(); go(k); closeOverview();}; g.appendChild(c);}); ov.classList.add('on'); requestAnimationFrame(scaleCells); setTimeout(()=>{const cc=g.querySelector('.cell.cur'); cc&&cc.scrollIntoView({block:'center'});},0);}
 function scaleCells(){ov.querySelectorAll('.cell').forEach(c=>{const w=c.clientWidth; c.querySelector('.mini').style.transform=`scale(${w/1920})`;});}
 function closeOverview(){ov.classList.remove('on');}
-stage.addEventListener('click',(e)=>{if(e.target.closest('.cmd .copy')) return; const r=stage.getBoundingClientRect(); if(e.clientX < r.left + r.width/2) go(cur-1); else go(cur+1);});
+stage.addEventListener('click',(e)=>{if(e.target.closest('.cmd .copy, a')) return; const r=stage.getBoundingClientRect(); if(e.clientX < r.left + r.width/2) go(cur-1); else go(cur+1);});
 ov.addEventListener('click',closeOverview);
 addEventListener('click',(e)=>{const b=e.target.closest('.cmd .copy'); if(!b) return; navigator.clipboard.writeText(b.parentElement.querySelector('.c').textContent).then(()=>{b.textContent='복사됨'; b.classList.add('done'); setTimeout(()=>{b.textContent='복사'; b.classList.remove('done');},1200);});});
 addEventListener('keydown',(e)=>{
