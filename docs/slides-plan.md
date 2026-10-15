@@ -1,7 +1,7 @@
 # 2일차 강의 슬라이드 계획 — 장 단위 목록
 
 작성: 2026-10-07 · 형식: HTML 슬라이드 16:9 · 다크 · 로고 없음 · 밀도 B(총 38장) · 터미널 캡처 사용 · 1일차와 독립
-> **2026-10-14 재구성:** 단계마다 "`pnpm step N` 표지 1장 + 실습 1장" (47장). 1일차 자료와 겹치는 개념 4장(루프 · 누가 멈추나 · State 쌓임 · interrupt 위치)은 빼고 "1일차에서 가져오는 것" 표 1장으로 대신했다. 번역어 "부하" 는 쓰지 않는다 (Subagent).
+> **2026-10-14 재구성:** 단계마다 "`pnpm step N` 표지 1장 + 실습 1장" (47장 → 2026-10-15 48장: 7단계 뒤에 `checkpoints.sqlite` 테이블 캡처 장 추가). 1일차 자료와 겹치는 개념 4장(루프 · 누가 멈추나 · State 쌓임 · interrupt 위치)은 빼고 "1일차에서 가져오는 것" 표 1장으로 대신했다. 번역어 "부하" 는 쓰지 않는다 (Subagent).
 > **2026-10-09 재구성:** 슬라이드를 "같이 하나씩 붙이기" 단계 0 ~ 8 순서(36장)로 다시 짰다. 아래 장 목록은 2026-10-07 판(빈칸 1 ~ 11)이라 번호가 다르다. 현재 순서는 `python3 tools/make-slides.py` 출력, 단계 정의는 `docs/exercises.md`.
 
 **구현: `docs/slides/day2.html` (생성기 `tools/make-slides.py`, 캡처 `docs/slides/captures/`). 문안을 고치면 생성기를 고치고 `pnpm slides`, PDF 는 `pnpm slides:pdf` (→ `day2.pdf`).**
@@ -18,7 +18,7 @@
 | 1 | 오늘 만드는 것 | 그림 | 부모 그래프 한 장 (`docs/graphs/agent.md` Mermaid). "보고 한 줄 → 수집 → 기억 → 판정 → 사람" |
 | 2 | 소개 | 표 | 최호섭 · 삼성전자 R&D센터 → 툰스퀘어 CTO · Tooning / Tooning Plus / Deev · branden@tooning.io (Edu 포함 여부 미결) |
 | 3 | 오늘의 규칙 | 명령 | `git clone -b hands-on …` · `pnpm agent` 가 TODO 에서 멈추는 캡처 · "막히면 `git diff hands-on main -- <파일>`" · 빈칸 11개 지도 (번호만) |
-| 4 | 오늘 일정 | 표 | 블록 5개 · 시간 · 각 블록에서 채우는 빈칸 번호 · 휴식 2번. 오후 14:30 이현우 Langfuse 특강 예고 |
+| 4 | 오늘 일정 | 표 | 블록 5개 · 시간 · 각 블록에서 채우는 빈칸 번호 · 휴식 2번. 오후 14:30 정진태 Langfuse 특강 예고 |
 
 ## 1. Agent Loop · Harness (09:10~09:50, 7장) — 빈칸 1 · 2 · 6
 
@@ -78,7 +78,7 @@
 | 34 | 운영 중 자료에 지시문이 섞여 오면? | 그림 | 자료에 섞인 "이전 지시는 무시" 한 줄이 판정을 뒤집는 모습 (`jev.ts` JEV_MODE=local 규칙이 위험도 0.95 로 기움). 지금 코드에 있는 상한들 위치: MAX_STEPS · RUN_TIMEOUT_SEC · approve interrupt · MCP 서버에 키 미전달 |
 | 35 | 실제 서비스(Deev)는 어떻게 거르나 | 명령 | appendix Deev 캡처(img.png) + `detect_define.ts` 의 정규식 1차 → TypeSafe 2차 핵심 10줄 + `detect_call.ts` 3분 타임아웃. 정규식은 빠르고 설명 가능, 모델 판정은 변형에 강함 |
 | 36 | 모델을 바꾸면? | 표 | `LLM_MODE` mock / ollama / relay(Bedrock) 같은 보고 결과 비교. "슬롯만 바꾼다, 그래프는 그대로" (endpoint 는 당일 안내) |
-| 37 | 실행 기록은 어디서 보나? | 명령 | `LANGSMITH_TRACING=true` 트리 캡처 (노드 → LLM · Jev · MCP · 기억). "Langfuse 는 다음 시간 이현우" |
+| 37 | 실행 기록은 어디서 보나? | 명령 | `LANGSMITH_TRACING=true` 트리 캡처 (노드 → LLM · Jev · MCP · 기억). "Langfuse 는 다음 시간 정진태" |
 | 38 | 마무리 | 표 | 권 대위 항목 ↔ 오늘 코드 대응표 12줄 (CLAUDE.md 6장). (5-1 미결: Claude Code·opencode 대응표 / AI-DLC·Kiro / 동향 5분을 여기에 둘지) |
 
 ---
