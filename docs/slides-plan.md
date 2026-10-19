@@ -77,7 +77,7 @@
 |---|---|---|---|
 | 34 | 운영 중 자료에 지시문이 섞여 오면? | 그림 | 자료에 섞인 "이전 지시는 무시" 한 줄이 판정을 뒤집는 모습 (`jev.ts` JEV_MODE=local 규칙이 위험도 0.95 로 기움). 지금 코드에 있는 상한들 위치: MAX_STEPS · RUN_TIMEOUT_SEC · approve interrupt · MCP 서버에 키 미전달 |
 | 35 | 실제 서비스(Deev)는 어떻게 거르나 | 명령 | appendix Deev 캡처(img.png) + `detect_define.ts` 의 정규식 1차 → TypeSafe 2차 핵심 10줄 + `detect_call.ts` 3분 타임아웃. 정규식은 빠르고 설명 가능, 모델 판정은 변형에 강함 |
-| 36 | 모델을 바꾸면? | 표 | `LLM_MODE` mock / ollama / relay(Bedrock) 같은 보고 결과 비교. "슬롯만 바꾼다, 그래프는 그대로" (endpoint 는 당일 안내) |
+| 36 | 모델을 바꾸면? | 표 | `LLM_MODE` mock / ollama / cloud(OpenRouter) 같은 보고 결과 비교. "슬롯만 바꾼다, 그래프는 그대로" (OpenRouter 조별 키는 당일 배포) |
 | 37 | 실행 기록은 어디서 보나? | 명령 | `LANGSMITH_TRACING=true` 트리 캡처 (노드 → LLM · Jev · MCP · 기억). "Langfuse 는 다음 시간 정진태" |
 | 38 | 마무리 | 표 | 권 대위 항목 ↔ 오늘 코드 대응표 12줄 (CLAUDE.md 6장). (5-1 미결: Claude Code·opencode 대응표 / AI-DLC·Kiro / 동향 5분을 여기에 둘지) |
 
@@ -86,7 +86,6 @@
 ## 비워 둔 자리 (결정 오면 채움)
 - 2번 장: Tooning Edu 포함 여부, Tooning Plus 한 줄 설명
 - 33번 장: 시간 되감기 구현 여부
-- 36번 장: Bedrock endpoint 문구
 - 38번 장: 5-1 마무리 슬롯
 - writeReport 는 2026-10-12 구현 → 운영 블록 '보고서는 누가 쓰나?' 1장 추가. 채점표는 범위 밖
 

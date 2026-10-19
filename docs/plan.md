@@ -45,7 +45,7 @@
 | 어디서 | 시작 시 한 번 `createBank("control-room", mission: "관제실 보조. 보고와 결정을 기억한다")` / judge 시작에 `recall(report)` → Jev 에 `past` 로 전달 (`jev.ts` 에 past 처리 있음) / 결정 뒤 `retain("보고 … → 결정 …")` |
 | 시연 | 보고 1을 두 번 돌리면 두 번째엔 "어제도 출격"이 떠올라 확신이 올라감. `reflect("최근 서울 상공 보고 경향은?")` 은 강사 한 줄 시연 |
 | 로컬 테스트 (Docker 없음) | 공식 패키지 `@vectorize-io/hindsight-all` 이 Hindsight 를 내 노트북에서 작은 데몬으로 띄워 준다 (내장 Postgres 포함, 첫 실행 때 약 200MB 받음). 코드: `new HindsightServer({ profile, port, env }) → start() → getBaseUrl()`. `pnpm memory:up` 명령으로 켜고 끈다 |
-| 로컬 테스트 준비물 | `uv` (Python 패키지 도구, 한 줄 설치) + Hindsight 가 쓸 LLM 하나. LLM 은 OpenAI 호환 주소면 되므로 강사 Bedrock 주소(`LLM_BASE_URL`)를 그대로 넘긴다 → 교육생은 Ollama 설치 불필요. Windows · Mac 지원 |
+| 로컬 테스트 준비물 | `uv` (Python 패키지 도구, 한 줄 설치) + Hindsight 가 쓸 LLM 하나. LLM 은 OpenAI 호환 주소면 되므로 OpenRouter 주소(`LLM_BASE_URL`)를 그대로 넘긴다 → 교육생은 Ollama 설치 불필요. Windows · Mac 지원 |
 | 서버 없을 때 | `MEMORY_MODE=file` → `.hindsight/control-room.json` 에 같은 모양으로 저장. `uv` 가 없거나 막히면 이걸로 진행 |
 | 개발 검증 | 내 노트북에서 `hindsight-all` + Ollama 로 실제 retain · recall · reflect 동작 확인 |
 | 의존성 | `@vectorize-io/hindsight-client`, `@vectorize-io/hindsight-all` |

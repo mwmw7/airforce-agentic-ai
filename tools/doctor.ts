@@ -23,7 +23,7 @@ loadEnv(); // 복사한 뒤에 읽어야 아래 점검이 .env 값을 본다
 
 // LLM
 const llmMode = process.env.LLM_MODE ?? "mock";
-if (llmMode === "mock") warn("LLM_MODE=mock — 정해진 답으로 흐름만 확인. 실제 모델은 .env 에서 relay(강사 Bedrock)/ollama/cloud 로");
+if (llmMode === "mock") warn("LLM_MODE=mock — 정해진 답으로 흐름만 확인. 실제 모델은 .env 에서 cloud(OpenRouter, 당일 조별 키)/ollama/relay(자체 중계) 로");
 else {
   try {
     const r = await fetch(`${process.env.LLM_BASE_URL}/models`, { headers: { Authorization: `Bearer ${process.env.LLM_API_KEY}` } });
