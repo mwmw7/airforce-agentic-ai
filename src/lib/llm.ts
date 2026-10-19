@@ -5,9 +5,9 @@
  *   askLLM()  글 한 편 쓰기            — 보고서 작성처럼 긴 글이 필요할 때 사용
  *
  * 어떤 모델을 쓸지는 .env 의 LLM_MODE 한 줄로 바꿉니다.
- *   relay  : 강사가 AWS Bedrock 에 올려 둔 모델 (기본. 주소와 조별 토큰만 붙이면 됨)
+ *   cloud  : OpenRouter (교육 당일 기본. 조별 키 하나로 여러 회사 모델. LLM_MODEL 에 회사/모델 이름)
  *   ollama : 내 노트북의 Ollama (ollama pull qwen3:8b)
- *   cloud  : OpenRouter 같은 중계 서비스 (키 하나로 여러 회사 모델. LLM_MODEL 에 회사/모델 이름)
+ *   relay  : 자체 중계 서버 (vLLM 등 OpenAI 호환 주소) — 폐쇄망으로 옮길 때
  *   mock   : 네트워크 없이 흐름만 확인 (정해진 답을 돌려줌)
  * 폐쇄망으로 옮길 때도 .env 의 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 세 줄만 바꾸면 됩니다.
  *

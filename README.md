@@ -230,7 +230,7 @@ Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weath
 
 | 설정 | 기본 (키 없이) | 강사 제공 | 폐쇄망으로 옮길 때 |
 |---|---|---|---|
-| `LLM_MODE` | `mock` (정해진 답) | `cloud` — OpenRouter + 조별 키 | `relay` — vLLM/Bedrock/Ollama 등 OpenAI 호환 주소 |
+| `LLM_MODE` | `mock` (정해진 답) | `cloud` — OpenRouter + 조별 키 | `relay` — vLLM 등 OpenAI 호환 주소 |
 | `JEV_MODE` | `local` (규칙 판정기) | `openrouter` — Jev (OpenRouter Decisions API, 같은 조별 키를 `OPENROUTER_API_KEY` 에) | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
 | `MEMORY_MODE` | `file` (`.hindsight/*.json`) · `off` (기억 없음) | `hindsight` — `pnpm memory:up` 또는 강사 서버 주소 | 자체 호스팅 Hindsight |
 
