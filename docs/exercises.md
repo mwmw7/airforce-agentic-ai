@@ -21,7 +21,7 @@
 | 4 | 날씨를 MCP 로 | `server.ts` TODO 4-1 · `mcp.ts` TODO 4-2 (두 칸) | 5줄 + 4줄 + 3줄 | 터미널 1 `pnpm mcp:weather`, 터미널 2 `pnpm agent` (`pnpm mcp:inspect` 로 서버만 따로) | `[MCP] look_weather`, 날씨 줄. 서버를 끄면 "날씨 없이 계속" | MCP 서버 · 클라이언트, 외부 의존이 죽어도 Agent 는 산다 |
 | 5 | 순차를 동시로 + 합류 | `main.ts` TODO 5 | 3줄 | `pnpm agent --watch` | searchDocs 와 askRadar 가 같이 시작, `← join:searchDocs+askRadar` | Task Decomposition · 병렬. 왜 나누나 (Context 분리) |
 | 6 | Jev 에게 묻기 | `main.ts` TODO 6 | 1줄 | `pnpm agent 1` | Jev 판정 줄에 확신도 · 위험도 · 정체불명 막대. 그 아래 `[RULE]` 코드 규칙 | 판정 모델 — Jev 는 의견, 결정은 코드 규칙. QUESTIONS 문장을 바꿔 보기 |
-| 7 | 사람의 답으로 이어가기 | `main.ts` TODO 7 | 1줄 | `pnpm agent` → Ctrl+C → `pnpm agent --resume <번호>` | `[DECIDE] … — 사람이 결정`, 껐다 켜도 같은 질문에서 이어짐 | HITL · Checkpoint (SqliteSaver) |
+| 7 | 사람의 답으로 이어가기 | `main.ts` TODO 7 | 2줄 | `pnpm agent` → Ctrl+C → `pnpm agent --resume <번호>` | `[DECIDE] … — 사람이 결정`, 껐다 켜도 같은 질문에서 이어짐 | HITL · Checkpoint (SqliteSaver) |
 | 8 | 기억 찾기 · 남기기 | `main.ts` TODO 8-1(remember) · 8-2(approve) | 1줄 + 1줄 | `pnpm agent 2` 두 번 | 두 번째엔 `같은 사례 찾음 → Jev 생략`. 보고 2 에서 `w` 를 고른 뒤 다시 돌리면 기억이 "감시 강화" 로 | Context · Memory — 사람이 가르친다 |
 
 **왜 7(이어가기)이 8(기억)보다 먼저인가:** 기억은 approve 에서 사람의 결정까지 합쳐 남긴다. 사람 답으로 이어가지 못하면 approve 가 끝나지 않아 남길 것도 없다.
@@ -76,8 +76,9 @@
 **7 이어가기** — `main.ts` 실행부
 ```diff
 -  const answer = await askPerson(question);
--  log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7`);
+-  log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7 (--resume 도 7단계를 채운 뒤부터)`);
 -  break;
++  log("setup", `멈춰도 된다 — pnpm agent --resume ${threadId} 로 여기부터 이어간다`); // 이어갈 수 있게 된 뒤에만 안내
 +  await run(new Command({ resume: await askPerson(question) }));
 ```
 

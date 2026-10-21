@@ -82,7 +82,7 @@ pnpm agent                       # 터미널 2: 보고 1번 → LLM 이 레이�
 pnpm agent 3                     # 보고 3번 (1~4), 또는 pnpm agent "한강에 오리 풍선이 떠요" 처럼 내 보고
 pnpm agent:limit                 # 호출 한도 1 로 강제 중단 — 멈추는 건 모델이 아니라 코드
 pnpm agent --watch               # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
-pnpm agent --resume <실행번호>    # 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (실행번호는 시작할 때 출력)
+pnpm agent --resume <실행번호>    # 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (명령은 질문 바로 위 SETUP 줄에 찍힌다, 7단계 뒤)
 pnpm agent --all                 # 보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 y/w/n 을 답한다 (--answer w 를 주면 자동). JEV_MODE=local 과 typesafe 로 두 번 돌려 비교
 LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다
 ```
@@ -242,7 +242,7 @@ pnpm setup:check             # 환경 점검
 | `--watch=full` | 위와 같지만 자르지 않고 전부 | 값이 잘려서 안 보일 때 |
 | `--all` | 보고 4종을 차례로 돌리고 표 하나로 정리 | `JEV_MODE` 를 바꿔 두 번 돌려 비교할 때 |
 | `--answer <y\|w\|n>` | 담당자 질문에 답을 미리 정해 둔다. 묻지 않고 바로 그 답을 쓴다 (`y` 출격 · `w` 감시 · `n` 무시) | `--all` 로 4건을 멈춤 없이 돌릴 때 |
-| `--resume <실행번호>` | 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어간다 (`checkpoints.sqlite`). 실행번호는 시작할 때 출력 | 단계 7 (Checkpoint · 재개) |
+| `--resume <실행번호>` | 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어간다 (`checkpoints.sqlite`). 실행번호는 SETUP 줄에, 이어가는 명령은 질문 바로 위에 찍힌다 (7단계를 채운 뒤부터) | 단계 7 (Checkpoint · 재개) |
 | `--live` | 브라우저(http://localhost:3030)에 그래프를 띄우고 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝). `pnpm see:run` 이 이 옵션을 붙인 것 | 그래프가 도는 모습을 눈으로 볼 때 |
 
 옵션은 섞어 쓸 수 있습니다. 예: `pnpm agent 2 --watch`, `pnpm agent --all --answer w`, `pnpm agent --resume loop-1-1234567890 --watch`.

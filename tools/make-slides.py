@@ -344,7 +344,7 @@ add(3, '판정 화면 읽기 · 질문 한 줄이 결과를 바꾼다',
     small('해 보기: unknown 의 instructions 를 "더 알아봐야 해?" 처럼 모호하게 바꾸고 둘 다 다시 돌린다. ③ 의 % 가 두 보고에서 갈리면 질문이 일을 한 것이다. 끝나면 원래 문장으로 되돌린다 (실제 Jev 키가 있어야 차이가 난다. JEV_MODE=local 은 문장을 안 읽는다)'), 'cmd')
 cover(3, 7, '사람의 답으로 이어가기', '<code>Command({ resume: 답 })</code> 으로 같은 thread 다시 invoke', '<code>main.ts</code> (TODO 7)', '"사람이 결정". Ctrl+C 뒤 <code>pnpm agent --resume &lt;번호&gt;</code>', 'HITL · Checkpoint', '③ interrupt · Command resume · thread_id 그대로. MemorySaver 만 SqliteSaver 로')
 add(3, step_tag(7, '사람의 답으로 멈춘 곳부터 이어가기'),
-    bullets(['<code>interrupt()</code> 는 그래프를 <b>멈추고 저장만</b> 한다. 답을 넣어 <b>다시 돌리는 건 그래프 밖 반복문</b>의 일이다 — 그 한 줄이 TODO 7']) +
+    bullets(['<code>interrupt()</code> 는 그래프를 <b>멈추고 저장만</b> 한다. 답을 넣어 <b>다시 돌리는 건 그래프 밖 반복문</b>의 일이다 — 그게 TODO 7']) +
     cols(diff_ctx([(' ', 'async function runWithHuman() {'),
                    (' ', '  if (!resumeId) await run(input);            // 처음이면 START 부터, --resume 이면 생략'),
                    (' ', '  for (;;) {'),
@@ -354,23 +354,25 @@ add(3, step_tag(7, '사람의 답으로 멈춘 곳부터 이어가기'),
                    (' ', '    if (!question) break;                       // 질문이 없다 = 끝까지 돌았다'),
                    (' ', '    // ===== TODO 7 ====='),
                    ('-', '    const answer = await askPerson(question);'),
-                   ('-', '    log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7`);'),
+                   ('-', '    log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다'),
+                   ('-', '                 — TODO 7 (--resume 도 7단계를 채운 뒤부터)`);'),
                    ('-', '    break;                                      // 답만 받고 끝'),
+                   ('+', '    log("setup", `멈춰도 된다 — pnpm agent --resume ${threadId} 로 여기부터 이어간다`);'),
                    ('+', '    // 같은 thread_id 로 다시 돌린다 → 멈춘 줄에서 답을 받고 이어진다'),
                    ('+', '    await run(new Command({ resume: await askPerson(question) }));'),
                    (' ', '  }'),
                    (' ', '}')], file='labs/agent/main.ts · TODO 7 (그래프 밖 실행 반복문)', w=96) + cmd('pnpm agent'),
          bullets(['① <b>멈춤</b> — <code>approve</code> 안의 <code>interrupt()</code> 가 그래프를 멈추고 칠판을 <code>checkpoints.sqlite</code> 에 저장한다',
                   '② <b>묻기</b> — 바깥 반복문이 "멈춰 있나?" 를 보고 <code>askPerson</code> 으로 답을 받는다',
-                  '③ <b>이어가기 (빈칸)</b> — 같은 <code>thread_id</code> 로 <code>Command({ resume: 답 })</code>. <code>approve</code> 는 처음부터 다시 돌지만 <code>interrupt()</code> 가 이번엔 답을 돌려줘서 그 줄부터 계속']) +
-         term(pick('00_step1_blank.txt', [r'^\[HUMAN \] 답', r'^\[STOP'], limit=2)) + small('채우기 전: 답은 받았는데 그래프를 다시 돌리지 않아 여기서 끝') +
+                  '③ <b>이어가기 (빈칸)</b> — 같은 <code>thread_id</code> 로 <code>Command({ resume: 답 })</code>. <code>approve</code> 는 처음부터 다시 돌지만 <code>interrupt()</code> 가 이번엔 답을 돌려줘서 그 줄부터 계속. 이어갈 수 있게 됐으니 <code>--resume</code> 안내도 여기서 찍는다']) +
+         term([x for l in pick('00_step1_blank.txt', [r'^\[HUMAN \] 답', r'^\[STOP'], limit=2, w=200) for x in l.replace(' (--resume', '\n         (--resume').split('\n')]) + small('채우기 전: 답은 받았는데 그래프를 다시 돌리지 않아 여기서 끝') +
          term(pick('14_flight_plan.txt', [r'^\[HUMAN \] 답', r'^\[DECIDE'], limit=2)) + small('채운 뒤: approve 가 그 답으로 결정을 쓰고 끝까지 간다') +
          ok('<code>[DECIDE] … — 사람이 결정</code>'), ratio='r64'), 'diff')
 add(3, '껐다 켜면?',
     bullets(['멈춘 자리는 메모리가 아니라 <b>파일</b>(<code>checkpoints.sqlite</code>)에 있다. 프로세스를 죽여도 파일은 남는다 → <b>같은 실행번호로 켜면 그 자리부터</b>']) +
-    cols(term(pick('12a_approve_killed.txt', [r'^\[SETUP \] 모델', r'실행번호 loop', r'^\[HUMAN \] 종합'], limit=3, w=100) + ['         │ y(출격) / w(감시 강화) / n(무시) > ^C   ← 답 안 하고 Ctrl+C'], 'tiny') +
-         small('① 끄기: 질문 화면에서 끈다. 실행번호는 SETUP 줄에 있다 (멈추면 … 뒤에 명령이 그대로 적혀 있다)') +
-         cmd('pnpm agent --resume loop-1-1791371799518', '② 켜기: 내 화면의 번호로') +
+    cols(term(pick('12a_approve_killed.txt', [r'^\[SETUP \] 멈춰도', r'^\[HUMAN \] 종합'], limit=2, w=100) + ['         │ y(출격) / w(감시 강화) / n(무시) > ^C   ← 답 안 하고 Ctrl+C'], 'tiny') +
+         small('① 끄기: 질문 화면에서 끈다. 질문 바로 위 SETUP 줄에 이어가는 명령이 그대로 적혀 있다 — 7단계를 채운 뒤에만 나오는 줄') +
+         cmd('pnpm agent --resume loop-1-1792592796718', '② 켜기: 내 화면의 번호로') +
          term(pick('12b_approve_resume.txt', [r'^\[SETUP \] 이어가기', r'^\[HUMAN \] 종합', r'\[HUMAN \] 답', r'^\[DECIDE'], limit=4, w=100), 'tiny') +
          small('③ 이어짐: search_docs · askRadar · Jev 줄이 <b>없다</b> = 다시 수집하지 않았다. 같은 질문이 바로 뜨고, 답하면 끝까지 간다'),
          code(['.compile({ checkpointer:              // 어제 MemorySaver 자리',
@@ -379,7 +381,7 @@ add(3, '껐다 켜면?',
                'const threadId = resumeId ?? `loop-${round}-${Date.now()}`;',
                'if (!resumeId) await run(input);   // 이어가기면 START 부터 안 감'], w=66, file='labs/agent/main.ts · 바뀐 건 이 세 줄') +
          bullets(['<code>MemorySaver</code>(메모리) → <code>SqliteSaver</code>(파일). 단계가 끝날 때마다 칠판 전체가 파일에 남는다',
-                  '실행번호 = <code>thread_id</code>. 같은 번호로 켜면 LangGraph 가 파일에서 멈춘 줄을 찾아 <code>interrupt()</code> 자리로 돌아간다',
+                  '실행번호 = <code>thread_id</code> (SETUP 줄에도 있다). 같은 번호로 켜면 LangGraph 가 파일에서 멈춘 줄을 찾아 <code>interrupt()</code> 자리로 돌아간다',
                   'Subagent 안 askHuman 에서 멈춰도 같다 (부모 번호 아래 저장). SQL 은 한 줄도 안 썼다 — 파일 속은 다음 장']), ratio='r64'), 'cmd')
 add(3, '파일 안에는 뭐가 남나?',
     cols('<figure class="shot"><img src="captures/checkpoint.png" alt="checkpoints.sqlite 의 checkpoints 테이블"><figcaption>checkpoints 테이블을 IDE 의 DB 보기로 연 화면 — 한 줄이 superstep 하나. 실행 35번에 463줄</figcaption></figure>',

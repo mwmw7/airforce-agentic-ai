@@ -107,9 +107,9 @@
 - 키 없는 자리는 `JEV_MODE=local` (정규식 규칙이 Jev 자리를 대신, 태그가 `[JEV   ] [local]`). 문장을 안 읽으니 질문 바꾸기 실험은 강사 화면에서만
 
 **11:30 7단계 · 사람의 답으로 이어가기 (15분) — 슬라이드 31 ~ 34**
-- 같이 칠 것: `main.ts` TODO 7 → `await run(new Command({ resume: await askPerson(question) }))`, `pnpm agent`
+- 같이 칠 것: `main.ts` TODO 7 → `log("setup", `멈춰도 된다 — pnpm agent --resume ${threadId} …`)` + `await run(new Command({ resume: await askPerson(question) }))`, `pnpm agent`. 안내 줄이 정답 안에 있는 이유: 7단계 전엔 `--resume` 해도 답 직후 끝나므로 (빈칸 상태의 STOP 줄이 그렇게 말한다)
 - 성공 화면: STOP 줄이 사라지고 **처음으로 `[WRITE ] 보고서 저장 reports/loop-1-….md (모델 이름)` 가 나온 뒤** `[DECIDE] 출격 — 사람이 결정  ← Jev scramble 65% + 코드 규칙` → "사람이 결정해야 보고서가 써집니다. 오후에 다시 봅니다."
-- 슬라이드 33 시연: 질문 화면에서 Ctrl+C → `[SETUP ]` 줄의 실행번호(`loop-1-…`) 복사 → `pnpm agent --resume <번호>` → `[SETUP ] 이어가기 — 실행번호 loop-1-… 의 멈춘 곳부터` 뒤에 같은 질문에서 이어짐
+- 슬라이드 33 시연: 질문 화면에서 Ctrl+C → 질문 바로 위 `[SETUP ] 멈춰도 된다 — pnpm agent --resume loop-1-… 로 여기부터 이어간다` 줄의 명령을 복사 → `pnpm agent --resume <번호>` → `[SETUP ] 이어가기 — 실행번호 loop-1-… 의 멈춘 곳부터` 뒤에 같은 질문에서 이어짐
 - 슬라이드 34 (파일 안에는 뭐가 남나): `checkpoints.sqlite` 를 IDE DB 보기로 연 캡처. thread_id = 실행번호, checkpoint_ns 가 askRadar:… 면 Subagent 줄. "SQL 은 우리가 한 줄도 안 썼다" 한 마디, 30초
 - 말할 것: "체크포인트(SqliteSaver)가 단계마다 `checkpoints.sqlite` 에 저장합니다. SQL 은 한 줄도 안 썼습니다."
 
@@ -184,7 +184,8 @@
 | `pnpm: command not found` | Node 만 있음 | `corepack enable` 후 다시. 안 되면 Codespaces |
 | 4단계 "날씨 없이 계속" 만 나옴 | MCP 서버를 안 켰거나 같은 터미널에서 켬 | 터미널 두 개: 1 `pnpm mcp:weather`, 2 `pnpm agent` |
 | 4단계 `날씨 서버 연결 OK — 도구 0개` | TODO 4-1(서버 등록)을 안 채움 | 서버 터미널 Ctrl+C 후 다시 `pnpm mcp:weather` (서버 코드를 고치면 재시작) |
-| 7단계 `--resume` 이 `저장 기록이 없습니다 (checkpoints.sqlite)` | 실행번호를 잘못 복사 | `[SETUP ]` 줄 `loop-1-…` 전체를 복사 |
+| 7단계 `--resume` 이 `저장 기록이 없습니다 (checkpoints.sqlite)` | 실행번호를 잘못 복사 | 질문 위 `[SETUP ] 멈춰도 된다 …` 줄의 `loop-1-…` 전체를 복사 |
+| 7단계 전에 `--resume` 했더니 답 받고 끝남 | TODO 7 이 비어 있음 | 정상. STOP 줄의 `(--resume 도 7단계를 채운 뒤부터)` 를 읽어 준다 |
 | 8단계 두 번째에도 "같은 사례 없음" | 8-2(남기기)를 안 채웠거나 보고 번호가 다름 | 같은 `pnpm agent 2` 두 번. 사이에 답을 꼭 고른다 |
 | 402 / 잔액 부족 | 조별 키 지출 상한 도달 또는 계정 Credits 0 | 강사가 상한·잔액을 올리거나 `LLM_MODE=mock` 으로 계속 |
 | 모델이 너무 느림 | OpenRouter 혼잡 | `LLM_MODE=mock` 로 흐름만 보고, 강사 화면으로 결과 비교 |
