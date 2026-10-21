@@ -268,7 +268,7 @@ if (process.argv[1]?.endsWith("main.ts")) {
     console.log(dim("\n" + "─".repeat(72)));
     log("report", bold(report));
     log("setup", `모델 ${LLM_MODE === "mock" ? "mock" : `${LLM_MODEL} (${LLM_MODE})`} · Jev ${JEV_MODE} · 기억 ${MEMORY_MODE}`, [
-      dim(`모델 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 · 실행번호 ${threadId} (멈추면 pnpm agent --resume ${threadId})`),
+      dim(`모델 한 번 ${LLM_TIMEOUT_SEC}초 · 실행 전체 ${RUN_TIMEOUT_SEC}초 · 최대 ${MAX_STEPS}회 · 실행번호 ${threadId}`),
     ]);
     send("run_start", { round, report });
     resetRadar(); // 보고마다 레이더 화면을 새로 짓는다
@@ -296,8 +296,9 @@ if (process.argv[1]?.endsWith("main.ts")) {
         //   · 그래서 Ctrl+C 로 껐다가 pnpm agent --resume <실행번호> 로 켜도 같은 줄에서 이어진다
         // ----- SOLUTION -----
         //! const answer = await askPerson(question);
-        //! log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7`);
+        //! log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7 (--resume 도 7단계를 채운 뒤부터)`);
         //! break; // ← 이대로면 답을 받고도 이어가지 않습니다
+        log("setup", `멈춰도 된다 — pnpm agent --resume ${threadId} 로 여기부터 이어간다`); // 이어갈 수 있게 된 뒤에만 안내
         await run(new Command({ resume: await askPerson(question) }));
         // ----- END SOLUTION -----
       }
