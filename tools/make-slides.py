@@ -97,8 +97,13 @@ def diff(todo, part=0, w=74):
         if not s: continue
         out.append('<span class="add">+ ' + html.escape(cut(s, w)) + '</span>')
     return snip(label, '<pre class="diff">' + ''.join(out) + '</pre>')
-def diff_raw(before, after, file=''):
-    out = ['<span class="del">- ' + html.escape(cut(l, 74)) + '</span>' for l in before] + ['<span class="add">+ ' + html.escape(cut(l, 74)) + '</span>' for l in after]
+def diff_ctx(lines, file='', w=74):
+    """앞뒤 문맥이 있는 diff: (' ' | '-' | '+', 줄) 목록. 문맥 줄은 회색, 지울 줄 빨강, 넣을 줄 초록"""
+    cls = {' ': 'ctx', '-': 'del', '+': 'add'}
+    out = [f'<span class="{cls[k]}">{k} ' + html.escape(cut(l, w)) + '</span>' for k, l in lines]
+    return snip(file, '<pre class="diff">' + ''.join(out) + '</pre>')
+def diff_raw(before, after, file='', w=74):
+    out = ['<span class="del">- ' + html.escape(cut(l, w)) + '</span>' for l in before] + ['<span class="add">+ ' + html.escape(cut(l, w)) + '</span>' for l in after]
     return snip(file, '<pre class="diff">' + ''.join(out) + '</pre>')
 def cmd(c, note=''):
     return (f'<div class="cmd"><span class="prompt">$</span> <span class="c">{html.escape(c)}</span>' + (f'<span class="note">{html.escape(note)}</span>' if note else '')
@@ -115,25 +120,21 @@ def bullets(items): return '<ul class="list">' + ''.join(f'<li>{i}</li>' for i i
 def small(t): return f'<p class="small">{t}</p>'
 
 BLOCKS = ['오프닝', '1교시 · Subagent 와 도구 (단계 1 · 2)', '2교시 · 자료 · MCP · 동시 (단계 3 · 4 · 5)', '3교시 · 판정 · 사람 · 기억 (단계 6 · 7 · 8)', '운영']
-slides = []  # (block, title, body_html, kind)
-def add(block, title, body, kind='text'): slides.append((block, title, body, kind))
+slides = []  # (block, title, body_html, kind, step)
+LAST_STEP = 8          # 핸즈온 단계 0 ~ 8. 푸터 게이지가 "지금 몇 단계 · 남은 몇" 을 그린다
+step_now = None        # 아직 단계 표지 전(오프닝)이면 None → 게이지 없음
+def add(block, title, body, kind='text'):
+    slides.append((block, title, body, kind, LAST_STEP + 1 if block == 4 else step_now))  # 운영 블록 = 전부 끝
 def step_tag(n, title): return f'<span class="amber">{n}단계</span> · {title}'
 def cover(block, n, title, what, where, shows, concept, day1=''):
     """단계 표지: pnpm step N 한 줄 + 같이 붙이는 것 · 파일 · 화면 · 개념. 1일차에서 가져오는 것은 day1 에"""
     rows = [['같이 붙이는 것', what], ['파일 (TODO)', where], ['화면에 생기는 것', shows], ['개념', concept]]
     if day1: rows.append(['1일차에서', day1])
+    global step_now; step_now = n
     c = cmd(f'pnpm step {n}', '늦었으면 이걸로 따라잡기 — 1 ~ ' + f'{n - 1} 은 정답, {n} 부터 내 차례' if n > 1 else '처음 상태 — 1 ~ 8 전부 빈칸') if n else cmd('pnpm agent', '빈칸이 전부 비어 있어도 끝까지 돈다 (= pnpm step 1 상태)')
     add(block, step_tag(n, title), c + table(['', ''], rows, 'plain meta'), 'cover')
 
 # ───────── 0. 오프닝 ─────────
-add(0, '보고 한 줄이 들어오면, 수집하고, 기억하고, 판정하고, 사람이 결정한다',
-    mermaid(MERMAID) +
-    cols(bullets(['규정집 Worker 와 레이더 Subagent 가 <b>동시에</b> 자료를 모은다',
-                  '전에 같은 보고를 판단했으면 기억이 답한다 (Jev 생략)',
-                  '없으면 Jev 가 출격 / 감시 / 무시 의견을 낸다']),
-         bullets(['마지막 버튼은 언제나 사람이 누른다',
-                  '오늘 이 그래프를 <b>거의 빈 Agent 에서 8단계로</b> 같이 붙여 완성한다',
-                  '점선은 조건에 따라 갈리는 선, 실선은 항상 가는 선'])), 'fig')
 add(0, '소개', '''
 <div class="intro">
   <div class="name">최호섭</div>
@@ -145,20 +146,29 @@ add(0, '소개', '''
   </table>
   <div class="mail">branden@tooning.io</div>
 </div>''', 'text')
+add(0, '보고 한 줄이 들어오면, 수집하고, 기억하고, 판정하고, 사람이 결정한다',
+    mermaid(MERMAID) +
+    cols(bullets(['규정집 Worker 와 레이더 Subagent 가 <b>동시에</b> 자료를 모은다',
+                  '전에 같은 보고를 판단했으면 기억이 답한다 (Jev 생략)',
+                  '없으면 Jev 가 출격 / 감시 / 무시 의견을 낸다']),
+         bullets(['마지막 버튼은 언제나 사람이 누른다',
+                  '오늘 이 그래프를 <b>거의 빈 Agent 에서 8단계로</b> 같이 붙여 완성한다',
+                  '점선은 조건에 따라 갈리는 선, 실선은 항상 가는 선'])), 'fig')
 add(0, '시작은 링크 하나: Codespaces 에서 hands-on 브랜치 열기',
     cols('<figure class="shot"><img src="captures/codespace_start.png" alt="Codespaces 만들기 화면"><figcaption>링크를 열면 보이는 화면 — 저장소 · 브랜치 hands-on · 2-core 가 미리 골라져 있다. 초록 단추만 누른다</figcaption></figure>',
+         '<figure class="qr"><img src="captures/codespace_qr.png" alt="Codespaces 링크 QR"><figcaption>폰으로 찍어도 같은 링크</figcaption></figure>' +
          cmd('https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on', 'GitHub 로그인만 있으면 된다') +
          bullets(['브랜치가 <b>hands-on</b> 인지 확인하고 <b>Create codespace</b>',
                   '브라우저에 VS Code 가 뜨면 설치 · .env · 환경 점검이 <b>자동으로</b> 끝난다 (<code>.devcontainer/</code>). "준비 끝" 이 보이면 <code>pnpm agent</code>',
                   '개인 계정은 달마다 2-core 60시간이 무료. 이틀 교육은 10시간이면 끝',
                   '30분 안 쓰면 자동으로 멈춘다. 다시 열면 그 자리부터 (점심 뒤)',
-                  '노트북에 직접 하고 싶으면 다음 장의 <code>git clone</code>']) +
+                  'Codespaces 를 못 쓰면 README <b>1-3</b> 대로 노트북에 직접 설치 (clone · install · setup:check). 그 뒤는 똑같다']) +
          small('fork 는 안 해도 된다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생긴다'), ratio='r64'), 'cmd')
 add(0, '오늘의 규칙: 같이 하나씩 붙이고, 매번 다시 돌린다',
-    cols(cmd('git clone -b hands-on https://github.com/mwmw7/airforce-agentic-ai', '노트북이면. Codespaces 는 앞 장') + cmd('pnpm install && pnpm setup:check', '.env 는 알아서 만들어 준다') + cmd('pnpm agent', '빈칸이 비어 있어도 끝까지 돈다') +
+    cols(cmd('pnpm agent', '"준비 끝" 이 보이면 이것 하나. 빈칸이 비어 있어도 끝까지 돈다') +
          bullets(['문제는 <b>TODO 1 ~ 8</b>. 단계 번호 = TODO 번호. 파일 안에서 <code>// ===== TODO n</code> 을 찾는다',
                   '강사가 화면에서 치면 같이 친다. 채운 뒤 <code>pnpm agent</code> → 화면에 새 줄이 생긴다',
-                  '키가 하나도 없어도 mock 모드로 전부 돈다']),
+                  '키가 하나도 없어도 mock 모드로 전부 돈다. 설치 · <code>.env</code> · 점검은 Codespaces 가 이미 끝냈다']),
          table(['늦었으면', '상태'],
                [['<code>pnpm step 1</code>', '1 ~ 8 전부 남음 (처음 상태)'],
                 ['<code>pnpm step 4</code>', '1 ~ 3 풀림, 4번을 풀 차례'],
@@ -207,6 +217,14 @@ add(1, '1단계 전후 — 그래프에서 무엇이 바뀌었나?',
     bullets(['바뀐 건 노드 <b>하나의 속</b>. 바깥 선(searchDocs → askRadar → remember)은 그대로다',
              '오늘 그래프 모양이 바뀌는 건 두 번뿐: 지금(1단계, 노드)과 5단계(선). 나머지 단계는 노드 안의 코드만 채운다',
              '그림 다시 뽑기: <code>pnpm see:steps</code> → <code>docs/graphs/step-*.md</code>']), 'fig')
+add(1, '왜 나누나?',
+    table(['이점', '하나의 루프였을 때', 'Subagent 로 나누면', '어디서 보이나'],
+          [['작업 기록이 부모에 안 남는다', '레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감', '20줄은 Subagent State 에만. 부모엔 facts 3줄 + evidence', '<code>--watch</code>: remember 입력에 messages 가 없다'],
+           ['Subagent 가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', 'Subagent 만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
+           ['Subagent 단위로 갈아 끼운다', '루프 · 판정 · 승인이 한 파일에', '모델 · 키 · 도구를 Subagent 만 바꾸거나 옆에 하나 더', '다음 단계'],
+           ['속도', '—', '<b>5단계에서 동시로 바꿔도 지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + 원격 모델일 때']]) +
+    small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, State 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
+
 add(1, '모델이 늦으면?',
     cols(term(pick('06_slow.txt', [r'^┃ \[LLM', r'^┃ \[HUMAN', r'^\[SUB   \] ┗', r'^\[HUMAN', r'^\[DECIDE'], limit=8)) + cmd('LLM_MOCK_SLOW=1 pnpm agent 4'),
          bullets(['한 번 호출이 <code>LLM_TIMEOUT_SEC</code> 를 넘으면 끊는다',
@@ -240,6 +258,18 @@ add(2, step_tag(3, '규정 한 줄에 점수 매기기'),
          term(pick('07_mcp_off.txt', [r'^\[TOOL  \] search_docs', r'^\s+│ \d+\. '], limit=4)) +
          term(pick('07_mcp_off.txt', [r'^\s+│ 관련 규정$', r'^\s+│\s+· \d+\. '], limit=4)) +
          ok('담당자 화면 <b>관련 규정</b> 에 풍선 규정이 올라온다. 점수가 전부 0 이면 "관련 규정 없음"')), 'diff')
+add(2, 'Worker 와 Subagent 는 뭐가 다른가?',
+    cols(table(['', 'Worker', 'Subagent'],
+               [['하는 일', '정해진 일 하나', '목표 하나를 받아 알아서 끝냄'],
+                ['모델 호출', '없음', '있음, 반복 (도구를 고르고 또 고름)'],
+                ['실행 횟수', '항상 같음', '상황마다 다름'],
+                ['코드 모양', '함수 하나', '그래프 하나 (agent ⇄ tools)'],
+                ['우리 코드', 'searchDocs (3단계)', 'askRadar (1단계)']]),
+         bullets(['복사기와 인턴. 복사기는 몇 장 나올지 미리 알고, 인턴은 몇 번 왔다 갔다 할지 자기가 정한다',
+                  '<b>LangGraph 에겐 둘 다 노드 하나다.</b> 안에 모델 루프가 있으면 우리가 Subagent 라고 부를 뿐',
+                  '선 잇기 · 체크포인트 · interrupt 코드는 둘이 완전히 같다']) +
+         code(['.addNode("searchDocs", searchDocsNode)   // 함수',
+               '.addNode("askRadar",   radarAgent)       // compile() 된 그래프'], file='labs/agent/main.ts')), 'table')
 cover(2, 4, '날씨를 MCP 로', '서버에 <code>registerTool</code>(4-1) · 클라이언트에서 목록 받고 실행(4-2)', '<code>mcp-servers/weather/server.ts</code> (4-1) · <code>mcp.ts</code> (4-2)', '날씨 줄 (<code>pnpm mcp:weather</code> 켠 채). 끄면 "날씨 없이 계속"', 'MCP — 도구를 다른 프로세스에')
 add(2, '도구를 다른 프로세스에 두면?',
     cols(mermaid('''flowchart LR
@@ -267,26 +297,6 @@ add(2, '서버를 끄면?',
                   '외부 의존이 죽어도 Agent 가 사는 것은 코드로 정해 둔 일이다',
                   '어디서 그렇게 했나: <code>labs/agent/mcp.ts</code> 의 <code>connectMcp</code> 가 null 을 돌려준다'])), 'cmd')
 cover(2, 5, '순차를 동시로', '<code>START → 둘</code>, <code>[둘] → remember</code> 세 줄', '<code>main.ts</code> (TODO 5)', '<code>--watch</code> 에서 searchDocs · askRadar 가 같이 시작', 'Task Decomposition · 병렬', '① addEdge · ② 같은 단계에서 두 노드가 쓰면 (reducer)')
-add(2, 'LangGraph 사용자가 가장 많이 쓰는 그래프 다섯 가지',
-    table(['패턴', '모양', '한 줄 비유', '우리 코드'],
-          [['Tool-calling 루프 (ReAct)', 'agent ⇄ tools 왕복', '혼자 일하는 직원', '있음 — ask-radar.ts (1단계)'],
-           ['Supervisor', '감독 모델이 Subagent 여럿 중 누구에게 넘길지 고름', '팀장이 팀원을 지명', '없음 — 다음 단계'],
-           ['Orchestrator–Workers', '일을 쪼개 동시에 뿌리고 합침', '팀장이 일을 쪼개 동시에 배분', '있음 — main.ts (5단계)'],
-           ['Router', '입력 보고 갈림길 하나, 루프 없음', '안내 데스크', 'route 함수가 축소판'],
-           ['Evaluator–Optimizer', '만들기 → 평가 → 다시 만들기', '퇴고하는 작가', '<span class="amber">실제 사례 시연: 3D 이펙트 생성 → 렌더 → 평가 → 재생성</span>']]) +
-    small('interrupt 로 사람이 끼어드는 것은 패턴이 아니라 어느 패턴에나 끼우는 공통 부품이다. LangChain 이 권하는 순서: ReAct 하나로 시작하고, 도구가 열 개를 넘거나 역할이 갈리면 쪼개라'), 'table')
-add(2, 'Worker 와 Subagent 는 뭐가 다른가?',
-    cols(table(['', 'Worker', 'Subagent'],
-               [['하는 일', '정해진 일 하나', '목표 하나를 받아 알아서 끝냄'],
-                ['모델 호출', '없음', '있음, 반복 (도구를 고르고 또 고름)'],
-                ['실행 횟수', '항상 같음', '상황마다 다름'],
-                ['코드 모양', '함수 하나', '그래프 하나 (agent ⇄ tools)'],
-                ['우리 코드', 'searchDocs (3단계)', 'askRadar (1단계)']]),
-         bullets(['복사기와 인턴. 복사기는 몇 장 나올지 미리 알고, 인턴은 몇 번 왔다 갔다 할지 자기가 정한다',
-                  '<b>LangGraph 에겐 둘 다 노드 하나다.</b> 안에 모델 루프가 있으면 우리가 Subagent 라고 부를 뿐',
-                  '선 잇기 · 체크포인트 · interrupt 코드는 둘이 완전히 같다']) +
-         code(['.addNode("searchDocs", searchDocsNode)   // 함수',
-               '.addNode("askRadar",   radarAgent)       // compile() 된 그래프'], file='labs/agent/main.ts')), 'table')
 add(2, step_tag(5, '순차를 동시로'),
     cols(diff('TODO 5') + cmd('pnpm agent 1 --watch') +
          small('LangGraph 는 한 단계의 노드가 전부 끝나야 다음으로 간다. 배열로 묶으면 "둘 다 끝나야" 가 코드에 보이고, 가지 길이가 달라도 안전하다'),
@@ -299,14 +309,6 @@ add(2, '5단계 전후 — 그래프에서 무엇이 바뀌었나?',
          mermaid(G6) + small('채운 뒤 (<code>pnpm step 6</code>): <span class="amber">START 에서 둘로 갈라졌다가 remember 에서 합류</span>')) +
     bullets(['노드는 하나도 안 늘었다. 코드 세 줄을 바꿨고, 그림에선 <b>searchDocs → askRadar 선이 빠지고 앰버 선 두 개가 생겼다</b>',
              '1단계는 노드 속을, 5단계는 노드 사이의 선을 바꿨다. 오늘 그래프 모양이 바뀌는 건 이 두 번이 전부다']), 'fig')
-add(2, '왜 나누나?',
-    table(['이점', '하나의 루프였을 때', 'Subagent 로 나누면', '어디서 보이나'],
-          [['작업 기록이 부모에 안 남는다', '레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감', '20줄은 Subagent State 에만. 부모엔 facts 3줄 + evidence', '<code>--watch</code>: remember 입력에 messages 가 없다'],
-           ['Subagent 가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', 'Subagent 만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
-           ['Subagent 단위로 갈아 끼운다', '루프 · 판정 · 승인이 한 파일에', '모델 · 키 · 도구를 Subagent 만 바꾸거나 옆에 하나 더', '다음 단계'],
-           ['속도', '—', '<b>지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + 원격 모델일 때']]) +
-    small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, State 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
-
 # ───────── 3. 단계 6 · 7 · 8 ─────────
 cover(3, 6, 'Jev 에게 묻기', '<code>askJev(단서, QUESTIONS)</code> 한 줄 — 출격/감시/무시 · 위험도 · 정체불명', '<code>main.ts</code> (TODO 6)', 'Jev 판정 줄 (확신도 · 위험도 · 정체불명)', '판정 모델 — 의견은 Jev, 규칙은 코드')
 add(3, 'LLM 말고 Jev 를 쓰면?',
@@ -329,31 +331,56 @@ add(3, step_tag(6, 'Jev 에게 묻기'),
          term(pick('10_all_typesafe.txt', [], start=r'^\[JEV   \] \[typesafe\]', stop=r'^\[RULE', limit=16, w=96), 'tiny') +
          ok('<code>[JEV]</code> 막대 세 개와 <code>[RULE]</code> 줄이 찍히고, 담당자 화면 <b>Jev 판정</b> 에 확신도 · 위험도 · 정체불명')), 'diff')
 add(3, '판정 화면 읽기 · 질문 한 줄이 결과를 바꾼다',
-    cols(bullets(['① action: 셋 중 하나를 고르고 확률을 나란히 준다. 확신(confidence)은 1등과 2등의 차이',
-                  '② danger: 0 ~ 3 점수. 기준 문장 4개를 우리가 적었다',
-                  '③ unknown: 예 / 아니오 확률',
-                  '<code>[RULE]</code> 줄이 코드 규칙이다: 확신 20% 미만이면 사람에게, scramble 이면 출격 준비, watch 인데 정체불명 50% 이상이면 정체부터']),
-         diff_raw(['instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다",'], ['instructions: "더 알아봐야 해?",'], file='labs/agent/main.ts') + cmd('pnpm agent 1', 'UFO') + cmd('pnpm agent 4', '훈련기') +
-         small('해 보기: noul 문장을 모호하게 바꾸면 어느 보고든 70 ~ 80% 가 나온다. 좁혀 쓰면 UFO 75% 근처, 훈련기 10% 이하로 갈린다 (실제 Jev 키가 있어야 차이가 난다)')), 'cmd')
-add(3, 'JEV_MODE 를 바꾸면?',
-    term(pick('09_all_local.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=local — Jev 자리를 정규식 규칙이 대신. 정체불명 보고는 전부 scramble 로 기운다') +
-    term(pick('10_all_typesafe.txt', [r'^[┌│└├]'], limit=9, w=150), 'tiny') + small('JEV_MODE=typesafe — 실제 Jev. 보고마다 의견과 확신이 다르다. 훈련기는 ignore 97%') +
-    cols(cmd('JEV_MODE=local pnpm agent --all --answer w'), cmd('JEV_MODE=typesafe pnpm agent --all --answer w')), 'cmd')
+    bullets(['① action: 셋 중 하나를 고르고 확률을 나란히 준다. 확신(confidence)은 1등과 2등의 차이 · ② danger: 0 ~ 3 점수, 기준 문장 4개를 우리가 적었다 · ③ unknown: 예 / 아니오 확률',
+             '<code>[RULE]</code> 줄이 코드 규칙이다: 확신 20% 미만이면 사람에게, scramble 이면 출격 준비, watch 인데 정체불명 50% 이상이면 정체부터']) +
+    code(['const QUESTIONS = {',
+          '  action:  { type: "choice", instructions: "report 와 facts 를 보고 관제실이 지금 뭘 해야 할까?",',
+          '                             criteria: { scramble: "위험해 보인다 …", watch: "좀 수상하지만 …", ignore: "별일 아니다 …" } },',
+          '  danger:  { type: "score",  instructions: "얼마나 위험해 보이나?", criteria: DANGER },',
+          '  unknown: { type: "noul",   instructions: "정체가 무엇인지 전혀 짐작이 안 가서 정체부터 알아내야 한다",',
+          '                             criteria: { true: "정체를 모른다", false: "무엇인지 대략 안다" } },',
+          '};'], w=160, file='labs/agent/main.ts · QUESTIONS (세 질문이 전부 여기)') +
+    cols(cmd('pnpm agent 1', 'UFO — ③ unknown 이 몇 % 인가'), cmd('pnpm agent 4', '훈련기 — 같은 질문, 다른 보고')) +
+    small('해 보기: unknown 의 instructions 를 "더 알아봐야 해?" 처럼 모호하게 바꾸고 둘 다 다시 돌린다. ③ 의 % 가 두 보고에서 갈리면 질문이 일을 한 것이다. 끝나면 원래 문장으로 되돌린다 (실제 Jev 키가 있어야 차이가 난다. JEV_MODE=local 은 문장을 안 읽는다)'), 'cmd')
 cover(3, 7, '사람의 답으로 이어가기', '<code>Command({ resume: 답 })</code> 으로 같은 thread 다시 invoke', '<code>main.ts</code> (TODO 7)', '"사람이 결정". Ctrl+C 뒤 <code>pnpm agent --resume &lt;번호&gt;</code>', 'HITL · Checkpoint', '③ interrupt · Command resume · thread_id 그대로. MemorySaver 만 SqliteSaver 로')
 add(3, step_tag(7, '사람의 답으로 멈춘 곳부터 이어가기'),
-    cols(diff('TODO 7') + cmd('pnpm agent') +
-         bullets(['같은 <code>thread_id</code> 로 다시 돌리면 LangGraph 가 멈춘 자리를 찾는다',
-                  '답은 <code>interrupt()</code> 의 반환값으로 들어간다. 노드 함수는 처음부터 다시 돌지만 그 줄에서 답을 받는다']),
-         term(pick('00_step1_blank.txt', [r'^\[HUMAN \] 답', r'^\[STOP', r'^\[DECIDE'], limit=3)) + small('채우기 전: 답을 받고도 끝난다') +
-         term(pick('14_flight_plan.txt', [r'^\[HUMAN \] 답', r'^\[DECIDE'], limit=2)) + small('채운 뒤: 같은 줄에서 이어져 사람의 결정으로') +
-         ok('<code>[DECIDE] … — 사람이 결정</code>')), 'diff')
+    bullets(['<code>interrupt()</code> 는 그래프를 <b>멈추고 저장만</b> 한다. 답을 넣어 <b>다시 돌리는 건 그래프 밖 반복문</b>의 일이다 — 그 한 줄이 TODO 7']) +
+    cols(diff_ctx([(' ', 'async function runWithHuman() {'),
+                   (' ', '  if (!resumeId) await run(input);            // 처음이면 START 부터, --resume 이면 생략'),
+                   (' ', '  for (;;) {'),
+                   (' ', '    // 그래프가 interrupt() 에서 멈춰 있나? 멈췄으면 질문이 tasks 에 들어 있다'),
+                   (' ', '    const stopped = await graph.getState(config);'),
+                   (' ', '    const question = stopped.tasks.flatMap((t) => t.interrupts ?? [])[0]?.value;'),
+                   (' ', '    if (!question) break;                       // 질문이 없다 = 끝까지 돌았다'),
+                   (' ', '    // ===== TODO 7 ====='),
+                   ('-', '    const answer = await askPerson(question);'),
+                   ('-', '    log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다 — TODO 7`);'),
+                   ('-', '    break;                                      // 답만 받고 끝'),
+                   ('+', '    // 같은 thread_id 로 다시 돌린다 → 멈춘 줄에서 답을 받고 이어진다'),
+                   ('+', '    await run(new Command({ resume: await askPerson(question) }));'),
+                   (' ', '  }'),
+                   (' ', '}')], file='labs/agent/main.ts · TODO 7 (그래프 밖 실행 반복문)', w=96) + cmd('pnpm agent'),
+         bullets(['① <b>멈춤</b> — <code>approve</code> 안의 <code>interrupt()</code> 가 그래프를 멈추고 칠판을 <code>checkpoints.sqlite</code> 에 저장한다',
+                  '② <b>묻기</b> — 바깥 반복문이 "멈춰 있나?" 를 보고 <code>askPerson</code> 으로 답을 받는다',
+                  '③ <b>이어가기 (빈칸)</b> — 같은 <code>thread_id</code> 로 <code>Command({ resume: 답 })</code>. <code>approve</code> 는 처음부터 다시 돌지만 <code>interrupt()</code> 가 이번엔 답을 돌려줘서 그 줄부터 계속']) +
+         term(pick('00_step1_blank.txt', [r'^\[HUMAN \] 답', r'^\[STOP'], limit=2)) + small('채우기 전: 답은 받았는데 그래프를 다시 돌리지 않아 여기서 끝') +
+         term(pick('14_flight_plan.txt', [r'^\[HUMAN \] 답', r'^\[DECIDE'], limit=2)) + small('채운 뒤: approve 가 그 답으로 결정을 쓰고 끝까지 간다') +
+         ok('<code>[DECIDE] … — 사람이 결정</code>'), ratio='r64'), 'diff')
 add(3, '껐다 켜면?',
-    cols(term(pick('12a_approve_killed.txt', [r'^\[SETUP', r'^\s+│ 모델 한 번', r'^\[HUMAN \] 종합'], limit=3) + ['^C  (담당자 확인 중 Ctrl+C)']) + small('멈춘 실행번호가 SETUP 줄에 있다'),
-         term(pick('12b_approve_resume.txt', [r'^\[SETUP', r'^\[HUMAN', r'^\[DECIDE'], limit=4)) + small('--resume: 처음부터 돌리지 않고 같은 질문에서 이어진다')) +
-    cmd('pnpm agent --resume loop-1-1791371799518') +
-    bullets(['어제 ③ 의 <code>MemorySaver</code> 를 <code>SqliteSaver</code> 로 바꾼 것뿐. 단계마다 <code>checkpoints.sqlite</code> 에 State 가 남는다',
-             'Subagent 안 askHuman 에서 멈춰도 같다 — Subagent 의 체크포인트도 부모 실행번호 아래 저장된다',
-             '직접 쓴 SQL 은 한 줄도 없다. 파일 하나를 지우면 처음부터']), 'cmd')
+    bullets(['멈춘 자리는 메모리가 아니라 <b>파일</b>(<code>checkpoints.sqlite</code>)에 있다. 프로세스를 죽여도 파일은 남는다 → <b>같은 실행번호로 켜면 그 자리부터</b>']) +
+    cols(term(pick('12a_approve_killed.txt', [r'^\[SETUP \] 모델', r'실행번호 loop', r'^\[HUMAN \] 종합'], limit=3, w=100) + ['         │ y(출격) / w(감시 강화) / n(무시) > ^C   ← 답 안 하고 Ctrl+C'], 'tiny') +
+         small('① 끄기: 질문 화면에서 끈다. 실행번호는 SETUP 줄에 있다 (멈추면 … 뒤에 명령이 그대로 적혀 있다)') +
+         cmd('pnpm agent --resume loop-1-1791371799518', '② 켜기: 내 화면의 번호로') +
+         term(pick('12b_approve_resume.txt', [r'^\[SETUP \] 이어가기', r'^\[HUMAN \] 종합', r'\[HUMAN \] 답', r'^\[DECIDE'], limit=4, w=100), 'tiny') +
+         small('③ 이어짐: search_docs · askRadar · Jev 줄이 <b>없다</b> = 다시 수집하지 않았다. 같은 질문이 바로 뜨고, 답하면 끝까지 간다'),
+         code(['.compile({ checkpointer:              // 어제 MemorySaver 자리',
+               '  SqliteSaver.fromConnString("checkpoints.sqlite") })',
+               '',
+               'const threadId = resumeId ?? `loop-${round}-${Date.now()}`;',
+               'if (!resumeId) await run(input);   // 이어가기면 START 부터 안 감'], w=66, file='labs/agent/main.ts · 바뀐 건 이 세 줄') +
+         bullets(['<code>MemorySaver</code>(메모리) → <code>SqliteSaver</code>(파일). 단계가 끝날 때마다 칠판 전체가 파일에 남는다',
+                  '실행번호 = <code>thread_id</code>. 같은 번호로 켜면 LangGraph 가 파일에서 멈춘 줄을 찾아 <code>interrupt()</code> 자리로 돌아간다',
+                  'Subagent 안 askHuman 에서 멈춰도 같다 (부모 번호 아래 저장). SQL 은 한 줄도 안 썼다 — 파일 속은 다음 장']), ratio='r64'), 'cmd')
 add(3, '파일 안에는 뭐가 남나?',
     cols('<figure class="shot"><img src="captures/checkpoint.png" alt="checkpoints.sqlite 의 checkpoints 테이블"><figcaption>checkpoints 테이블을 IDE 의 DB 보기로 연 화면 — 한 줄이 superstep 하나. 실행 35번에 463줄</figcaption></figure>',
          bullets(['테이블은 둘뿐 — <code>checkpoints</code>(단계마다 State 전체) · <code>writes</code>(노드가 칸에 쓴 값). 둘 다 SqliteSaver 가 만든다',
@@ -477,6 +504,14 @@ add(4, '실행 기록은 어디서 보나?',
                   '<code>pnpm see:studio</code> 는 같은 키로 LangGraph Studio 를 띄운다',
                   'Langfuse 로 보는 법은 14:30 정진태 특강에서']),
          '<div class="placeholder img">LangSmith 트리 캡처 자리<br/><span>run → searchDocs · askRadar(agent, tools …) · remember · judge · approve · writeReport</span></div>'), 'cmd')
+add(4, 'LangGraph 사용자가 가장 많이 쓰는 그래프 다섯 가지',
+    table(['패턴', '모양', '한 줄 비유', '우리 코드'],
+          [['Tool-calling 루프 (ReAct)', 'agent ⇄ tools 왕복', '혼자 일하는 직원', '있음 — ask-radar.ts (1단계)'],
+           ['Supervisor', '감독 모델이 Subagent 여럿 중 누구에게 넘길지 고름', '팀장이 팀원을 지명', '없음 — 다음 단계'],
+           ['Orchestrator–Workers', '일을 쪼개 동시에 뿌리고 합침', '팀장이 일을 쪼개 동시에 배분', '있음 — main.ts (5단계)'],
+           ['Router', '입력 보고 갈림길 하나, 루프 없음', '안내 데스크', 'route 함수가 축소판'],
+           ['Evaluator–Optimizer', '만들기 → 평가 → 다시 만들기', '퇴고하는 작가', '<span class="amber">실제 사례 시연: 배동환 CTO 의 Shader Agent — 생성 → 렌더 → 평가 → 재생성</span>']]) +
+    small('오늘 그래프 = ReAct (1단계) + Orchestrator–Workers (5단계) + interrupt (7단계). interrupt 로 사람이 끼어드는 것은 패턴이 아니라 어느 패턴에나 끼우는 공통 부품이다. LangChain 이 권하는 순서: ReAct 하나로 시작하고, 도구가 열 개를 넘거나 역할이 갈리면 쪼개라'), 'table')
 add(4, '오늘 만든 것과 요청 항목',
     table(['요청 항목', '오늘 코드', '단계'],
           [['Agent Loop · Planning · Tool Calling', 'ask-radar.ts agent ⇄ tools, 새 도구 look_flight_plan', '1 · 2'],
@@ -496,11 +531,17 @@ add(4, '오늘 만든 것과 요청 항목',
     '<a href="https://docs.google.com/presentation/d/15TWur3FoEh3LOYjRo4MU0xIS1G_zKfNKfi6kquwkwcE/edit?usp=sharing" target="_blank">타사 Shader Agent 예시 (Google Slides)</a></div>', 'table')
 
 # ───────── HTML ─────────
-def section(i, b, title, body, kind):
+def gauge(step):
+    if step is None: return ''
+    cells = ''.join(f'<i class="{"done" if k < step else "now" if k == step else ""}"></i>' for k in range(LAST_STEP + 1))
+    label = f'<b>{step}단계</b> · 남은 {LAST_STEP - step}' if step <= LAST_STEP else f'<b>{LAST_STEP}단계</b>까지 전부 끝'
+    return f'<span class="gauge">{cells}<span class="lbl">{label}</span></span>'
+
+def section(i, b, title, body, kind, step):
     return f'''<section class="slide k-{kind}" data-i="{i}" data-block="{b}">
   <h1>{title}</h1>
   <div class="body">{body}</div>
-  <footer><span class="blk b{b}">{html.escape(BLOCKS[b])}</span><span class="num">{i + 1} / {len(slides)}</span></footer>
+  <footer><span class="blk b{b}">{html.escape(BLOCKS[b])}</span>{gauge(step)}<span class="num">{i + 1} / {len(slides)}</span></footer>
 </section>'''
 
 CSS = r'''
@@ -524,6 +565,12 @@ h1{font-size:54px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;margin-
 .body{flex:1;min-height:0;font-size:27px;line-height:1.5;display:flex;flex-direction:column;gap:18px}
 .body > *{flex:0 0 auto}
 footer{display:flex;justify-content:space-between;font-size:19px;color:var(--muted);padding-top:16px;border-top:1px solid var(--line)}
+footer{align-items:center}
+footer .gauge{display:inline-flex;align-items:center;gap:5px}
+footer .gauge i{display:inline-block;width:26px;height:9px;border-radius:2px;border:1px solid var(--line)}
+footer .gauge i.done{background:var(--line);border-color:var(--line)}
+footer .gauge i.now{background:var(--amber);border-color:var(--amber)}
+footer .gauge .lbl{margin-left:12px}footer .gauge b{color:var(--amber);font-weight:600}
 footer .blk::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:10px;background:var(--amber)}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start;min-height:0}
 .cols.r64{grid-template-columns:1.5fr 1fr}
@@ -532,7 +579,7 @@ pre{font-family:"IBM Plex Mono",ui-monospace,monospace;background:var(--panel);b
 pre.tiny{font-size:16px}
 pre.code{color:#D5DBE3}
 .snip{display:flex;flex-direction:column}.snip .file{align-self:flex-start;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:14px;line-height:1;color:var(--amber);background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0;padding:7px 14px 6px}.snip pre{border-top-left-radius:0}
-pre.diff .del{color:#F08B8B;display:block}pre.diff .add{color:#8BE0A4;display:block}
+pre.diff .del{color:#F08B8B;display:block}pre.diff .add{color:#8BE0A4;display:block}pre.diff .ctx{color:#8C98A8;display:block}
 pre.term .tag{display:inline-block;color:#fff;padding:0 6px;border-radius:3px;font-weight:600}
 .t-report,.t-rule{color:#111 !important}
 .t-report{background:var(--t-report)}.t-setup{background:var(--t-setup)}.t-llm{background:var(--t-llm)}.t-tool{background:var(--t-tool)}.t-mcp{background:var(--t-mcp)}
@@ -562,6 +609,7 @@ table.tbl.plain td{border:none;padding:8px 18px 8px 0;font-size:26px}table.tbl.p
 .placeholder span{font-size:18px}.placeholder.img{min-height:420px;display:flex;flex-direction:column;justify-content:center}
 .placeholder.slot{text-align:left;padding:14px 18px;font-size:19px}
 .links{margin-top:14px;font-size:19px;color:var(--muted)}.links a{color:var(--amber);text-decoration:underline;text-underline-offset:4px}
+figure.qr{display:flex;align-items:center;gap:14px;margin:0}figure.qr img{width:170px;height:170px;border-radius:6px;background:#fff;padding:4px}figure.qr figcaption{font-size:18px;color:var(--muted)}
 figure.shot{display:flex;flex-direction:column;align-items:center;gap:10px}figure.shot img{max-height:640px;max-width:100%;border-radius:8px;border:1px solid var(--line)}figure.shot figcaption{font-size:18px;color:var(--muted);text-align:center;line-height:1.4}
 pre.mermaid{background:transparent;border:none;padding:0;display:flex;justify-content:center;align-items:flex-start;color:transparent;width:100%}
 pre.mermaid svg{width:100% !important;max-width:none !important;height:auto;max-height:560px}
@@ -610,7 +658,7 @@ fit(); go((parseInt(location.hash.slice(1))||1)-1,false);
 if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'loose',htmlLabels:false,flowchart:{curve:'linear',htmlLabels:false,padding:14,nodeSpacing:40,rankSpacing:50},themeVariables:{background:'#0F141B',primaryColor:'#1C2531',primaryTextColor:'#E7ECF2',primaryBorderColor:'#3A4553',lineColor:'#8C98A8',secondaryColor:'#161D26',tertiaryColor:'#161D26',clusterBkg:'#131a22',clusterBorder:'#3A4553',edgeLabelBackground:'#0F141B',fontFamily:'IBM Plex Sans KR, sans-serif',fontSize:'20px'}}); stage.classList.add('prerender'); (document.fonts?Promise.all([document.fonts.load('20px "IBM Plex Sans KR"','agent searchDocs remember 보고 수집'),document.fonts.load('600 54px "IBM Plex Sans KR"','가 abc'),document.fonts.load('18px "IBM Plex Mono"','abc')]).then(()=>document.fonts.ready):Promise.resolve()).then(()=>mermaid.run({querySelector:'pre.mermaid'})).then(()=>{document.querySelectorAll('pre.mermaid').forEach(p=>p.style.color='inherit');}).finally(()=>{stage.classList.remove('prerender'); document.body.dataset.ready='1';});} else document.body.dataset.ready='1';
 '''
 
-sections = '\n'.join(section(i, b, t, body, k) for i, (b, t, body, k) in enumerate(slides))
+sections = '\n'.join(section(i, b, t, body, k, st) for i, (b, t, body, k, st) in enumerate(slides))
 page = f'''<!doctype html>
 <html lang="ko">
 <head>
@@ -635,4 +683,4 @@ page = f'''<!doctype html>
 out = R / 'docs/slides/day2.html'
 out.write_text(page, encoding='utf-8')
 print(f'{out} — {len(slides)}장, {len(page)//1024}KB')
-for i, (b, t, _, k) in enumerate(slides): print(f'{i+1:2d} [{BLOCKS[b]}] {t}')
+for i, (b, t, _, k, st) in enumerate(slides): print(f'{i+1:2d} [{BLOCKS[b]}] {t}')
