@@ -87,6 +87,8 @@ pnpm agent --all                 # 보고 4종을 차례로 돌리고 표로 정
 LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다
 ```
 
+옵션 전체 표는 4장 「`pnpm agent` 옵션 전부」에 있습니다.
+
 그래프를 **눈으로 보는** 명령은 `see:` 로 시작합니다.
 
 | 명령 | 하는 일 | 에이전트 실행 | 어디서 보나 | 계정 |
@@ -219,6 +221,43 @@ pnpm see:graph               # 그래프를 Mermaid 그림으로 (docs/graphs/)
 pnpm typecheck               # 타입 검사
 pnpm setup:check             # 환경 점검
 ```
+
+### `pnpm agent` 옵션 전부
+
+`pnpm agent` 는 `labs/agent/main.ts` 를 실행합니다. 아래 표가 코드가 읽는 옵션의 전부입니다. 실행 방식은 `--live` → `--all` → `--resume` → 보고 인자 순으로 먼저 있는 것 하나만 적용됩니다.
+
+**어떤 보고를 돌릴지 (옵션 없이 붙이는 인자)**
+
+| 쓰는 법 | 하는 일 |
+|---|---|
+| `pnpm agent` | 보고 1번 |
+| `pnpm agent 3` | 보고 3번 (1~4. 범위 밖이면 1번) |
+| `pnpm agent "한강에 오리 풍선이 떠요"` | 내가 쓴 문장을 보고로 |
+
+**옵션 (`--` 로 시작)**
+
+| 옵션 | 하는 일 | 언제 쓰나 |
+|---|---|---|
+| `--watch` | 단계(노드)마다 들어간 값·나온 값을 요약해서 보여 준다. Subagent 안은 `askRadar › agent` 처럼 찍힌다 | 빈칸을 채운 뒤 칠판이 어떻게 바뀌는지 볼 때 |
+| `--watch=full` | 위와 같지만 자르지 않고 전부 | 값이 잘려서 안 보일 때 |
+| `--all` | 보고 4종을 차례로 돌리고 표 하나로 정리 | `JEV_MODE` 를 바꿔 두 번 돌려 비교할 때 |
+| `--answer <y\|w\|n>` | 담당자 질문에 답을 미리 정해 둔다. 묻지 않고 바로 그 답을 쓴다 (`y` 출격 · `w` 감시 · `n` 무시) | `--all` 로 4건을 멈춤 없이 돌릴 때 |
+| `--resume <실행번호>` | 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어간다 (`checkpoints.sqlite`). 실행번호는 시작할 때 출력 | 단계 7 (Checkpoint · 재개) |
+| `--live` | 브라우저(http://localhost:3030)에 그래프를 띄우고 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝). `pnpm see:run` 이 이 옵션을 붙인 것 | 그래프가 도는 모습을 눈으로 볼 때 |
+
+옵션은 섞어 쓸 수 있습니다. 예: `pnpm agent 2 --watch`, `pnpm agent --all --answer w`, `pnpm agent --resume loop-1-1234567890 --watch`.
+
+**같이 쓰는 환경 변수 (명령 앞에 붙이거나 `.env` 에)**
+
+| 변수 | 기본값 | 하는 일 |
+|---|---|---|
+| `LLM_MODE` · `JEV_MODE` · `MEMORY_MODE` | `.env` | 모델 · Jev · 기억을 어떤 걸로 돌릴지 (5장) |
+| `MAX_STEPS` | `8` | Subagent 안 agent ⇄ tools 루프 최대 횟수. `pnpm agent:limit` 이 `1` 로 놓고 돌리는 것 |
+| `RUN_TIMEOUT_SEC` | `180` | 실행 전체가 이 초를 넘으면 끊는다 |
+| `LLM_TIMEOUT_SEC` | `60` | 모델 호출 한 번의 제한 시간. 넘으면 Subagent 가 담당자에게 retry / skip / stop 을 묻는다 |
+| `LLM_MOCK_SLOW` | 없음 | `1` 이면 mock 모델이 매번 늦게, `once` 면 첫 호출만 늦게 → "모델이 늦을 때 사람에게 묻기" 시연 |
+| `LIVE_PORT` | `3030` | `--live` 가 여는 포트 |
+| `NO_COLOR` | 없음 | 값을 아무거나 주면 터미널 색을 끈다 |
 
 Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weather http://localhost:3333/mcp`
 

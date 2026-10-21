@@ -17,7 +17,7 @@
 |---|---|---|---|
 | 1 | 오늘 만드는 것 | 그림 | 부모 그래프 한 장 (`docs/graphs/agent.md` Mermaid). "보고 한 줄 → 수집 → 기억 → 판정 → 사람" |
 | 2 | 소개 | 표 | 최호섭 · 삼성전자 R&D센터 → 툰스퀘어 CTO · Tooning / Tooning Plus / Deev · branden@tooning.io (Edu 포함 여부 미결) |
-| 3 | 오늘의 규칙 | 명령 | `git clone -b hands-on …` · `pnpm agent` 가 TODO 에서 멈추는 캡처 · "막히면 `git diff hands-on main -- <파일>`" · 빈칸 11개 지도 (번호만) |
+| 3 | 오늘의 규칙 | 명령 | Codespaces 전용: `pnpm agent` 하나 (노트북 설치는 3장에서 README 1-3 으로) · `pnpm agent` 가 TODO 에서 멈추는 캡처 · "막히면 `git diff hands-on main -- <파일>`" · 빈칸 11개 지도 (번호만) |
 | 4 | 오늘 일정 | 표 | 블록 5개 · 시간 · 각 블록에서 채우는 빈칸 번호 · 휴식 2번. 오후 14:30 정진태 Langfuse 특강 예고 |
 
 ## 1. Agent Loop · Harness (09:10~09:50, 7장) — 빈칸 1 · 2 · 6
