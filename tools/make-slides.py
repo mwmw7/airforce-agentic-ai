@@ -380,9 +380,12 @@ add(3, '껐다 켜면?',
                '',
                'const threadId = resumeId ?? `loop-${round}-${Date.now()}`;',
                'if (!resumeId) await run(input);   // 이어가기면 START 부터 안 감'], w=66, file='labs/agent/main.ts · 바뀐 건 이 세 줄') +
-         bullets(['<code>MemorySaver</code>(메모리) → <code>SqliteSaver</code>(파일). 단계가 끝날 때마다 칠판 전체가 파일에 남는다',
-                  '실행번호 = <code>thread_id</code> (SETUP 줄에도 있다). 같은 번호로 켜면 LangGraph 가 파일에서 멈춘 줄을 찾아 <code>interrupt()</code> 자리로 돌아간다',
-                  'Subagent 안 askHuman 에서 멈춰도 같다 (부모 번호 아래 저장). SQL 은 한 줄도 안 썼다 — 파일 속은 다음 장']), ratio='r64'), 'cmd')
+         bullets(['<code>checkpoints.sqlite</code> 는 <b>게임 세이브 파일</b>이다. 노드 하나 끝날 때마다 칠판 전체를 한 줄 저장하고, <code>interrupt()</code> 에서는 "사람 답 기다리는 중" 으로 멈춘 채 저장된다. 실행번호 = <code>thread_id</code> 로 그 줄을 찾는다']) +
+         table(['', '7단계 채우기 전', '채운 뒤'],
+               [['껐다 켜면', '같은 질문이 다시 뜬다 (세이브 읽기)', '같은 질문이 다시 뜬다'],
+                ['답하면', '<code>STOP</code> — 화면에 찍고 끝. 세이브는 그대로', '<code>DECIDE</code> — 이어서 돌고 새 줄이 붙는다'],
+                ['또 켜면', '같은 질문이 또. 백 번 해도 같다', '기다리는 질문이 없어 바로 끝']], 'dense') +
+         small('채우기 전에 되는 건 세이브 <b>읽기</b>뿐이다. 세이브에서 <b>이어서 플레이하고 다시 저장</b>하는 한 줄이 TODO 7. Subagent 안 askHuman 에서 멈춰도 같다 — 파일 속은 다음 장'), ratio='r64'), 'cmd')
 add(3, '파일 안에는 뭐가 남나?',
     cols('<figure class="shot"><img src="captures/checkpoint.png" alt="checkpoints.sqlite 의 checkpoints 테이블"><figcaption>checkpoints 테이블을 IDE 의 DB 보기로 연 화면 — 한 줄이 superstep 하나. 실행 35번에 463줄</figcaption></figure>',
          bullets(['테이블은 둘뿐 — <code>checkpoints</code>(단계마다 State 전체) · <code>writes</code>(노드가 칸에 쓴 값). 둘 다 SqliteSaver 가 만든다',
