@@ -219,8 +219,7 @@ add(1, '1단계 전후 — 그래프에서 무엇이 바뀌었나?',
              '그림 다시 뽑기: <code>pnpm see:steps</code> → <code>docs/graphs/step-*.md</code>']), 'fig')
 add(1, '왜 나누나?',
     table(['이점', '하나의 루프였을 때', 'Subagent 로 나누면', '어디서 보이나'],
-          [['작업 기록이 부모에 안 남는다', '레이더 조회 대화 20줄이 판정 · 저장 · 화면까지 따라감', '20줄은 Subagent State 에만. 부모엔 facts 3줄 + evidence', '<code>--watch</code>: remember 입력에 messages 가 없다'],
-           ['Subagent 가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', 'Subagent 만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
+          [['Subagent 가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', 'Subagent 만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
            ['Subagent 단위로 갈아 끼운다', '루프 · 판정 · 승인이 한 파일에', '모델 · 키 · 도구를 Subagent 만 바꾸거나 옆에 하나 더', '다음 단계'],
            ['속도', '—', '<b>5단계에서 동시로 바꿔도 지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + 원격 모델일 때']]) +
     small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, State 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
