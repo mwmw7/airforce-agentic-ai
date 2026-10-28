@@ -426,18 +426,6 @@ add(3, 'Hindsight 를 켜면 무엇이 달라지나? — MEMORY_MODE file vs hin
              '차이는 찾는 힘과 정리: file 은 메모장에서 단어 찾기, Hindsight 는 정리 · 연결해 두었다가 뜻으로 찾아 준다',
              '주의: Hindsight 의 retain 은 비동기 — 실행 끝 <code>[MEMORY] 서버 작업 끝</code> 을 본 뒤 다음 실행',
              '<code>MEMORY_MODE=off</code> 면 둘 다 안 한다 — 기억 없는 Agent 와 비교할 때']), 'table')
-add(3, '되감으면?',
-    cols(code(['const history = [];',
-               'for await (const snap of graph.getStateHistory(config)) history.push(snap);',
-               '// 체크포인트마다: snap.values(State) · snap.next(다음 노드) · snap.config(그 시점 id)',
-               '',
-               '// 담당자가 "감시" 라고 한 시점으로 돌아가 "출격" 으로 다시 돌린다',
-               'await graph.invoke(new Command({ resume: "y" }), history[2].config);'], file='예시 코드 (핸즈온 저장소에는 없음)') +
-         bullets(['체크포인트는 되돌아갈 수 있는 저장 슬롯이다',
-                  '같은 실행번호 안에서 "그때 다르게 답했으면" 을 재생한다',
-                  '시연만 한다. 코드는 10줄, 빈칸 아님']),
-         '<div class="placeholder">시연 자리<br/><span>구현 여부 미정 — 미구현이면 "다음 단계" 로 넘어간다</span></div>'), 'cmd')
-
 # ───────── 4. 운영 ─────────
 add(4, '운영 중 자료에 지시문이 섞여 오면?',
     cols(code(['// JEV_MODE=local 규칙 (속는 쪽을 흉내 낸다)',
