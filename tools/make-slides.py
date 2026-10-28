@@ -219,6 +219,18 @@ add(1, '1단계 전후 — 그래프에서 무엇이 바뀌었나?',
     bullets(['바뀐 건 노드 <b>하나의 속</b>. 바깥 선(searchDocs → askRadar → remember)은 그대로다',
              '오늘 그래프 모양이 바뀌는 건 두 번뿐: 지금(1단계, 노드)과 5단계(선). 나머지 단계는 노드 안의 코드만 채운다',
              '그림 다시 뽑기: <code>pnpm see:steps</code> → <code>docs/graphs/step-*.md</code>']), 'fig')
+add(1, 'Worker 와 Subagent 는 뭐가 다른가?',
+    cols(table(['', 'Worker', 'Subagent'],
+               [['하는 일', '정해진 일 하나', '목표 하나를 받아 알아서 끝냄'],
+                ['모델 호출', '없음', '있음, 반복 (도구를 고르고 또 고름)'],
+                ['실행 횟수', '항상 같음', '상황마다 다름'],
+                ['코드 모양', '함수 하나', '그래프 하나 (agent ⇄ tools)'],
+                ['우리 코드', 'searchDocs (지금도 돌고 있음 · 3단계에서 점수 채움)', 'askRadar (1단계)']]),
+         bullets(['복사기와 인턴. 복사기는 몇 장 나올지 미리 알고, 인턴은 몇 번 왔다 갔다 할지 자기가 정한다',
+                  '<b>LangGraph 에겐 둘 다 노드 하나다.</b> 안에 모델 루프가 있으면 우리가 Subagent 라고 부를 뿐',
+                  '선 잇기 · 체크포인트 · interrupt 코드는 둘이 완전히 같다']) +
+         code(['.addNode("searchDocs", searchDocsNode)   // 함수',
+               '.addNode("askRadar",   radarAgent)       // compile() 된 그래프'], file='labs/agent/main.ts')), 'table')
 add(1, '왜 나누나?',
     table(['이점', '하나의 루프였을 때', 'Subagent 로 나누면', '어디서 보이나'],
           [['Subagent 가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', 'Subagent 만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
@@ -253,18 +265,6 @@ add(2, step_tag(3, '규정 한 줄에 점수 매기기'),
          term(pick('07_mcp_off.txt', [r'^\[TOOL  \] search_docs', r'^\s+│ \d+\. '], limit=4)) +
          term(pick('07_mcp_off.txt', [r'^\s+│ 관련 규정$', r'^\s+│\s+· \d+\. '], limit=4)) +
          ok('담당자 화면 <b>관련 규정</b> 에 풍선 규정이 올라온다. 점수가 전부 0 이면 "관련 규정 없음"')), 'diff')
-add(2, 'Worker 와 Subagent 는 뭐가 다른가?',
-    cols(table(['', 'Worker', 'Subagent'],
-               [['하는 일', '정해진 일 하나', '목표 하나를 받아 알아서 끝냄'],
-                ['모델 호출', '없음', '있음, 반복 (도구를 고르고 또 고름)'],
-                ['실행 횟수', '항상 같음', '상황마다 다름'],
-                ['코드 모양', '함수 하나', '그래프 하나 (agent ⇄ tools)'],
-                ['우리 코드', 'searchDocs (3단계)', 'askRadar (1단계)']]),
-         bullets(['복사기와 인턴. 복사기는 몇 장 나올지 미리 알고, 인턴은 몇 번 왔다 갔다 할지 자기가 정한다',
-                  '<b>LangGraph 에겐 둘 다 노드 하나다.</b> 안에 모델 루프가 있으면 우리가 Subagent 라고 부를 뿐',
-                  '선 잇기 · 체크포인트 · interrupt 코드는 둘이 완전히 같다']) +
-         code(['.addNode("searchDocs", searchDocsNode)   // 함수',
-               '.addNode("askRadar",   radarAgent)       // compile() 된 그래프'], file='labs/agent/main.ts')), 'table')
 cover(2, 4, '날씨를 MCP 로', '서버에 <code>registerTool</code>(4-1) · 클라이언트에서 목록 받고 실행(4-2)', '<code>mcp-servers/weather/server.ts</code> (4-1) · <code>mcp.ts</code> (4-2)', '날씨 줄 (<code>pnpm mcp:weather</code> 켠 채). 끄면 "날씨 없이 계속"', 'MCP — 도구를 다른 프로세스에')
 add(2, '도구를 다른 프로세스에 두면?',
     cols(mermaid('''flowchart LR

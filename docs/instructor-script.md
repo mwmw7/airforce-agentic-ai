@@ -50,16 +50,17 @@
 - 말할 것: "빈칸이 비어 있어도 프로그램은 끝까지 돕니다. 화면의 빈 줄이 오늘 우리가 채울 자리입니다. STOP 줄은 7단계에서 사라집니다."
 - 파일 구조는 README 2장 그림 하나로만: `main.ts`(부모) · `ask-radar.ts`(Subagent) · `search-docs.ts` · `mcp.ts` · `write-report.ts`
 
-**09:15 1단계 · 레이더 Subagent 데려오기 (15분) — 슬라이드 9 ~ 12**
+**09:15 1단계 · 레이더 Subagent 데려오기 (15분) — 슬라이드 9 ~ 13**
 - 같이 칠 것: `main.ts` TODO 1 → `.addNode("askRadar", radarAgent)` 한 줄, `pnpm agent`
 - 성공 화면: `[SUB   ] ┏━ askRadar 레이더 Subagent — 여기부터 ┃ 줄은 Subagent 의 일. 부모는 facts · evidence · steps 만 받는다` 띠 안에 `┃ [LLM   ] 1회째 → 도구 쓰기: look_radar` · `┃ [TOOL  ] look_radar(where: …)` · `look_closer` 가 이어지고 `[SUB   ] ┗━ askRadar 끝 · 모델 N회 호출, 사실 정리 완료 → 부모에게`. 담당자 화면에 "레이더" · "확대해서 본 것" 항목이 생긴다
 - 이때 `┃ [MCP   ] 날씨 서버 연결 실패 … 날씨 없이 계속합니다.` 가 같이 보이는 게 정상 (4단계에서 OK 로 바뀐다)
 - 말할 것: "함수 대신 그래프를 넣었는데 LangGraph 에겐 똑같은 노드입니다. 안에 모델 루프가 있으면 우리가 Subagent라고 부를 뿐입니다."
 - 단계 표지(9)에서 `pnpm step 1` 한 줄 보여 주고 바로 실습 장(10). 루프 · route · State 는 어제 한 것이라 설명하지 않는다
 - 슬라이드 10 마지막 줄 `pnpm agent:limit` 시연: `┃ [STOP  ] 모델을 이미 1번 불렀습니다. 더 부르지 않고 내 코드가 멈췄습니다. 레이더 Subagent 만 끝내고 부모는 계속 갑니다` → `[SUB   ] ┗━ askRadar 끝 · 강제 중단` 뒤에도 부모는 규정집만으로 판정까지 간다. Subagent 의 대화(messages)는 Subagent State 에만, 부모에겐 facts · evidence · steps 만 → Context 분리
-- 슬라이드 12 (왜 나누나): 멈춰도 부모는 산다 · 레이더만 따로 고친다(2단계가 증거) · 속도는 지금 구성엔 없다(정직하게). 방금 본 `agent:limit` 화면이 그 증거
+- 슬라이드 12 (Worker 와 Subagent): 0단계부터 돌던 searchDocs(함수, 모델 호출 없음) 와 방금 꽂은 askRadar(agent ⇄ tools 그래프) 를 표로 나란히. 복사기와 인턴. "LangGraph 에겐 둘 다 노드 하나" — addNode 두 줄만 보여 주고 넘긴다, 1분
+- 슬라이드 13 (왜 나누나): 멈춰도 부모는 산다 · 레이더만 따로 고친다(2단계가 증거) · 속도는 지금 구성엔 없다(정직하게). 방금 본 `agent:limit` 화면이 그 증거
 
-**09:30 2단계 · 도구 하나 더 look_flight_plan (15분) — 슬라이드 13 · 14**
+**09:30 2단계 · 도구 하나 더 look_flight_plan (15분) — 슬라이드 14 · 15**
 - 같이 칠 것: `ask-radar.ts` TODO 2-1(도구 설명) · 2-2(실행), `pnpm agent 3`
 - 성공 화면: `┃ [LLM   ] 3회째 → 도구 쓰기: look_flight_plan` · `┃ [TOOL  ] look_flight_plan(where: 잠실 …)`, 담당자 화면에 "비행 계획" 항목 `잠실 상공 · 드론 쇼 · - · 신청 없음 (오늘 접수된 드론 쇼 없음)`
 - 말할 것: "모델은 이 설명(description)만 보고 도구를 고릅니다. 설명 한 줄이 모델의 행동을 바꿉니다. 실행은 우리 코드가 합니다."
@@ -71,12 +72,11 @@
 
 ### 10:05 ~ 11:00 · 2교시 (단계 3 · 4 · 5)
 
-**10:05 3단계 · 규정집 찾기 (15분) — 슬라이드 15 ~ 18**
+**10:05 3단계 · 규정집 찾기 (15분) — 슬라이드 16 ~ 18**
 - 같이 칠 것: `search-docs.ts` TODO 3 (단어 겹침 점수 3줄), `pnpm agent 2`
 - 성공 화면: `[TOOL  ] search_docs(보고 그대로)` 아래 `3. 풍선, 연, 새 떼는 위협이 아니다. 공항 쪽으로 가면 공항에 알리고 감시한다.` · `2. 무전 응답이 없어도 느리게 바람 따라 움직이는 물체는 …` 두 줄 (채우기 전엔 `관련 규정 없음`)
 - 말할 것: "RAG 는 '찾아서 넣어 쓰게 하는 구조' 입니다. 찾는 방법은 자유입니다. 오늘은 구조가 보이게 가장 단순한 겹치는 단어 수로 합니다. 임베딩으로 바꿔도 바깥 그래프는 그대로입니다."
 - 질문 나오면: 승인된 문서(`data/docs/rulebook.md`)만 색인 → 자료 범위 통제. searchDocs 는 도구가 아니라 부모 그래프의 Worker 노드 (태그가 TOOL 인 건 "규정집을 찾았다" 는 뜻)
-- 슬라이드 18 (Worker 와 Subagent): 방금 만든 searchDocs(함수, 모델 호출 없음) 와 1단계 askRadar(agent ⇄ tools 그래프) 를 표로 나란히. 복사기와 인턴. "LangGraph 에겐 둘 다 노드 하나" — addNode 두 줄만 보여 주고 넘긴다, 1분
 
 **10:20 4단계 · 날씨를 MCP 로 (25분) — 슬라이드 19 ~ 22**
 - 같이 칠 것:
