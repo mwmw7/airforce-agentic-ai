@@ -15,6 +15,102 @@ https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on
 
 ---
 
+## 처음 오신 분께 — 수업을 즐기기 위한 기본
+
+### 오늘 만드는 것
+
+관제실에 "서울 상공에 둥근 비행체가 떠 있어요" 같은 **보고 한 줄**이 들어오면, AI Agent 가 레이더 · 날씨 · 규정집을 스스로 찾아보고 근거를 모아 "출격 / 감시 / 무시" 의견을 냅니다. **마지막 결정은 언제나 사람**이 합니다.
+
+거의 빈 Agent 에서 출발해 강사와 함께 **8단계**로 하나씩 붙입니다. 한 단계를 채울 때마다 다시 돌리면 담당자 화면에 근거가 한 줄씩 늘어납니다. 끝나면 요즘 Agent 의 핵심 부품(Tool Calling · MCP · RAG · Subagent · 사람 승인 · 기억)을 모두 내 손으로 한 번씩 붙여 본 셈이 됩니다.
+
+### 걱정하지 않아도 되는 것
+
+- **TypeScript 를 몰라도 됩니다.** 빈칸은 한 곳에 몇 줄이고, 주석에 할 일이 적혀 있으며, 강사가 화면에서 같이 칩니다. 코드를 외우기보다 "어디에 무엇이 붙는지" 를 보는 수업입니다
+- **설치가 필요 없습니다.** GitHub Codespaces 가 브라우저 안에 개발 환경을 통째로 띄워 줍니다
+- **API 키가 없어도 끝까지 돕니다.** 키가 없으면 **mock 모드**(정해진 답을 돌려주는 가짜 모델)로 모든 단계가 돌아갑니다. 실제 모델 키는 강사가 당일 조별로 나눠 줍니다
+- **늦어도 따라잡을 수 있습니다.** `pnpm step <단계>` 한 줄이면 앞 단계는 정답으로 채워진 상태로 넘어갑니다
+- **에러는 정상입니다.** 빨간 줄이 나오면 읽어 보고, 모르겠으면 손을 들어 주세요. 고치는 과정도 수업입니다
+
+### 수업 전에 해 둘 것 (5분)
+
+- [ ] **GitHub 계정** 만들기 · 로그인 확인 — https://github.com/signup (Codespaces 는 개인 계정이면 달마다 60시간 무료, 이틀 수업은 10시간이면 충분)
+- [ ] 노트북에 **Chrome 또는 Edge** 최신판
+- [ ] 미리 한 번 열어 보기 — [1-2 절](#1-2-가장-빠른-길--github-codespaces-설치-없음-권장) 대로 Codespace 를 만들고 "준비 끝" 이 뜨는지 확인 (첫 생성은 2~3분, 한 번 만들어 두면 당일엔 다시 열기만 하면 됩니다)
+- [ ] (선택) 회사·기관 네트워크에서 github.com 이 막혀 있다면 미리 알려 주세요
+
+### 꼭 알아 둘 용어 12개
+
+| 용어 | 한 줄 뜻 | 오늘 코드에서 |
+|---|---|---|
+| **LLM** | 글을 읽고 다음 글을 써 주는 언어 모델 (ChatGPT · Claude 같은 것) | `src/lib/llm.ts` |
+| **Agent** | LLM 이 "다음에 뭘 할지" 스스로 고르며 일을 끝까지 해내는 프로그램 | 이 저장소 전체 |
+| **Tool (도구)** | LLM 이 부를 수 있는 함수. 모델은 "이 도구를 이 값으로 불러 줘" 라고 **말만** 하고, 실행은 내 코드가 한다 | `look_radar` · `look_weather` … |
+| **Agent Loop** | 모델에게 묻기 → 도구 실행 → 결과를 다시 모델에게, 를 "다 확인했다" 할 때까지 반복 | `agent ⇄ tools` |
+| **Graph · Node · Edge** | LangGraph 의 그림. 노드 = 할 일 한 칸, 엣지 = 다음으로 가는 화살표 | `addNode` · `addEdge` |
+| **State (칠판)** | 노드들이 같이 읽고 쓰는 칠판. 노드는 칠판에 자기 결과를 적고 다음 노드에 넘긴다 | `labs/agent/state.ts` |
+| **Worker · Subagent** | 일을 나눠 맡는 일꾼. 안에 모델 루프가 없으면 Worker, 있으면 Subagent | `searchDocs` · `askRadar` |
+| **RAG** | 질문과 관련된 문서를 먼저 찾아서 근거로 넣어 주기 | 규정집 찾기 (`search-docs.ts`) |
+| **MCP** | 도구를 다른 프로그램(서버)에 두고 표준 방식으로 빌려 쓰는 약속. USB 처럼 꽂으면 도구가 생긴다 | 날씨 서버 (`mcp-servers/weather`) |
+| **Jev** | 질문에 출격/감시/무시 같은 **정해진 답과 확률**로 답하는 판정 모델. LLM 보다 빠르고 답이 흔들리지 않는다 | `src/lib/jev.ts` |
+| **HITL (Human-in-the-Loop)** | 중요한 순간에 Agent 가 멈추고 사람에게 묻기. 멈춘 곳은 저장(Checkpoint)되어 나중에 이어갈 수 있다 | `approve` 노드 |
+| **Memory (기억)** | 지난번 판단을 남겨 두었다가 같은 보고가 오면 다시 묻지 않고 그대로 쓰기 | Hindsight (`src/lib/memory.ts`) |
+
+### 터미널 화면 읽는 법
+
+`pnpm agent` 를 치면 줄마다 앞에 **꼬리표**가 붙습니다. 꼬리표만 따라 읽어도 Agent 가 무엇을 했는지 보입니다.
+
+```
+[REPORT] 서울 상공에 정체불명의 둥근 비행체가 떠 있어요 …      ← 들어온 보고
+[SETUP ] 모델 mock · Jev local · 기억 file                      ← 지금 어떤 모드로 도는지
+[TOOL  ] search_docs(보고 그대로)                                ← 규정집 찾기 (Worker)
+[SUB   ] ┏━ askRadar 레이더 Subagent                             ← 여기부터 ┃ 줄은 Subagent 의 일
+┃ [LLM   ] 1회째 → 도구 쓰기: look_radar                          ← 모델이 도구를 고름
+┃ [TOOL  ] look_radar(…)                                          ← 내 코드가 실행
+┃ [MCP   ] look_weather(…)                                        ← MCP 서버의 도구
+[SUB   ] ┗━ askRadar 끝 · 모델 4회 호출                           ← 결론만 부모에게
+[MEMORY] 같은 사례 없음 → Jev 에게 묻는다                         ← 기억 확인
+[JEV   ] ▶ scramble 65% …                                         ← 판정 모델의 의견
+[RULE  ] 조건 scramble → 출격 준비!                               ← 코드 규칙의 권고
+[HUMAN ] 종합 — 담당자가 결정합니다                               ← 사람에게 묻는다 (y / w / n)
+[DECIDE] …                                                        ← 사람이 고른 결과
+```
+
+`[STOP]` 은 코드가 강제로 멈췄다는 뜻(호출 한도 · 시간 초과)이고, `--watch` 를 붙이면 `[NODE]` 줄에 노드마다 칠판에 들어간 값 · 나온 값이 보입니다.
+
+### 한 단계는 이렇게 진행됩니다
+
+1. 강사가 "N단계 시작합니다" 하고 개념을 설명합니다
+2. 파일을 엽니다 — VS Code 에서 `Ctrl+P` (Mac `Cmd+P`) 를 누르고 파일 이름(`main.ts` 등)을 칩니다
+3. 빈칸을 찾습니다 — `Ctrl+F` 로 `TODO N` 검색. `// ===== TODO N: … =====` 아래 주석에 할 일이, `[여기에 코드를 작성하세요]` 자리에 쓸 곳이 있습니다
+4. 강사와 같이 채우고 저장(`Ctrl+S`)
+5. 터미널에서 `pnpm agent` → **담당자 화면(`[HUMAN]`)에 새 줄이 생기면 성공**
+
+### 막혔을 때
+
+| 상황 | 이렇게 |
+|---|---|
+| 정답이 궁금하다 | `git diff hands-on main -- labs/agent/main.ts` — 내 코드와 정답을 나란히 (파일 경로만 바꿔서) |
+| 진도를 놓쳤다 | `pnpm step <지금 단계>` — 앞 단계가 풀린 상태로 맞춰진다 (덮어쓰기 전에 묻는다) |
+| 실행이 멈추지 않는다 | 터미널에서 `Ctrl+C` |
+| 담당자 질문에서 멈췄다 | 정상입니다. `y`(출격) · `w`(감시) · `n`(무시) 중 하나를 치고 Enter |
+| 점심 뒤 화면이 꺼졌다 | Codespace 는 30분 쉬면 잠듭니다. 같은 주소로 다시 열면 파일은 그대로 |
+| 그래도 모르겠다 | 손을 들어 주세요. 옆 사람과 같이 봐도 좋습니다 |
+
+### 터미널 기본 몇 가지
+
+- 이전 명령 다시: `↑` 키
+- 터미널 하나 더: 터미널 창 오른쪽 위 `+` (날씨 MCP 서버를 켜 둘 때)
+- 터미널에서 `Ctrl+C` 는 "복사" 가 아니라 **"멈춤"** 입니다. 복사는 드래그 후 마우스 오른쪽 버튼, 붙여넣기는 `Ctrl+V` (브라우저가 처음 한 번 허락을 물을 수 있음)
+- 이 README 의 `pnpm …` 명령은 모두 저장소 맨 위 폴더에서 칩니다 (Codespaces 는 처음부터 거기서 열립니다)
+
+### 수업이 끝나면
+
+- 내 코드를 남기고 싶으면 VS Code 왼쪽 **Source Control** 에서 commit → push (내 fork 가 자동으로 생깁니다)
+- 다 썼으면 https://github.com/codespaces 에서 내 Codespace 를 **Stop** 또는 **Delete** — 무료 시간을 아낄 수 있습니다
+- 완성본은 언제든 `main` 브랜치에 있습니다. 집에서 다시 해 보려면 같은 링크로 새 Codespace 를 만들면 됩니다
+
+---
+
 ## 0. 브랜치 안내 — 먼저 읽어 주세요
 
 | 브랜치 | 용도 | 누가 |
@@ -192,20 +288,6 @@ Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. �
 
 완성 코드로 제공 (설명 · 시연): 도구 실행 루프와 MAX_STEPS 강제 중단(`ask-radar.ts` — 1일차 Loop 그대로, `pnpm agent:limit`), 모델이 늦을 때 사람에게 묻기(`LLM_MOCK_SLOW=1`), 모델 교체, Studio.
 
----|---|---|---|---|
-| 1 | 도구 결과를 모델에게 돌려주기 | `labs/agent/ask-radar.ts` | Agent Loop | `pnpm agent` |
-| 2 | 강제 중단은 코드가 | 〃 | Harness | `pnpm agent:limit` |
-| 3 | 규정집 줄마다 점수 매기기 | `labs/agent/search-docs.ts` | RAG (찾아서 넣는다) | `pnpm agent 2` |
-| 4 | MCP 서버에 `look_weather` 도구 등록 | `mcp-servers/weather/server.ts` | MCP Server | `pnpm mcp:inspect` → `http://localhost:3333/mcp` |
-| 5 | MCP 도구 목록 받기 · 실행하기 | `labs/agent/mcp.ts` | MCP Client | `pnpm mcp:weather` + `pnpm agent` |
-| 7 | Subagent(서브그래프)를 노드로 꽂기 (`addNode("askRadar", radarAgent)`) | `labs/agent/main.ts` 조립부 | Subagent — LangGraph 에겐 그냥 노드 | `pnpm agent` → 담당자 화면에 레이더 · 확대 · 날씨 줄이 생기면 성공 |
-| 8 | 순차를 동시로: `addEdge(START, …)` 두 줄 + 합류 `addEdge([…], "remember")` | 〃 | Task Decomposition · 병렬 실행 | `pnpm agent --watch` → searchDocs 와 askRadar 가 같이 시작하면 성공 |
-| 9 | 사람의 답으로 멈춘 곳부터 이어가기 (`Command({ resume })`) | `labs/agent/main.ts` 실행부 | Checkpointer · HITL | `pnpm agent` → Ctrl+C → `pnpm agent --resume <번호>` |
-
-(6 은 비어 있음 — `docs/exercises.md` 의 계획대로 선 잇기 빈칸이 들어갈 자리)
-
-빈칸이 아닌 것 (완성 코드로 제공 · 시연): 장기 기억(`src/lib/memory.ts`), 모델 교체, Studio.
-
 ---
 
 ## 4. 자주 쓰는 명령
@@ -304,7 +386,7 @@ airforce-agentic-ai/
 ├─ .devcontainer/            Codespaces 레시피 — Node 22 상자 + setup.sh(설치 · .env · 점검 자동)
 ├─ docs/graphs/              그래프 그림 (pnpm see:graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
-├─ docs/slides/day2.html     2일차 강의 슬라이드 (41장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
+├─ docs/slides/day2.html     2일차 강의 슬라이드 (47장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
 ├─ docs/slides/day2.pdf      같은 슬라이드 PDF (장마다 한 페이지) — pnpm slides:pdf 로 재생성 (Chrome 필요)
 ├─ docs/slides-plan.md       슬라이드 장 단위 계획
 ├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
