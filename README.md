@@ -386,7 +386,7 @@ airforce-agentic-ai/
 ├─ .devcontainer/            Codespaces 레시피 — Node 22 상자 + setup.sh(설치 · .env · 점검 자동)
 ├─ docs/graphs/              그래프 그림 (pnpm see:graph)
 ├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
-├─ docs/slides/day2.html     2일차 강의 슬라이드 (47장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
+├─ docs/slides/day2.html     2일차 강의 슬라이드 (46장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
 ├─ docs/slides/day2.pdf      같은 슬라이드 PDF (장마다 한 페이지) — pnpm slides:pdf 로 재생성 (Chrome 필요)
 ├─ docs/slides-plan.md       슬라이드 장 단위 계획
 ├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
