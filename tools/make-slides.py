@@ -226,12 +226,6 @@ add(1, '왜 나누나?',
            ['속도', '—', '<b>5단계에서 동시로 바꿔도 지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + 원격 모델일 때']]) +
     small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, State 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
 
-add(1, '모델이 늦으면?',
-    cols(term(pick('06_slow.txt', [r'^┃ \[LLM', r'^┃ \[HUMAN', r'^\[SUB   \] ┗', r'^\[HUMAN', r'^\[DECIDE'], limit=8)) + cmd('LLM_MOCK_SLOW=1 pnpm agent 4'),
-         bullets(['한 번 호출이 <code>LLM_TIMEOUT_SEC</code> 를 넘으면 끊는다',
-                  '끊은 뒤 뭘 할지는 코드가 정하지 않고 <b>사람에게 묻는다</b>: retry / skip / stop',
-                  'skip 이면 사실 없이 판정으로, stop 이면 전부 중단',
-                  '실행 전체가 <code>RUN_TIMEOUT_SEC</code> 를 넘어도 끊는다'])), 'cmd')
 cover(1, 2, 'Subagent 에게 도구 하나 더', '<code>look_flight_plan</code> — 설명(2-1) + 실행(2-2)', '<code>ask-radar.ts</code> (TODO 2-1 · 2-2)', '<code>[TOOL] look_flight_plan</code>, 비행 계획 줄 (<code>pnpm agent 3</code>)', 'Tool Calling — 설명이 선택을 정한다', '오전 도구 = 설명 + 실행')
 add(1, step_tag(2, 'Subagent 에게 도구 하나 더 — 비행 계획 조회'),
     cols(diff('TODO 2', 0, w=88) + diff('TODO 2', 1, w=88) + cmd('pnpm agent 3', '잠실 드론'),
