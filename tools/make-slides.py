@@ -105,8 +105,9 @@ def diff_ctx(lines, file='', w=74):
 def diff_raw(before, after, file='', w=74):
     out = ['<span class="del">- ' + html.escape(cut(l, w)) + '</span>' for l in before] + ['<span class="add">+ ' + html.escape(cut(l, w)) + '</span>' for l in after]
     return snip(file, '<pre class="diff">' + ''.join(out) + '</pre>')
-def cmd(c, note=''):
-    return (f'<div class="cmd"><span class="prompt">$</span> <span class="c">{html.escape(c)}</span>' + (f'<span class="note">{html.escape(note)}</span>' if note else '')
+def cmd(c, note='', href=''):   # href 를 주면 명령 글자가 링크가 된다 (복사는 그대로 글자만)
+    t = f'<a href="{href}" target="_blank">{html.escape(c)}</a>' if href else html.escape(c)
+    return (f'<div class="cmd"><span class="prompt">$</span> <span class="c">{t}</span>' + (f'<span class="note">{html.escape(note)}</span>' if note else '')
             + '<button class="copy" title="명령 복사">복사</button></div>')  # 명령만 복사한다 (설명은 빼고)
 def ok(text): return f'<div class="ok"><span>이게 보이면 성공</span>{text}</div>'
 def para(text): return f'<p>{text}</p>'
@@ -163,7 +164,8 @@ add(0, '시작은 링크 하나: Codespaces 에서 hands-on 브랜치 열기',
                   '개인 계정은 달마다 2-core 60시간이 무료. 이틀 교육은 10시간이면 끝',
                   '30분 안 쓰면 자동으로 멈춘다. 다시 열면 그 자리부터 (점심 뒤)',
                   'Codespaces 를 못 쓰면 README <b>1-3</b> 대로 노트북에 직접 설치 (clone · install · setup:check). 그 뒤는 똑같다']) +
-         small('fork 는 안 해도 된다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생긴다'), ratio='r64'), 'cmd')
+         small('fork 는 안 해도 된다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생긴다') +
+         cmd('https://github.com/mwmw7/airforce-agentic-ai', '저장소 · 브랜치 hands-on', href='https://github.com/mwmw7/airforce-agentic-ai/tree/hands-on'), ratio='r64'), 'cmd')
 add(0, '오늘의 규칙: 같이 하나씩 붙이고, 매번 다시 돌린다',
     cols(cmd('pnpm agent', '"준비 끝" 이 보이면 이것 하나. 빈칸이 비어 있어도 끝까지 돈다') +
          bullets(['문제는 <b>TODO 1 ~ 8</b>. 단계 번호 = TODO 번호. 파일 안에서 <code>// ===== TODO n</code> 을 찾는다',
@@ -220,7 +222,7 @@ add(1, '1단계 전후 — 그래프에서 무엇이 바뀌었나?',
 add(1, '왜 나누나?',
     table(['이점', '하나의 루프였을 때', 'Subagent 로 나누면', '어디서 보이나'],
           [['Subagent 가 멈춰도 부모는 산다', 'MAX_STEPS 면 전체 종료', 'Subagent 만 끝나고 규정집 결과로 판정까지', '<code>pnpm agent:limit</code>'],
-           ['Subagent 단위로 갈아 끼운다', '루프 · 판정 · 승인이 한 파일에', '모델 · 키 · 도구를 Subagent 만 바꾸거나 옆에 하나 더', '다음 단계'],
+           ['레이더만 따로 고친다', '도구 하나 추가해도 판정 · 승인 코드와 한 파일에서 엉킨다', '도구 추가 · 교체는 <code>ask-radar.ts</code> 만. <code>main.ts</code> 는 그대로', '2단계 <code>look_flight_plan</code>'],
            ['속도', '—', '<b>5단계에서 동시로 바꿔도 지금 구성에선 없다.</b> 모델 쓰는 가지가 하나뿐이고, 노트북 GPU 는 요청을 한 줄로 받는다', '가지 2개 이상 + 원격 모델일 때']]) +
     small('이점이 아닌 것: 판정 정확도는 안 바뀐다(judge 는 facts 만 읽는다) · 코드가 짧아지지 않는다(파일 둘, State 둘) · LangGraph 에겐 그냥 노드 하나'), 'table')
 
@@ -591,7 +593,7 @@ pre.term .tag{display:inline-block;color:#fff;padding:0 6px;border-radius:3px;fo
 .t-decide{background:var(--t-decide)}.t-stop{background:var(--t-stop)}.t-node{background:var(--t-node)}.t-sub{background:var(--t-sub)}.t-live{background:var(--t-live)}
 pre .bar,pre .mag{color:var(--mag);font-weight:700}pre .dim{color:#5B6676}pre .amber{color:var(--amber);font-weight:600}
 .cmd{font-family:"IBM Plex Mono",monospace;font-size:24px;background:var(--panel2);border-left:4px solid var(--amber);padding:12px 20px;border-radius:0 6px 6px 0}
-.cmd{position:relative;padding-right:84px}.cmd .copy{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:600 15px/1 "Noto Sans KR",sans-serif;color:var(--muted);background:transparent;border:1px solid var(--muted);border-radius:5px;padding:5px 10px;cursor:pointer}.cmd .copy:hover,.cmd .copy.done{color:var(--amber);border-color:var(--amber)}
+.cmd{position:relative;padding-right:84px}.cmd .copy{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:600 15px/1 "Noto Sans KR",sans-serif;color:var(--muted);background:transparent;border:1px solid var(--muted);border-radius:5px;padding:5px 10px;cursor:pointer}.cmd .copy:hover,.cmd .copy.done{color:var(--amber);border-color:var(--amber)}.cmd .c a{color:inherit;text-decoration:underline;text-underline-offset:4px}
 .cmd .prompt{color:var(--amber);margin-right:10px}.cmd .note{color:var(--muted);font-size:19px;margin-left:18px}
 .ok{border:1px solid var(--amber);border-radius:6px;padding:12px 18px;font-size:23px;line-height:1.45}
 .ok > span{display:block;color:var(--amber);font-size:17px;margin-bottom:4px}
