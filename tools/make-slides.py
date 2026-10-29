@@ -21,8 +21,8 @@ def read_todos():
                 part = {'before': [], 'after': [], 'file': f, 'label': label}   # 파일 · 소번호는 part 마다 (TODO 4 는 두 파일에 걸친다)
                 for x in ls[i + 1:]:
                     if re.match(r'\s*// ----- END SOLUTION -----', x): break
-                    pm = re.match(r'\s*//! ?(.*)', x)
-                    if pm: part['before'].append(pm.group(1))
+                    pm = re.match(r'(\s*)//! ?(.*)', x)
+                    if pm: part['before'].append(pm.group(1) + pm.group(2))   # 들여쓰기는 그대로 (복사해 붙여도 맞게)
                     else: part['after'].append(x)
                 todos.setdefault(name, {'file': f, 'parts': []})['parts'].append(part)
     return todos
@@ -82,29 +82,24 @@ def term(lines, extra_cls=''):
         e = re.sub(r'(← join:[^ ]+)', r'<span class="amber">\1</span>', e)
         out.append(e)
     return f'<pre class="term {extra_cls}">' + '\n'.join(out) + '</pre>'
-def snip(file, pre):
-    """코드 상자 위에 파일 이름 탭 — 30명이 어느 파일을 보는지 한눈에. file 이 비면 상자만"""
-    return f'<div class="snip"><div class="file">{html.escape(file)}</div>{pre}</div>' if file else pre
+def snip(file, pre, copy=False):
+    """코드 상자 위에 파일 이름 탭 — 30명이 어느 파일을 보는지 한눈에. file 이 비면 상자만
+       copy=True 면 탭 줄 오른쪽에 '정답 복사' 단추 — 초록(+) 줄만 원래 들여쓰기 그대로 복사한다"""
+    btn = '<button class="copy" title="정답(+ 줄)만 복사">정답 복사</button>' if copy else ''
+    return f'<div class="snip"><div class="file">{html.escape(file)}</div>{btn}{pre}</div>' if file else pre
 def code(lines, w=76, file=''):
     return snip(file, '<pre class="code">' + '\n'.join(html.escape(cut(l, w)) for l in lines) + '</pre>')
-def diff(todo, part=0, w=74):
-    t = TODOS[todo]; p = t['parts'][part]
-    label = p['file'] + ' · ' + p['label']   # 예: labs/agent/mcp.ts · TODO 4-2
-    out = []
-    for l in p['before']: out.append('<span class="del">- ' + html.escape(cut(l.strip(), w)) + '</span>')
-    for l in p['after']:
-        s = l.strip()
-        if not s: continue
-        out.append('<span class="add">+ ' + html.escape(cut(s, w)) + '</span>')
-    return snip(label, '<pre class="diff">' + ''.join(out) + '</pre>')
-def diff_ctx(lines, file='', w=74):
+# 빈칸 diff 는 정답을 자르지 않는다 (… 없음). 긴 줄은 화면에서만 접히고, 복사하면 원래 한 줄 · 원래 들여쓰기 그대로.
+# - / + 표시는 CSS(::before)가 그려서 마우스로 긁어 복사해도 따라오지 않는다
+def diff_ctx(lines, file=''):
     """앞뒤 문맥이 있는 diff: (' ' | '-' | '+', 줄) 목록. 문맥 줄은 회색, 지울 줄 빨강, 넣을 줄 초록"""
     cls = {' ': 'ctx', '-': 'del', '+': 'add'}
-    out = [f'<span class="{cls[k]}">{k} ' + html.escape(cut(l, w)) + '</span>' for k, l in lines]
-    return snip(file, '<pre class="diff">' + ''.join(out) + '</pre>')
-def diff_raw(before, after, file='', w=74):
-    out = ['<span class="del">- ' + html.escape(cut(l, w)) + '</span>' for l in before] + ['<span class="add">+ ' + html.escape(cut(l, w)) + '</span>' for l in after]
-    return snip(file, '<pre class="diff">' + ''.join(out) + '</pre>')
+    out = [f'<span class="{cls[k]}">' + html.escape(l) + '</span>' for k, l in lines]
+    return snip(file, '<pre class="diff">' + ''.join(out) + '</pre>', copy=any(k == '+' for k, _ in lines))
+def diff(todo, part=0):
+    p = TODOS[todo]['parts'][part]
+    label = p['file'] + ' · ' + p['label']   # 예: labs/agent/mcp.ts · TODO 4-2
+    return diff_ctx([('-', l) for l in p['before']] + [('+', l) for l in p['after'] if l.strip()], label)
 def cmd(c, note='', href=''):   # href 를 주면 명령 글자가 링크가 된다 (복사는 그대로 글자만)
     t = f'<a href="{href}" target="_blank">{html.escape(c)}</a>' if href else html.escape(c)
     return (f'<div class="cmd"><span class="prompt">$</span> <span class="c">{t}</span>' + (f'<span class="note">{html.escape(note)}</span>' if note else '')
@@ -240,7 +235,7 @@ add(1, '왜 나누나?',
 
 cover(1, 2, 'Subagent 에게 도구 하나 더', '<code>look_flight_plan</code> — 설명(2-1) + 실행(2-2)', '<code>ask-radar.ts</code> (TODO 2-1 · 2-2)', '<code>[TOOL] look_flight_plan</code>, 비행 계획 줄 (<code>pnpm agent 3</code>)', 'Tool Calling — 설명이 선택을 정한다', '오전 도구 = 설명 + 실행')
 add(1, step_tag(2, 'Subagent 에게 도구 하나 더 — 비행 계획 조회'),
-    cols(diff('TODO 2', 0, w=88) + diff('TODO 2', 1, w=88) + cmd('pnpm agent 3', '잠실 드론'),
+    cols(diff('TODO 2', 0) + diff('TODO 2', 1) + cmd('pnpm agent 3', '잠실 드론'),
          term(pick('14_flight_plan.txt', [r'^┃ \[LLM   \] 3회째', r'^┃ \[TOOL  \] look_flight_plan', r'^\s+│ 비행 계획$', r'신청 없음'], limit=5)) +
          bullets(['도구 = <b>설명(모델이 읽는 것)</b> + <b>실행(내 코드)</b>. 둘 다 내가 쓴다',
                   '모델은 description 을 읽고 "언제 쓸지" 정한다. 설명이 선택을 정한다',
@@ -281,10 +276,10 @@ add(2, '도구를 다른 프로세스에 두면?',
                   '클라이언트: 접속 → 목록 받기 → 실행 (4-2)',
                   '모델 입장에선 2단계에서 만든 로컬 도구와 구분이 없다. 같은 목록에 섞여 있을 뿐'])), 'fig')
 add(2, step_tag(4, '날씨를 MCP 로 — 서버에 등록, 클라이언트에서 목록 받고 실행'),
-    cols(diff('TODO 4', 0, w=88) + cmd('pnpm mcp:weather', '다른 터미널에서 먼저') + cmd('pnpm mcp:inspect', 'http://localhost:3333/mcp'),
-         diff('TODO 4', 1, w=88) + diff('TODO 4', 2, w=88) + cmd('pnpm agent') +
+    cols(diff('TODO 4', 0) + cmd('pnpm mcp:weather', '다른 터미널에서 먼저') + cmd('pnpm mcp:inspect', 'http://localhost:3333/mcp') +
          term(pick('02_run1_first.txt', [r'^┃ \[MCP   \] 날씨 서버 연결 OK', r'^┃ \[MCP   \] look_weather'], limit=2)) +
-         ok('<code>[MCP] 날씨 서버 연결 OK — 도구 1개</code>, 담당자 화면에 <b>날씨</b> 줄')), 'dense')
+         ok('<code>[MCP] 날씨 서버 연결 OK — 도구 1개</code>, 담당자 화면에 <b>날씨</b> 줄'),
+         diff('TODO 4', 1) + diff('TODO 4', 2) + cmd('pnpm agent')), 'dense')
 add(2, '서버를 끄면?',
     cols(term(pick('07_mcp_off.txt', [r'^┃ \[MCP   \] 날씨 서버 연결 실패', r'^┃ \[LLM', r'^\[SUB   \] ┗', r'^\[DECIDE'], limit=7)) + cmd('pnpm agent 2', '날씨 서버를 끈 채로'),
          bullets(['연결 실패는 <b>에러가 아니라 안내 한 줄</b>이다',
@@ -319,8 +314,48 @@ add(3, 'LLM 말고 Jev 를 쓰면?',
                '};'], file='labs/agent/main.ts') +
          bullets(['Jev 는 <b>의견</b>만 준다. 출격 / 감시 / 무시를 정하는 규칙은 코드에 있다',
                   '키가 없으면 <code>JEV_MODE=local</code> 로 Jev 자리를 정규식 규칙이 대신한다. 흐름은 똑같이 돈다'])), 'table')
+add(3, 'Jev 는 무엇인가?',
+    cols(table(['', 'Jev (TypeSafe AI)'],
+               [['발표', '2026-09-15, early access (대기 명단)'],
+                ['이름', '경제학자 W. S. <b>Jevons</b> · System One = 카너먼 「생각에 관한 생각」의 <b>빠른 생각</b>'],
+                ['하는 일', '앱 상태(문장 · JSON)를 받아 <b>형식이 정해진 답</b>: choice · score · noul'],
+                ['만드는 법', '글자를 한 자씩 쓰지 않고 답 전체를 한 번에 뽑는다 · RLCD(확률이 맞게 학습)'],
+                ['속도 · 값', '70 ~ 500ms · 입력 100만 토큰 $0.042, 출력 무료'],
+                ['한계', '이유를 말하지 않는다 · 답 후보를 미리 알아야 한다 · 형식은 늘 맞지만 판정은 틀릴 수 있다']], 'dense'),
+         bullets(['LLM = 느린 생각(설명 · 조사), Jev = 빠른 생각(판정). <b>모델 둘을 일에 맞게 나눠 쓴다</b>',
+                  '질문을 여러 개 묶어 보내도 지연이 거의 안 늘어난다 → judge 노드가 3질문을 한 번에',
+                  '부르는 길 셋, <code>askJev</code> 는 같다: <code>JEV_MODE=typesafe</code>(공식 SDK) · <code>openrouter</code>(<code>/api/alpha/decisions</code>) · <code>local</code>(정규식, 키 없음)',
+                  '폐쇄망이면 <code>local</code> 자리에 우리 분류 모델을 꽂는다. 그래프는 그대로']) +
+         small('속도 · 값 · 정확도는 TypeSafe 자체 발표. 자체 벤치마크 일치율 67.8% — 중위권 LLM 과 비슷하고 최상위 LLM 보다 5 ~ 6점 낮다. 정확도가 아니라 <b>속도 · 값 · 형식</b>을 사는 모델')), 'table')
+add(3, 'OpenAI 도 판정 전용 API 를 냈다 — Decisions API',
+    cols(table(['', 'OpenAI Decisions API'],
+               [['일정', '10/06 공개 베타 → <b>10/22 정식(GA)</b>'],
+                ['부르는 곳', '<code>POST /v1/decisions</code> · 모델 <code>gpt-6-luna</code> 하나'],
+                ['질문 유형', '<code>predicate</code>(예/아니오 확률) · <code>choice</code> · <code>score</code>(2 ~ 10 등급)'],
+                ['값', '입력 100만 토큰 $0.10 (캐시 $0.01), 출력 무료'],
+                ['GA 에서 바뀐 것', '질문 수 200 → <b>400</b> · 프롬프트 캐시 · JSON 입력 · 질문마다 이미지 · 음성(GPT-Live) 연동'],
+                ['비교', 'Jev 와 같은 생각: 문장 대신 <b>확률 + 확신도</b>. Jev 의 <code>noul</code> = OpenAI 의 <code>predicate</code>']], 'dense') +
+         small('이름 주의: OpenRouter 의 "Decisions API"(<code>/api/alpha/decisions</code>, 우리 <code>JEV_MODE=openrouter</code>)는 OpenAI 것보다 먼저 나온 별개 엔드포인트다. OpenRouter 는 OpenAI 모델도 <code>openai/gpt-6-luna-decisions</code> 로 중계한다'),
+         code(['// 예시 — 우리 QUESTIONS 를 OpenAI 형식으로 옮기면 (오늘 실행 코드 아님)',
+               'POST /v1/decisions',
+               '{ model: "gpt-6-luna",',
+               '  input: "보고 + facts + 기억",',
+               '  questions: [',
+               '    { name: "action", type: "choice", instructions: "관제실이 지금 뭘 해야 할까?",',
+               '      choices: [{ value: "scramble", description: "위험해 보인다" },',
+               '                { value: "watch",    description: "좀 수상하다" },',
+               '                { value: "ignore",   description: "별일 아니다" }] },',
+               '    { name: "danger", type: "score", instructions: "얼마나 위험해 보이나?",',
+               '      levels: [{ label: "안 위험" }, { label: "조금" },',
+               '               { label: "꽤" },     { label: "비상" }] },',
+               '    { name: "unknown", type: "predicate", instructions: "정체를 모른다" } ] }',
+               '',
+               '// 답: { answers: [{ name: "action", choice: "watch",',
+               '//        probabilities: [...], confidence: 0.41 }, ...] }'], w=120, file='OpenAI Decisions API · 요청 모양') +
+         bullets(['판정 모델이 한 회사의 실험이 아니라 <b>큰 회사도 내놓는 부품</b>이 됐다',
+                  '바꾸려면 <code>src/lib/jev.ts</code> 에 모드 하나 추가: noul → predicate, criteria → choices · levels. judge 노드와 그래프는 그대로'])), 'dense')
 add(3, step_tag(6, 'Jev 에게 묻기'),
-    cols(diff('TODO 6', w=88) + cmd('pnpm agent 1') +
+    cols(diff('TODO 6') + cmd('pnpm agent 1') +
          bullets(['질문 세 개는 위에 <code>QUESTIONS</code> 로 미리 적혀 있다. 빈칸은 묻는 한 줄',
                   '비워 두면 "확신 0% 감시" 뿐이라 코드 규칙이 언제나 사람에게 넘긴다']),
          term(pick('10_all_typesafe.txt', [], start=r'^\[JEV   \] \[typesafe\]', stop=r'^\[RULE', limit=16, w=96), 'tiny') +
@@ -340,23 +375,18 @@ add(3, '판정 화면 읽기 · 질문 한 줄이 결과를 바꾼다',
 cover(3, 7, '사람의 답으로 이어가기', '<code>Command({ resume: 답 })</code> 으로 같은 thread 다시 invoke', '<code>main.ts</code> (TODO 7)', '"사람이 결정". Ctrl+C 뒤 <code>pnpm agent --resume &lt;번호&gt;</code>', 'HITL · Checkpoint', '③ interrupt · Command resume · thread_id 그대로. MemorySaver 만 SqliteSaver 로')
 add(3, step_tag(7, '사람의 답으로 멈춘 곳부터 이어가기'),
     bullets(['<code>interrupt()</code> 는 그래프를 <b>멈추고 저장만</b> 한다. 답을 넣어 <b>다시 돌리는 건 그래프 밖 반복문</b>의 일이다 — 그게 TODO 7']) +
-    cols(diff_ctx([(' ', 'async function runWithHuman() {'),
-                   (' ', '  if (!resumeId) await run(input);            // 처음이면 START 부터, --resume 이면 생략'),
-                   (' ', '  for (;;) {'),
-                   (' ', '    // 그래프가 interrupt() 에서 멈춰 있나? 멈췄으면 질문이 tasks 에 들어 있다'),
-                   (' ', '    const stopped = await graph.getState(config);'),
-                   (' ', '    const question = stopped.tasks.flatMap((t) => t.interrupts ?? [])[0]?.value;'),
-                   (' ', '    if (!question) break;                       // 질문이 없다 = 끝까지 돌았다'),
-                   (' ', '    // ===== TODO 7 ====='),
-                   ('-', '    const answer = await askPerson(question);'),
-                   ('-', '    log("stop", `답(${answer})을 받았지만 그래프를 이어가지 않았습니다'),
-                   ('-', '                 — TODO 7 (--resume 도 7단계를 채운 뒤부터)`);'),
-                   ('-', '    break;                                      // 답만 받고 끝'),
-                   ('+', '    log("setup", `멈춰도 된다 — pnpm agent --resume ${threadId} 로 여기부터 이어간다`);'),
-                   ('+', '    // 같은 thread_id 로 다시 돌린다 → 멈춘 줄에서 답을 받고 이어진다'),
-                   ('+', '    await run(new Command({ resume: await askPerson(question) }));'),
-                   (' ', '  }'),
-                   (' ', '}')], file='labs/agent/main.ts · TODO 7 (그래프 밖 실행 반복문)', w=96) + cmd('pnpm agent'),
+    cols(diff_ctx([(' ', '    async function runWithHuman() {'),
+                   (' ', '      if (!resumeId) await run(input);            // 처음이면 START 부터, --resume 이면 생략'),
+                   (' ', '      for (;;) {'),
+                   (' ', '        // 그래프가 interrupt() 에서 멈춰 있나? 멈췄으면 질문이 tasks 에 들어 있다'),
+                   (' ', '        const stopped = await graph.getState(config);'),
+                   (' ', '        const question = stopped.tasks.flatMap((t) => t.interrupts ?? [])[0]?.value;'),
+                   (' ', '        if (!question) break;                       // 질문이 없다 = 끝까지 돌았다'),
+                   (' ', '        // ===== TODO 7 ====='),
+                   *[('-', l) for l in TODOS['TODO 7']['parts'][0]['before']],
+                   *[('+', l) for l in TODOS['TODO 7']['parts'][0]['after']],
+                   (' ', '      }'),
+                   (' ', '    }')], file='labs/agent/main.ts · TODO 7 (그래프 밖 실행 반복문)') + cmd('pnpm agent'),
          bullets(['① <b>멈춤</b> — <code>approve</code> 안의 <code>interrupt()</code> 가 그래프를 멈추고 칠판을 <code>checkpoints.sqlite</code> 에 저장한다',
                   '② <b>묻기</b> — 바깥 반복문이 "멈춰 있나?" 를 보고 <code>askPerson</code> 으로 답을 받는다',
                   '③ <b>이어가기 (빈칸)</b> — 같은 <code>thread_id</code> 로 <code>Command({ resume: 답 })</code>. <code>approve</code> 는 처음부터 다시 돌지만 <code>interrupt()</code> 가 이번엔 답을 돌려줘서 그 줄부터 계속. 이어갈 수 있게 됐으니 <code>--resume</code> 안내도 여기서 찍는다']) +
@@ -389,6 +419,25 @@ add(3, '파일 안에는 뭐가 남나?',
                   '<code>metadata</code> 의 step: -1 입력 → 0 수집 → 1 판정 → 2 사람(interrupt · resume) → 3 보고서',
                   '우리 코드에 SQL 은 없다. 궁금하면 이렇게 열어 보고, 꼬이면 <code>pnpm memory:reset</code> 으로 지운다']), ratio='r64'), 'cmd')
 cover(3, 8, '기억 찾기 · 남기기', 'remember 에서 <code>findSameCase</code>(8-1) · approve 뒤 <code>saveCase</code>(8-2)', '<code>main.ts</code> (TODO 8-1 · 8-2)', '같은 보고 두 번째엔 "같은 사례 찾음 → Jev 생략"', 'Context · Memory — 장기 기억이 판단을 바꾼다', '④ 단기 기억(thread) 과 장기 기억의 차이')
+add(3, 'Hindsight 는 무엇인가?',
+    cols('<figure class="shot"><img src="captures/hindsight_dashboard.png" alt="Hindsight 대시보드 control-room"><figcaption>보고 4건 + 같은 보고 한 번 더 = 문서 5개 → 기억 49개 · 링크 372개 (<code>pnpm memory:ui</code> → localhost:18888)</figcaption></figure>',
+         table(['', 'Hindsight (Vectorize, MIT 오픈소스)'],
+               [['한 줄', 'Agent 의 <b>장기 기억 서버</b>. 대화가 끝나도, 프로그램을 꺼도 남는다'],
+                ['동사 셋', '<b>retain</b> 남기기 · <b>recall</b> 찾기 · <b>reflect</b> 기억을 근거로 생각하기'],
+                ['남길 때', '원문을 그대로 두지 않는다. LLM 이 <b>사실</b>로 쪼개고, 같은 대상끼리 잇고, <b>요약</b>을 만든다'],
+                ['기억 종류', '<b>사실</b>(world: 세상 일) · <b>경험</b>(experience: 내가 한 일) · <b>요약</b>(observation: 여러 사실을 묶은 것)'],
+                ['찾을 때', '뜻 · 단어 · 연결 · 시간 네 갈래로 찾고 다시 순위를 매긴다']], 'dense') +
+         bullets(['thread(7단계) = 이번 실행의 <b>단기 기억</b>. Hindsight = 실행이 바뀌어도 남는 <b>장기 기억</b>',
+                  '우리 코드는 두 곳: remember 에서 찾고(8-1), approve 뒤에 남긴다(8-2)',
+                  '서버가 없으면 <code>MEMORY_MODE=file</code> — 같은 함수, JSON 파일 하나']), ratio='r64'), 'fig')
+add(3, 'Hindsight 는 어디서 LLM 을 쓰나?',
+    table(['동작', 'LLM', '하는 일', '우리 코드'],
+          [['retain 남기기', '<b>씀</b>', '원문을 <b>사실</b>로 쪼갠다 · 여러 사실을 <b>요약</b>(observation)으로 묶는다', 'approve 뒤 <code>saveCase</code> (8-2)'],
+           ['recall 찾기', '안 씀', '로컬 모델(임베딩 · 리랭커)로 뜻 · 단어 · 연결 · 시간 검색', 'remember <code>findSameCase</code> (8-1) · judge'],
+           ['reflect 생각하기', '<b>씀</b>', '찾은 기억을 근거로 한 문단 답', '함수만 있음 · 그래프에선 안 부름'],
+           ['같은 사례 판단', '안 씀', '일치도 0.9 이상이면 Jev 생략', '<b>우리 코드 규칙</b>']]) +
+    bullets(['LLM 은 Agent 와 따로: <code>.env</code> 의 <code>HINDSIGHT_LLM_MODEL</code> (비우면 <code>LLM_MODEL</code>)',
+             'retain 이 비동기인 이유 = 뒤에서 LLM 이 사실을 쪼개느라. LLM 이 실패하면 <b>기억이 안 남는다</b> (찾기는 키 없이도 된다)']), 'table')
 add(3, '어제 판단을 오늘 기억하면?',
     cols(mermaid('''flowchart LR
   C["수집 끝"] --> M{remember<br/>같은 사례? 8-1}
@@ -402,7 +451,7 @@ add(3, '어제 판단을 오늘 기억하면?',
                   '같은 사례면 Jev 를 부르지 않는다. 그때의 판정과 사람의 선택이 그대로 올라온다',
                   'Hindsight 서버가 없으면 <code>MEMORY_MODE=file</code> 로 JSON 파일에 똑같이 남긴다']), ratio='r64'), 'fig')
 add(3, step_tag(8, '기억 찾기 · 남기기'),
-    cols(diff('TODO 8', 0, w=88) + diff('TODO 8', 1, w=88) + cmd('pnpm agent 1', '두 번'),
+    cols(diff('TODO 8', 0) + diff('TODO 8', 1) + cmd('pnpm agent 1', '두 번'),
          term(pick('02_run1_first.txt', [r'^\[MEMORY', r'^\[JEV   \]', r'^\[DECIDE'], limit=4)) + small('첫 번째: 기억 없음 → Jev 판정') +
          term(pick('03_run1_again.txt', [r'^\[MEMORY', r'^\s+│ 그때', r'^\[DECIDE'], limit=5)) + small('두 번째: 같은 사례 찾음 → Jev 생략') +
          ok('두 번째 실행에 <code>[MEMORY] 같은 사례 찾음 → Jev 생략</code>')), 'dense')
@@ -545,7 +594,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:"IBM Pl
 #stage.prerender .slide{display:flex;visibility:hidden}#stage.prerender .slide.on{visibility:visible}
 /* 인쇄(PDF): 장마다 1920x1080 한 페이지. pnpm slides:pdf 가 Chrome 헤드리스로 뽑는다 */
 @page{size:1920px 1080px;margin:0}
-@media print{.cmd .copy{display:none}html,body{overflow:visible;height:auto}#stage{position:static;transform:none !important;width:1920px;height:auto;cursor:default}
+@media print{.cmd .copy,.snip .copy{display:none}html,body{overflow:visible;height:auto}#stage{position:static;transform:none !important;width:1920px;height:auto;cursor:default}
  .slide{position:relative;inset:auto;display:flex !important;visibility:visible !important;width:1920px;height:1080px}
  .slide + .slide{break-before:page}
  #bar,#overview,#hint,.mermaidTooltip{display:none !important}}
@@ -567,7 +616,11 @@ pre{font-family:"IBM Plex Mono",ui-monospace,monospace;background:var(--panel);b
 pre.tiny{font-size:16px}
 pre.code{color:#D5DBE3}
 .snip{display:flex;flex-direction:column}.snip .file{align-self:flex-start;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:14px;line-height:1;color:var(--amber);background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0;padding:7px 14px 6px}.snip pre{border-top-left-radius:0}
-pre.diff .del{color:#F08B8B;display:block}pre.diff .add{color:#8BE0A4;display:block}pre.diff .ctx{color:#8C98A8;display:block}
+pre.diff{white-space:pre-wrap;overflow-wrap:anywhere}pre.diff .del,pre.diff .add,pre.diff .ctx{display:block;padding-left:2ch;text-indent:-2ch}
+pre.diff .del{color:#F08B8B}pre.diff .add{color:#8BE0A4}pre.diff .ctx{color:#8C98A8}
+pre.diff .del::before{content:"- "}pre.diff .add::before{content:"+ "}pre.diff .ctx::before{content:"  "}pre.diff span::before{user-select:none}
+pre.diff,pre.code{user-select:text;cursor:text}
+.snip{position:relative}.snip .copy{position:absolute;right:0;top:-6px;font:600 15px/1 "Noto Sans KR",sans-serif;color:var(--muted);background:transparent;border:1px solid var(--muted);border-radius:5px;padding:5px 10px;cursor:pointer}.snip .copy:hover,.snip .copy.done{color:var(--amber);border-color:var(--amber)}
 pre.term .tag{display:inline-block;color:#fff;padding:0 6px;border-radius:3px;font-weight:600}
 .t-report,.t-rule{color:#111 !important}
 .t-report{background:var(--t-report)}.t-setup{background:var(--t-setup)}.t-llm{background:var(--t-llm)}.t-tool{background:var(--t-tool)}.t-mcp{background:var(--t-mcp)}
@@ -628,9 +681,11 @@ function go(i, push=true){cur=Math.max(0,Math.min(N-1,i)); slides.forEach((s,k)=
 function openOverview(){const g=ov.querySelector('.grid'); g.innerHTML=''; slides.forEach((s,k)=>{const c=document.createElement('div'); c.className='cell'+(k===cur?' cur':''); const m=document.createElement('div'); m.className='mini'; const clone=s.cloneNode(true); clone.classList.add('on'); m.appendChild(clone); c.appendChild(m); const n=document.createElement('div'); n.className='n'; n.textContent=k+1; const t=document.createElement('div'); t.className='t'; t.textContent=s.querySelector('h1').textContent; c.appendChild(t); c.appendChild(n); c.onclick=(e)=>{e.stopPropagation(); go(k); closeOverview();}; g.appendChild(c);}); ov.classList.add('on'); requestAnimationFrame(scaleCells); setTimeout(()=>{const cc=g.querySelector('.cell.cur'); cc&&cc.scrollIntoView({block:'center'});},0);}
 function scaleCells(){ov.querySelectorAll('.cell').forEach(c=>{const w=c.clientWidth; c.querySelector('.mini').style.transform=`scale(${w/1920})`;});}
 function closeOverview(){ov.classList.remove('on');}
-stage.addEventListener('click',(e)=>{if(e.target.closest('.cmd .copy, a')) return; const r=stage.getBoundingClientRect(); if(e.clientX < r.left + r.width/2) go(cur-1); else go(cur+1);});
+stage.addEventListener('click',(e)=>{if(e.target.closest('.cmd .copy, a, .snip, pre.code, pre.diff')) return; const r=stage.getBoundingClientRect(); if(e.clientX < r.left + r.width/2) go(cur-1); else go(cur+1);});
 ov.addEventListener('click',closeOverview);
-addEventListener('click',(e)=>{const b=e.target.closest('.cmd .copy'); if(!b) return; navigator.clipboard.writeText(b.parentElement.querySelector('.c').textContent).then(()=>{b.textContent='복사됨'; b.classList.add('done'); setTimeout(()=>{b.textContent='복사'; b.classList.remove('done');},1200);});});
+addEventListener('click',(e)=>{const b=e.target.closest('.cmd .copy, .snip .copy'); if(!b) return; const label=b.textContent;
+  const text=b.closest('.snip') ? [...b.parentElement.querySelectorAll('pre.diff .add')].map(x=>x.textContent).join('\n') + '\n' : b.parentElement.querySelector('.c').textContent;  // 정답 복사 = 초록 줄만
+  navigator.clipboard.writeText(text).then(()=>{b.textContent='복사됨'; b.classList.add('done'); setTimeout(()=>{b.textContent=label; b.classList.remove('done');},1200);});});
 addEventListener('keydown',(e)=>{
   if(e.key==='o'||e.key==='O'){ov.classList.contains('on')?closeOverview():openOverview(); return;}
   if(e.key==='Escape'){closeOverview(); return;}
