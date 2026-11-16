@@ -1,3 +1,13 @@
+## For international engineering reviewers
+
+**Agentic AI Workshop** — an educational, hands-on engineering repository using **TypeScript, LangGraph.js, Model Context Protocol (MCP), RAG, subagents, and human-in-the-loop approval**. It includes reproducible exercises in GitHub Codespaces and a mock-model mode for learners without API keys.
+
+**Highlights:** orchestration and tool contracts, evaluation of agent decisions, controlled execution, and human oversight. Radar/weather/policy scenarios are **synthetic educational data**, not an operational defense or aviation system.
+
+Start with the [workshop README](#처음-오신-분께--수업을-즐기기-위한-기본) or [Codespaces](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on).
+
+---
+
 # 공군 AI센터 · Agentic AI 설계·구현 실무 — 핸즈온 저장소
 
 2026. 10. 29(목) ~ 30(금) · TypeScript · LangGraph.js · MCP · Jev · Hindsight
