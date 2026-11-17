@@ -1,8 +1,8 @@
-# 공군 AI센터 · Agentic AI 설계·구현 실무 — 핸즈온 저장소
+# Air Force AI Center · Agentic AI Design and Implementation — Hands-on Workshop
 
-2026. 10. 29(목) ~ 30(금) · TypeScript · LangGraph.js · MCP · Jev · Hindsight
+October 29–30, 2026 (Thursday–Friday) · TypeScript · LangGraph.js · MCP · Jev · Hindsight
 
-**실습 시작 (설치 없음, 브라우저만):** 아래 버튼 또는 주소를 열고 **Create codespace** — 자세한 안내는 [1-2 절](#1-2-가장-빠른-길--github-codespaces-설치-없음-권장)
+**Start the workshop in your browser — no installation required:** Open the button or URL below and select **Create codespace**. See [Section 1-2](#1-2-fastest-path--github-codespaces-no-installation-recommended) for detailed instructions.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
 
@@ -10,115 +10,117 @@
 https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on
 ```
 
-> 이 저장소의 모든 데이터(레이더 화면·기상·규정집)는 **교육용 합성 자료**이며 실제 공역·부대·기종·규정과 무관합니다.
-> Agent 는 **권고**까지만 수행하고, 결정은 항상 사람이 합니다.
+> All data in this repository, including radar displays, weather, and the rulebook, is **synthetic training material**. It does not represent actual airspace, military units, aircraft types, or operational regulations.
+> The agent provides **recommendations only**. A human always makes the final decision.
 
 ---
 
-## 처음 오신 분께 — 수업을 즐기기 위한 기본
+## Welcome — What You Need to Get Started
 
-### 오늘 만드는 것
+### What You Will Build
 
-관제실에 "서울 상공에 둥근 비행체가 떠 있어요" 같은 **보고 한 줄**이 들어오면, AI Agent 가 레이더 · 날씨 · 규정집을 스스로 찾아보고 근거를 모아 "출격 / 감시 / 무시" 의견을 냅니다. **마지막 결정은 언제나 사람**이 합니다.
+When a control room receives a **one-line report**, such as “There is a round flying object above Seoul,” an AI agent checks radar, weather, and the rulebook, gathers evidence, and recommends one of three actions: **scramble, monitor, or ignore**. **A human always makes the final decision.**
 
-거의 빈 Agent 에서 출발해 강사와 함께 **8단계**로 하나씩 붙입니다. 한 단계를 채울 때마다 다시 돌리면 담당자 화면에 근거가 한 줄씩 늘어납니다. 끝나면 요즘 Agent 의 핵심 부품(Tool Calling · MCP · RAG · Subagent · 사람 승인 · 기억)을 모두 내 손으로 한 번씩 붙여 본 셈이 됩니다.
+Starting with a nearly empty agent, you will add capabilities in **eight steps** alongside the instructor. Each time you complete a step and run the agent again, another piece of evidence appears on the operator's screen. By the end, you will have connected the core building blocks of a modern agent yourself: tool calling, MCP, RAG, subagents, human approval, and memory.
 
-### 걱정하지 않아도 되는 것
+### No Need to Worry
 
-- **TypeScript 를 몰라도 됩니다.** 빈칸은 한 곳에 몇 줄이고, 주석에 할 일이 적혀 있으며, 강사가 화면에서 같이 칩니다. 코드를 외우기보다 "어디에 무엇이 붙는지" 를 보는 수업입니다
-- **설치가 필요 없습니다.** GitHub Codespaces 가 브라우저 안에 개발 환경을 통째로 띄워 줍니다
-- **API 키가 없어도 끝까지 돕니다.** 키가 없으면 **mock 모드**(정해진 답을 돌려주는 가짜 모델)로 모든 단계가 돌아갑니다. 실제 모델 키는 강사가 당일 조별로 나눠 줍니다
-- **늦어도 따라잡을 수 있습니다.** `pnpm step <단계>` 한 줄이면 앞 단계는 정답으로 채워진 상태로 넘어갑니다
-- **에러는 정상입니다.** 빨간 줄이 나오면 읽어 보고, 모르겠으면 손을 들어 주세요. 고치는 과정도 수업입니다
+- **You do not need to know TypeScript.** Each exercise requires only a few lines. Comments explain what to do, and the instructor writes the code with you. The goal is to understand how the pieces connect, rather than memorize code.
+- **No installation is required.** GitHub Codespaces provides a complete development environment in your browser.
+- **Every step works without an API key.** Without a key, the project uses **mock mode**, a simulated model with predefined responses. The instructor distributes real model keys to each group during the workshop.
+- **You can catch up at any time.** Run `pnpm step <step>` to start from a version with all earlier steps completed.
+- **Errors are part of learning.** Read the error message and raise your hand if you need help. Debugging is part of the workshop.
 
-### 수업 전에 해 둘 것 (5분)
+### Before the Workshop (5 Minutes)
 
-- [ ] **GitHub 계정** 만들기 · 로그인 확인 — https://github.com/signup (Codespaces 는 개인 계정이면 달마다 60시간 무료, 이틀 수업은 10시간이면 충분)
-- [ ] 노트북에 **Chrome 또는 Edge** 최신판
-- [ ] 미리 한 번 열어 보기 — [1-2 절](#1-2-가장-빠른-길--github-codespaces-설치-없음-권장) 대로 Codespace 를 만들고 "준비 끝" 이 뜨는지 확인 (첫 생성은 2~3분, 한 번 만들어 두면 당일엔 다시 열기만 하면 됩니다)
-- [ ] (선택) 회사·기관 네트워크에서 github.com 이 막혀 있다면 미리 알려 주세요
+- [ ] Create a **GitHub account** and confirm that you can sign in: https://github.com/signup. The workshop assumes the personal-account Codespaces allowance of 60 hours per month on a 2-core machine; approximately 10 hours is enough for both days.
+- [ ] Install the latest **Chrome or Edge** on your laptop.
+- [ ] Try opening the environment in advance. Follow [Section 1-2](#1-2-fastest-path--github-codespaces-no-installation-recommended), create a codespace, and check for the setup-complete message. Initial creation takes about 2–3 minutes; you can reopen the same environment on the day.
+- [ ] Optional: Let the instructor know in advance if your organization blocks github.com.
 
-### 꼭 알아 둘 용어 12개
+### 12 Essential Terms
 
-| 용어 | 한 줄 뜻 | 오늘 코드에서 |
+| Term | In Plain English | Where You Will See It |
 |---|---|---|
-| **LLM** | 글을 읽고 다음 글을 써 주는 언어 모델 (ChatGPT · Claude 같은 것) | `src/lib/llm.ts` |
-| **Agent** | LLM 이 "다음에 뭘 할지" 스스로 고르며 일을 끝까지 해내는 프로그램 | 이 저장소 전체 |
-| **Tool (도구)** | LLM 이 부를 수 있는 함수. 모델은 "이 도구를 이 값으로 불러 줘" 라고 **말만** 하고, 실행은 내 코드가 한다 | `look_radar` · `look_weather` … |
-| **Agent Loop** | 모델에게 묻기 → 도구 실행 → 결과를 다시 모델에게, 를 "다 확인했다" 할 때까지 반복 | `agent ⇄ tools` |
-| **Graph · Node · Edge** | LangGraph 의 그림. 노드 = 할 일 한 칸, 엣지 = 다음으로 가는 화살표 | `addNode` · `addEdge` |
-| **State (칠판)** | 노드들이 같이 읽고 쓰는 칠판. 노드는 칠판에 자기 결과를 적고 다음 노드에 넘긴다 | `labs/agent/state.ts` |
-| **Worker · Subagent** | 일을 나눠 맡는 일꾼. 안에 모델 루프가 없으면 Worker, 있으면 Subagent | `searchDocs` · `askRadar` |
-| **RAG** | 질문과 관련된 문서를 먼저 찾아서 근거로 넣어 주기 | 규정집 찾기 (`search-docs.ts`) |
-| **MCP** | 도구를 다른 프로그램(서버)에 두고 표준 방식으로 빌려 쓰는 약속. USB 처럼 꽂으면 도구가 생긴다 | 날씨 서버 (`mcp-servers/weather`) |
-| **Jev** | 질문에 출격/감시/무시 같은 **정해진 답과 확률**로 답하는 판정 모델. LLM 보다 빠르고 답이 흔들리지 않는다 | `src/lib/jev.ts` |
-| **HITL (Human-in-the-Loop)** | 중요한 순간에 Agent 가 멈추고 사람에게 묻기. 멈춘 곳은 저장(Checkpoint)되어 나중에 이어갈 수 있다 | `approve` 노드 |
-| **Memory (기억)** | 지난번 판단을 남겨 두었다가 같은 보고가 오면 다시 묻지 않고 그대로 쓰기 | Hindsight (`src/lib/memory.ts`) |
+| **LLM** | A language model that reads text and generates a response, such as ChatGPT or Claude | `src/lib/llm.ts` |
+| **Agent** | A program in which an LLM chooses what to do next and works toward completing a task | Throughout this repository |
+| **Tool** | A function the LLM can request. The model **asks** to call a tool with specific arguments; your code executes it | `look_radar` · `look_weather` … |
+| **Agent Loop** | Ask the model → execute tools → return results to the model; repeat until it has enough information | `agent ⇄ tools` |
+| **Graph · Node · Edge** | LangGraph's workflow structure: a node is a unit of work, and an edge points to the next step | `addNode` · `addEdge` |
+| **State** | A shared whiteboard that nodes read and update. Each node records its results for the next node | `labs/agent/state.ts` |
+| **Worker · Subagent** | A component assigned part of the work. Here, a Worker has no internal model loop; a Subagent does | `searchDocs` · `askRadar` |
+| **RAG** | Retrieve documents relevant to a question and provide them as supporting evidence | Rulebook retrieval (`search-docs.ts`) |
+| **MCP** | A standard protocol for using tools hosted by another program, or server. Connecting a server makes its tools available | Weather server (`mcp-servers/weather`) |
+| **Jev** | A decision model that returns **predefined choices and probabilities**, such as scramble, monitor, or ignore. It is designed for faster, more consistent decisions than a general-purpose LLM | `src/lib/jev.ts` |
+| **HITL (Human-in-the-Loop)** | Pause the agent at important moments to ask a human. A checkpoint saves the paused state so execution can resume later | `approve` node |
+| **Memory** | Store previous decisions and reuse them when the same report arrives | Hindsight (`src/lib/memory.ts`) |
 
-### 터미널 화면 읽는 법
+### Reading Terminal Output
 
-`pnpm agent` 를 치면 줄마다 앞에 **꼬리표**가 붙습니다. 꼬리표만 따라 읽어도 Agent 가 무엇을 했는지 보입니다.
+Each line printed by `pnpm agent` starts with a **label**. Follow the labels to see what the agent did.
+
+The examples below translate the output into English for reference; the application's existing messages and exercise comments remain in their original language.
 
 ```
-[REPORT] 서울 상공에 정체불명의 둥근 비행체가 떠 있어요 …      ← 들어온 보고
-[SETUP ] 모델 mock · Jev local · 기억 file                      ← 지금 어떤 모드로 도는지
-[TOOL  ] search_docs(보고 그대로)                                ← 규정집 찾기 (Worker)
-[SUB   ] ┏━ askRadar 레이더 Subagent                             ← 여기부터 ┃ 줄은 Subagent 의 일
-┃ [LLM   ] 1회째 → 도구 쓰기: look_radar                          ← 모델이 도구를 고름
-┃ [TOOL  ] look_radar(…)                                          ← 내 코드가 실행
-┃ [MCP   ] look_weather(…)                                        ← MCP 서버의 도구
-[SUB   ] ┗━ askRadar 끝 · 모델 4회 호출                           ← 결론만 부모에게
-[MEMORY] 같은 사례 없음 → Jev 에게 묻는다                         ← 기억 확인
-[JEV   ] ▶ scramble 65% …                                         ← 판정 모델의 의견
-[RULE  ] 조건 scramble → 출격 준비!                               ← 코드 규칙의 권고
-[HUMAN ] 종합 — 담당자가 결정합니다                               ← 사람에게 묻는다 (y / w / n)
-[DECIDE] …                                                        ← 사람이 고른 결과
+[REPORT] An unidentified round object is hovering above Seoul …  ← Incoming report
+[SETUP ] Model mock · Jev local · Memory file                     ← Current modes
+[TOOL  ] search_docs(original report)                             ← Rulebook lookup (Worker)
+[SUB   ] ┏━ askRadar radar Subagent                               ← Lines marked ┃ belong to the Subagent
+┃ [LLM   ] Call 1 → Use tool: look_radar                           ← The model selects a tool
+┃ [TOOL  ] look_radar(…)                                          ← Your code executes it
+┃ [MCP   ] look_weather(…)                                        ← Tool on the MCP server
+[SUB   ] ┗━ askRadar finished · 4 model calls                      ← Return conclusions to the parent
+[MEMORY] No matching case → Ask Jev                               ← Memory lookup
+[JEV   ] ▶ scramble 65% …                                         ← Decision model recommendation
+[RULE  ] Condition: scramble → Prepare to scramble!                ← Code-based recommendation
+[HUMAN ] Review — The operator makes the decision                 ← Ask a human (y / w / n)
+[DECIDE] …                                                       ← Human-selected outcome
 ```
 
-`[STOP]` 은 코드가 강제로 멈췄다는 뜻(호출 한도 · 시간 초과)이고, `--watch` 를 붙이면 `[NODE]` 줄에 노드마다 칠판에 들어간 값 · 나온 값이 보입니다.
+`[STOP]` means the code enforced a stop, such as a call limit or timeout. Add `--watch` to see each node's state inputs and outputs on `[NODE]` lines.
 
-### 한 단계는 이렇게 진행됩니다
+### How Each Step Works
 
-1. 강사가 "N단계 시작합니다" 하고 개념을 설명합니다
-2. 파일을 엽니다 — VS Code 에서 `Ctrl+P` (Mac `Cmd+P`) 를 누르고 파일 이름(`main.ts` 등)을 칩니다
-3. 빈칸을 찾습니다 — `Ctrl+F` 로 `TODO N` 검색. `// ===== TODO N: … =====` 아래 주석에 할 일이, `[여기에 코드를 작성하세요]` 자리에 쓸 곳이 있습니다
-4. 강사와 같이 채우고 저장(`Ctrl+S`)
-5. 터미널에서 `pnpm agent` → **담당자 화면(`[HUMAN]`)에 새 줄이 생기면 성공**
+1. The instructor introduces the next step and explains the concept.
+2. Open the file: press `Ctrl+P` in VS Code (`Cmd+P` on Mac) and enter its name, such as `main.ts`.
+3. Find the exercise: use `Ctrl+F` to search for `TODO N`. Comments below `// ===== TODO N: … =====` explain the task; the bracketed placeholder marks where to write your code.
+4. Complete the exercise with the instructor and save with `Ctrl+S`.
+5. Run `pnpm agent` in the terminal. **A new line on the operator's screen (`[HUMAN]`) means the step is working.**
 
-### 막혔을 때
+### If You Get Stuck
 
-| 상황 | 이렇게 |
+| Situation | What to Do |
 |---|---|
-| 정답이 궁금하다 | `git diff hands-on main -- labs/agent/main.ts` — 내 코드와 정답을 나란히 (파일 경로만 바꿔서) |
-| 진도를 놓쳤다 | `pnpm step <지금 단계>` — 앞 단계가 풀린 상태로 맞춰진다 (덮어쓰기 전에 묻는다) |
-| 실행이 멈추지 않는다 | 터미널에서 `Ctrl+C` |
-| 담당자 질문에서 멈췄다 | 정상입니다. `y`(출격) · `w`(감시) · `n`(무시) 중 하나를 치고 Enter |
-| 점심 뒤 화면이 꺼졌다 | Codespace 는 30분 쉬면 잠듭니다. 같은 주소로 다시 열면 파일은 그대로 |
-| 그래도 모르겠다 | 손을 들어 주세요. 옆 사람과 같이 봐도 좋습니다 |
+| You want to see the solution | Run `git diff hands-on main -- labs/agent/main.ts` to compare the exercise and solution branches. Substitute another file path as needed |
+| You missed a step | Run `pnpm step <current-step>` to fill in earlier steps. It asks before overwriting files |
+| A process keeps running | Press `Ctrl+C` in the terminal |
+| Execution pauses at the operator prompt | This is expected. Enter `y` (scramble), `w` (monitor), or `n` (ignore), then press Enter |
+| The environment stopped during lunch | A codespace sleeps after 30 minutes of inactivity. Reopen the same URL; your files are preserved |
+| You still need help | Raise your hand. You can also work through it with a neighbor |
 
-### 터미널 기본 몇 가지
+### A Few Terminal Basics
 
-- 이전 명령 다시: `↑` 키
-- 터미널 하나 더: 터미널 창 오른쪽 위 `+` (날씨 MCP 서버를 켜 둘 때)
-- 터미널에서 `Ctrl+C` 는 "복사" 가 아니라 **"멈춤"** 입니다. 복사는 드래그 후 마우스 오른쪽 버튼, 붙여넣기는 `Ctrl+V` (브라우저가 처음 한 번 허락을 물을 수 있음)
-- 이 README 의 `pnpm …` 명령은 모두 저장소 맨 위 폴더에서 칩니다 (Codespaces 는 처음부터 거기서 열립니다)
+- Repeat the previous command: press `↑`.
+- Open another terminal: select `+` in the upper-right corner of the terminal panel, for example to keep the weather MCP server running.
+- In the terminal, `Ctrl+C` means **stop**, not copy. To copy, select text and right-click. Paste with `Ctrl+V`; your browser may ask for permission the first time.
+- Run all `pnpm …` commands in this README from the repository root. Codespaces opens there by default.
 
-### 수업이 끝나면
+### After the Workshop
 
-- 내 코드를 남기고 싶으면 VS Code 왼쪽 **Source Control** 에서 commit → push (내 fork 가 자동으로 생깁니다)
-- 다 썼으면 https://github.com/codespaces 에서 내 Codespace 를 **Stop** 또는 **Delete** — 무료 시간을 아낄 수 있습니다
-- 완성본은 언제든 `main` 브랜치에 있습니다. 집에서 다시 해 보려면 같은 링크로 새 Codespace 를 만들면 됩니다
+- To save your work, use **Source Control** in VS Code to commit and push. When needed, VS Code offers to create your own fork.
+- When finished, **Stop** or **Delete** your codespace at https://github.com/codespaces to conserve your allowance.
+- The complete solution is always on `main`. To repeat the exercises at home, create a new codespace using the same link.
 
 ---
 
-## 0. 브랜치 안내 — 먼저 읽어 주세요
+## 0. Branch Guide — Read This First
 
-| 브랜치 | 용도 | 누가 |
+| Branch | Purpose | Intended Users |
 |---|---|---|
-| `main` | **완성본.** 모든 코드가 채워진 정답 | 강사 · 막힌 교육생 |
-| `hands-on` | **실습용.** `main` 과 같지만 핵심 몇 곳이 비어 있고 주석으로 할 일이 적혀 있음 (`[여기에 코드를 작성하세요]`) | 교육생 |
+| `main` | **Complete solution.** All exercise code is implemented | Instructors and learners looking for the solution |
+| `hands-on` | **Workshop exercises.** Matches `main`, with selected implementation sections replaced by placeholders and instructional comments | Learners |
 
-교육생은 `hands-on` 브랜치에서 실습합니다. 막히면 정답을 보세요. 파일 경로가 같으니 내 코드와 정답을 나란히 비교할 수 있습니다.
+Use the `hands-on` branch for the workshop. If you get stuck, consult the solution. Both branches use the same file paths, making comparison straightforward.
 
 ```bash
 git diff hands-on main -- labs/agent/main.ts
@@ -126,303 +128,313 @@ git diff hands-on main -- labs/agent/main.ts
 
 ---
 
-## 1. 5분 시작 가이드
+## 1. Five-Minute Quick Start
 
-### 1-1. 준비물 (교육 1주 전에 미리)
+### 1-1. Prerequisites (Prepare One Week Before the Workshop)
 
-| 필수 | 선택 |
+| Required | Optional |
 |---|---|
-| Node.js **22 LTS** 이상 (`node -v`) | Ollama + `ollama pull qwen3:8b` (내 노트북 모델로 바꿔 보기) |
-| git, VS Code | LangSmith 무료 계정 (LangGraph Studio · 실행 기록 보기) |
-| 강사가 나눠주는 조별 토큰 (`.env` 에 입력) | `uv` (Hindsight 기억 서버를 내 노트북에서 띄울 때, https://docs.astral.sh/uv/) |
+| Node.js **22 LTS** or later (`node -v`) | Ollama + `ollama pull qwen3:8b` to try a model running on your laptop |
+| git, VS Code | A free LangSmith account for LangGraph Studio and execution traces |
+| A group token provided by the instructor, entered in `.env` | `uv` to run the Hindsight memory server on your laptop: https://docs.astral.sh/uv/ |
 
-로컬 LLM 은 설치하지 않아도 됩니다. 모델은 OpenRouter 로 부르고, 강사가 조별 키(지출 상한 걸린)만 나눠 드립니다.
+You do not need to install a local LLM. The workshop calls models through OpenRouter, using spending-capped API keys provided to each group by the instructor.
 
-### 1-2. 가장 빠른 길 — GitHub Codespaces (설치 없음, 권장)
+### 1-2. Fastest Path — GitHub Codespaces (No Installation, Recommended)
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on)
 
-GitHub 계정만 있으면 됩니다. Windows · Mac · Linux 상관없이 **브라우저만 있으면 됩니다.** 위 배지(또는 https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on )를 열면 아래 화면이 뜹니다. 브랜치가 `hands-on`, 머신이 `2-core` 인지 확인하고 **Create codespace** 를 누르세요.
+All you need is a GitHub account and **a browser**, whether you use Windows, macOS, or Linux. Open the badge above or https://codespaces.new/mwmw7/airforce-agentic-ai?ref=hands-on. On the screen below, confirm that the branch is `hands-on` and the machine type is `2-core`, then select **Create codespace**.
 
-<img src="docs/slides/captures/codespace_start.png" alt="Codespaces 만들기 화면" width="640">
+<img src="docs/slides/captures/codespace_start.png" alt="GitHub Codespaces creation screen" width="640">
 
-2~3분 뒤 브라우저에 VS Code 가 열리고, 아래 터미널에서 **설치 · `.env` · 환경 점검이 자동으로 끝납니다** (`.devcontainer/` 가 그 레시피). "준비 끝" 이 보이면 `pnpm agent` 를 치세요. 날씨 MCP 는 터미널을 하나 더 열어(`+`) `pnpm mcp:weather`.
+After about 2–3 minutes, VS Code opens in your browser. **Dependency installation, `.env` creation, and environment checks run automatically** in the terminal, using the configuration in `.devcontainer/`. When setup completes, run `pnpm agent`. Open another terminal with `+` and run `pnpm mcp:weather` for the weather MCP server.
 
-- fork 는 필요 없습니다. 수업 중 강사가 고친 내용은 `git pull` 로 받습니다. 끝나고 남기고 싶으면 push 할 때 자동으로 내 fork 가 생깁니다
-- 개인 계정은 달마다 2-core 기준 60시간이 무료입니다 (이틀 교육은 10시간 안팎). 한도를 넘어도 요금이 나가지 않고 멈춥니다
-- 30분 동안 아무것도 안 하면 잠듭니다(점심시간). 다시 열면 파일은 그대로, 켜 둔 `pnpm mcp:weather` 만 다시 켜세요
-- 토큰·키는 `.env` 에 넣거나, GitHub **Settings → Codespaces → Secrets** 에 같은 이름(`LLM_API_KEY` 등)으로 넣으면 `.env` 보다 우선합니다
-- `pnpm see:run`(3030) · 날씨 MCP(3333) · Studio(2024) 포트는 Codespaces 가 알아서 열어 줍니다
-  - `pnpm see:run` — 돌리면서 보기. 브라우저 탭이 자동으로 열림 (계정 필요 없음)
-  - `pnpm see:graph` — 그림만. `docs/graphs/agent.md` 를 열고 `Ctrl+Shift+V` (Mermaid 미리보기 확장이 미리 깔려 있음)
-  - `pnpm see:studio` — 공식 디버거. 2024 포트를 공개로 바꾸고 Studio 주소를 찍어 준다 (LangSmith 로그인 필요). 공개 주소는 누구나 접속 가능하니 시연 후 Ctrl+C
+- No fork is required to begin. Use `git pull` to receive instructor updates during the workshop. When saving your work afterward, VS Code can create a fork as part of pushing your changes.
+- The workshop assumes a personal-account allowance of 60 hours per month on a 2-core machine, with approximately 10 hours needed for the two days. Without paid usage enabled, the environment stops when the allowance is exhausted.
+- After 30 minutes of inactivity, the codespace sleeps. Your files remain when you reopen it; restart `pnpm mcp:weather` if it was running.
+- Put tokens and keys in `.env`, or add identically named secrets, such as `LLM_API_KEY`, under GitHub **Settings → Codespaces → Secrets**. Codespaces secrets take precedence over `.env`.
+- Codespaces forwards the ports for `pnpm see:run` (3030), weather MCP (3333), and Studio (2024).
+  - `pnpm see:run`: Watch the agent execute. A browser tab opens automatically; no additional account is required.
+  - `pnpm see:graph`: View the graph only. Open `docs/graphs/agent.md` and press `Ctrl+Shift+V`. A Mermaid preview extension is preinstalled.
+  - `pnpm see:studio`: Launch the official debugger. The helper makes port 2024 public and prints the Studio URL. A LangSmith login is required. Anyone can access the public URL, so stop the process with `Ctrl+C` after the demonstration.
 
-### 1-3. 노트북에 직접 설치
+### 1-3. Local Installation
 
 ```bash
 git clone https://github.com/mwmw7/airforce-agentic-ai.git
 cd airforce-agentic-ai
-git checkout hands-on        # 실습용 브랜치 (빈칸 버전)
-corepack enable && corepack prepare pnpm@12.6.0 --activate   # pnpm 이 없다면 (Node 22 내장 corepack)
+git checkout hands-on        # Exercise branch with implementation placeholders
+corepack enable && corepack prepare pnpm@12.6.0 --activate   # If pnpm is missing; uses Corepack bundled with Node 22
 pnpm install
-pnpm setup:check             # 환경 점검 + .env 생성 (토큰은 당일 강사가 배포. 없어도 mock 모드로 전부 실행됩니다)
+pnpm setup:check             # Check the environment and create .env. Instructor tokens are provided on the day; mock mode works without them.
 ```
 
-`[문제]` 가 없으면 준비 완료입니다. `[참고]` 는 "네트워크 없이 도는 대체 모드" 라는 뜻이라 실습에는 지장이 없습니다.
+You are ready when the check reports no problems. Informational notices about offline fallback modes do not prevent you from completing the exercises.
 
-### 1-4. 첫 실행
+### 1-4. First Run
 
 ```bash
-pnpm mcp:weather                 # 터미널 1: 날씨 MCP 서버 (켜 둔 채로 둔다. 없으면 agent 는 날씨 없이 돈다)
-pnpm agent                       # 터미널 2: 보고 1번 → LLM 이 레이더·규정집·날씨 확인 → Jev 판정 → 출격이면 사람이 승인(y/n)
-pnpm agent 3                     # 보고 3번 (1~4), 또는 pnpm agent "한강에 오리 풍선이 떠요" 처럼 내 보고
-pnpm agent:limit                 # 호출 한도 1 로 강제 중단 — 멈추는 건 모델이 아니라 코드
-pnpm agent --watch               # 단계(노드)마다 들어간 값·나온 값을 보여 주며 실행 (--watch=full 이면 전부)
-pnpm agent --resume <실행번호>    # 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어가기 (명령은 질문 바로 위 SETUP 줄에 찍힌다, 7단계 뒤)
-pnpm agent --all                 # 보고 4종을 차례로 돌리고 표로 정리. 건마다 사람이 y/w/n 을 답한다 (--answer w 를 주면 자동). JEV_MODE=local 과 typesafe 로 두 번 돌려 비교
-LLM_MOCK_SLOW=1 pnpm agent       # 모델이 늦는 상황 시연 → 끊고 담당자에게 retry / skip / stop 을 묻는다
+pnpm mcp:weather                 # Terminal 1: keep the weather MCP server running. Without it, the agent continues without weather.
+pnpm agent                       # Terminal 2: report 1 → radar, rulebook, and weather checks → Jev recommendation → human decision
+pnpm agent 3                     # Report 3 (1–4), or a custom report such as: pnpm agent "A duck-shaped balloon is floating over the Han River"
+pnpm agent:limit                 # Enforce a one-call limit: the code, not the model, stops execution
+pnpm agent --watch               # Show inputs and outputs for each node; --watch=full shows everything
+pnpm agent --resume <run-id>      # Resume a run interrupted with Ctrl+C during human review. The resume command appears above the prompt after step 7.
+pnpm agent --all                 # Run all four reports and summarize them in a table. Answer y/w/n for each, or use --answer w. Compare JEV_MODE=local and typesafe.
+LLM_MOCK_SLOW=1 pnpm agent       # Simulate a slow model: interrupt the call and ask the operator to retry / skip / stop
 ```
 
-옵션 전체 표는 4장 「`pnpm agent` 옵션 전부」에 있습니다.
+See the complete option tables under **All `pnpm agent` Options** in Section 4.
 
-그래프를 **눈으로 보는** 명령은 `see:` 로 시작합니다.
+Commands beginning with `see:` let you **visualize the graph**.
 
-| 명령 | 하는 일 | 에이전트 실행 | 어디서 보나 | 계정 |
+| Command | Purpose | Runs the Agent? | Where to View | Account Required |
 |---|---|---|---|---|
-| `pnpm see:run` | 돌리면서 보기 — 그래프 그림 위에 지금 도는 단계가 켜진다. 보고를 무작위로 계속 돌림 (Ctrl+C 로 끝) | 함 | 브라우저 localhost:3030 | 필요 없음 |
-| `pnpm see:graph` | 그림만 그리기 — 선을 바꾼 뒤 모양 확인 | 안 함 | `docs/graphs/agent.md` (VS Code 미리보기) | 필요 없음 |
-| `pnpm see:studio` | 공식 디버거 LangGraph Studio — 입력을 넣고 한 단계씩 돌리기 · 칠판 보기. Codespace 면 포트 공개와 주소까지 알아서 | Studio 에서 | smith.langchain.com | LangSmith (`.env` 의 `LANGSMITH_API_KEY`) |
+| `pnpm see:run` | Watch execution with the active node highlighted. Runs randomly selected reports continuously; stop with `Ctrl+C` | Yes | Browser at localhost:3030 | No |
+| `pnpm see:graph` | Generate a static graph to inspect the structure after changing edges | No | `docs/graphs/agent.md` in VS Code preview | No |
+| `pnpm see:studio` | Use the official LangGraph Studio debugger to enter inputs, step through execution, and inspect state. In Codespaces, the helper handles the public port and URL | Through Studio | smith.langchain.com | LangSmith (`LANGSMITH_API_KEY` in `.env`) |
 
-`hands-on` 브랜치는 **거의 빈 Agent** 에서 출발합니다. 빈칸이 비어 있어도 끝까지 돌고, 담당자 화면에 근거 줄이 비어 있을 뿐입니다. 단계마다 빈칸을 채우고 다시 돌리면 화면에 새 줄이 생깁니다. 늦었으면 `pnpm step <지금 단계>` 로 앞 단계는 풀린 상태로 넘어갑니다 (3장).
+The `hands-on` branch starts with a **nearly empty agent**. It still runs to completion with the placeholders untouched; the operator's screen simply lacks evidence. Fill in each step and rerun to see new lines appear. If you fall behind, use `pnpm step <current-step>` to complete the earlier steps automatically (Section 3).
 
-Studio 의 Input 에는 보고 한 줄만 넣습니다.
+In Studio's Input field, provide a single report:
 
 ```json
-{ "report": "서울 상공에 정체불명의 둥근 비행체가 떠 있어요. 움직이지도 않고 무전에 대답도 없어요." }
+{ "report": "An unidentified round flying object is hovering above Seoul. It is stationary and does not respond to radio calls." }
 ```
 
 ---
 
-## 2. 내 에이전트 — 한눈에
+## 2. Your Agent at a Glance
 
-관제실에 보고 한 줄이 들어오면, **규정집 Worker 와 레이더 Subagent 가 동시에** 자료를 모으고, 전에 똑같은 보고를 판단한 기억이 있으면 그 판단을 그대로 쓰고(Jev 생략), 없으면 판정 모델이 의견을 냅니다. **언제나 마지막은 사람**이 모든 근거를 한눈에 보고 출격 / 감시 / 무시 를 고릅니다. 사람이 고른 뒤에야 LLM 이 그 사실로 브리핑 보고서를 써서 `reports/` 에만 남깁니다.
+When a one-line report arrives, the **rulebook Worker and radar Subagent gather information concurrently**. If memory contains a decision for the same report, the agent reuses it and skips Jev. Otherwise, the decision model provides a recommendation. **A human always reviews all evidence and chooses scramble, monitor, or ignore.** Only after that decision does the LLM write a briefing report, saved exclusively under `reports/`.
 
 ```
-         ┌─▶ searchDocs  (Worker: 함수 하나, 규정집 찾기)                      ─┐
-START ───┤                                                                    ├─▶ remember ─┬─ 같은 사례 기억 있음 ──────┐ (Jev 생략)
-         └─▶ askRadar    (Subagent, 안에서 agent ⇄ tools 를 반복) ─┘             └─ 없음 ─▶ judge (Jev) ───┴─▶ approve ─▶ writeReport ─▶ END
-                                                                                     approve = 레이더 · 확대 · 날씨 · 규정 · 기억 · Jev 를 모아 보여 주고 사람이 결정
-                                                                                     writeReport = 사람의 결정 뒤 LLM 이 브리핑 문장을 써서 reports/ 에만 저장
+         ┌─▶ searchDocs (Worker: a function that searches the rulebook) ─┐
+START ───┤                                                             ├─▶ remember
+         └─▶ askRadar (Subagent: internal agent ⇄ tools loop) ──────────┘
 
-askRadar 안 (labs/agent/ask-radar.ts):
-  START ─▶ agent ─┬─ 도구 쓰고 싶다   ─▶ tools ─▶ agent … (반복)
-                  ├─ 다 확인했다     ─▶ END   (facts · evidence 만 들고 부모에게 돌아간다. 대화 기록은 Subagent 안에 남는다)
-                  ├─ 너무 많이 돌았다 ─▶ stop  ─▶ END   (내 코드가 강제로 멈춤 — Subagent 만 멈추고 부모는 계속)
-                  └─ 모델이 늦다     ─▶ askHuman ─▶ 사람이 고름: retry → agent / skip → END / stop → stop
+remember ─┬─ Matching case in memory ──────────────────┐  (skip Jev)
+          └─ No matching case ─▶ judge (Jev) ──────────┴─▶ approve ─▶ writeReport ─▶ END
+
+approve     = Present radar, close-up, weather, rules, memory, and Jev results; a human decides
+writeReport = After the human decision, generate a briefing and save it only under reports/
+
+Inside askRadar (labs/agent/ask-radar.ts):
+  START ─▶ agent ─┬─ Requests a tool ─▶ tools ─▶ agent … (repeat)
+                 ├─ Has enough information ─▶ END
+                 │    Return facts and evidence to the parent; keep conversation history inside the Subagent
+                 ├─ Exceeds the step limit ─▶ stop ─▶ END
+                 │    Code stops only the Subagent; the parent continues
+                 └─ Model is too slow ─▶ askHuman
+                      Human chooses: retry → agent / skip → END / stop → stop
 ```
 
-Worker 와 Subagent 는 LangGraph 에겐 똑같이 "노드 하나" 입니다. 안에 모델 루프가 있으면 우리가 Subagent라고 부를 뿐입니다. 터미널에서는 Subagent 가 도는 동안 `[SUB] ┏━ askRadar` 띠가 열리고, 그 사이 모든 줄 앞에 보라색 `┃` 가 붙었다가 `┗━ askRadar 끝` 에서 닫힙니다. searchDocs 는 띠 밖에서 한 줄에 끝나고, `--watch` 면 띠 안에 `askRadar › agent`, `askRadar › tools` 가 여러 줄 찍힙니다.
+To LangGraph, both a Worker and a Subagent are simply nodes. We call a node a Subagent when it contains its own model loop. In the terminal, `[SUB] ┏━ askRadar` opens a block; every line inside it is prefixed with a purple `┃`, and a closing `┗━ askRadar` line marks completion. `searchDocs` finishes in one line outside that block. With `--watch`, the block also shows repeated `askRadar › agent` and `askRadar › tools` entries.
 
-| 단계 (노드) | 하는 일 | 배우는 것 |
+| Step (Node) | What It Does | What You Learn |
 |---|---|---|
-| `searchDocs` (Worker) | 보고 한 줄로 규정집에서 관련 규정을 찾아 근거에 넣기. 모델 호출 없음, 함수 하나 | Task Decomposition — 정해진 일은 함수가 |
-| `askRadar` (Subagent) | 아래 agent ⇄ tools 루프를 통째로 감싼 Subagent 그래프. 부모에겐 facts · evidence · steps 만 돌려준다 | Subagent · Context 분리 (팀장 칠판은 결론만) |
-| `agent` (Subagent 안) | 모델에게 "도구를 더 쓸래, 사실을 정리할래?" 묻기 | Agent Loop · Tool Calling |
-| `tools` (Subagent 안) | 모델이 고른 도구를 **내 코드가** 실행. 로컬 도구(레이더 보기·확대)와 MCP 도구(날씨)가 한 목록에 섞여 있다 | 모델은 부르겠다고 말할 뿐, 실행은 내 코드 |
-| `remember` | 기억에서 같은 사례 찾기(`findSameCase`). 보고 겹침 0.9 이상이면 그때의 판정을 그대로 쓰고 Jev 를 건너뜀 | 장기 기억으로 판단하기 (같은 사례 = 코드 규칙) |
-| `judge` | 비슷한 기억을 참고로(recall) Jev 에게 3가지 질문(출격/감시/무시 · 위험도 · 정체불명 확률), 끝나면 기억에 남김(retain) | 판정 모델 · 장기 기억 |
-| `approve` | **언제나** 멈춰서 레이더 · 확대 · 날씨 · 규정 · 기억 · Jev 의견 · 코드 권고를 한눈에 보여 주고, 사람이 y(출격) / w(감시) / n(무시) 를 고름. 사람의 답이 기억에 남음 | Human-in-the-Loop (`interrupt`) |
-| `writeReport` | 사람이 결정한 뒤 한 번. 결정 · 시각은 코드가 머리말에 박고, LLM 은 approve 가 보여 준 사실 목록으로 브리핑 문장만 씀. `reports/<실행번호>.md` 에만 저장(밖을 가리키면 거부). 모델이 실패하거나 mock 이면 사실 목록을 그대로 저장 | 사실은 코드가, 문장은 LLM 이 · Sandbox |
-| `askHuman` (Subagent 안) | 모델이 늦으면 멈추고 retry / skip / stop 묻기. Subagent 안의 interrupt 도 부모 실행번호로 저장·재개된다 | 시간 초과 · 사람 개입 |
-| `stop` (Subagent 안) | MAX_STEPS 를 넘기면 Subagent 만 강제 종료. 부모는 규정집 결과만 들고 판정으로 | Harness — 멈추는 건 코드 · 장애 격리 |
+| `searchDocs` (Worker) | Retrieve relevant rulebook entries using the report and add them as evidence. A single function, with no model call | Task decomposition: use a function for a defined task |
+| `askRadar` (Subagent) | Wrap the entire agent ⇄ tools loop in a Subagent graph. Return only facts, evidence, and steps to the parent | Subagents and context isolation: the parent receives conclusions |
+| `agent` (inside the Subagent) | Ask the model whether to call another tool or summarize the facts | Agent loops and tool calling |
+| `tools` (inside the Subagent) | **Your code** executes the model's selected tools. Local radar and close-up tools share a list with the MCP weather tool | The model requests execution; your code performs it |
+| `remember` | Look up the same case with `findSameCase`. If report overlap is at least 0.9, reuse the stored decision and skip Jev | Decisions informed by long-term memory; case matching is a code-defined rule |
+| `judge` | Recall similar cases and ask Jev three questions: scramble/monitor/ignore, risk level, and the probability that the object is unidentified. Retain the result | Decision models and long-term memory |
+| `approve` | **Always** pause and show radar, close-ups, weather, rules, memory, Jev's recommendation, and the code-based recommendation. A human selects y (scramble), w (monitor), or n (ignore). Store the human response in memory | Human-in-the-Loop (`interrupt`) |
+| `writeReport` | Run once after the human decision. Code fixes the decision and timestamp in the header; the LLM writes only the briefing prose from the facts shown by `approve`. Save only to `reports/<run-id>.md`, rejecting paths outside that directory. On model failure or in mock mode, save the fact list directly | Code controls facts; the LLM writes prose. Sandboxed file output |
+| `askHuman` (inside the Subagent) | Pause when the model is too slow and ask whether to retry, skip, or stop. Nested interrupts are saved and resumed using the parent run ID | Timeouts and human intervention |
+| `stop` (inside the Subagent) | Stop only the Subagent when `MAX_STEPS` is exceeded. The parent continues to the decision stage using the rulebook results | Harness controls and fault isolation |
 
-그림: `docs/graphs/agent.md` (`pnpm see:graph` 로 다시 생성)
+Graph: `docs/graphs/agent.md`. Regenerate it with `pnpm see:graph`.
 
-### 도구 4개 + Worker 1개
+### Four Tools and One Worker
 
-| 도구 | 어디서 실행 | 자료 |
+| Tool or Worker | Execution Location | Data Source |
 |---|---|---|
-| `look_radar` 보고에 나온 장소로 레이더 보기 | 로컬 (`ask-radar.ts`) | 실제 모델이면 **LLM 이 보고에 맞춰 레이더 화면을 지어냄** (실행마다 한 번, 확대와 앞뒤가 맞음). mock·실패 시 `data/api/radar-screen.json` |
-| `look_closer` 한 자리 확대 | 로컬 (`ask-radar.ts`) | 〃 |
-| `look_flight_plan` 오늘 통보·허가된 비행 계획 조회 (2단계에서 직접 붙인다) | 로컬 (`ask-radar.ts`) | `data/api/flight-plans.json` — 잠실 드론 쇼는 **신청 없음** |
-| (Worker) `searchDocs` 규정집 찾아보기 (RAG) — 모델이 고르는 도구가 아니라 부모 그래프가 항상 돌리는 노드 | 로컬 (`search-docs.ts`) | `data/docs/rulebook.md` |
-| `look_weather` 그 장소의 날씨 보기 | **MCP 서버** (`mcp-servers/weather`) | 서버 안에서 **LLM 이 장소·상황에 맞춰 지어냄**. mock·실패 시 규칙표 |
+| `look_radar`: inspect radar for the location in the report | Local (`ask-radar.ts`) | With a real model, **the LLM generates a synthetic radar scene based on the report**, once per run and consistent with close-up views. In mock mode or on failure: `data/api/radar-screen.json` |
+| `look_closer`: zoom in on a location | Local (`ask-radar.ts`) | Same radar scene as `look_radar` |
+| `look_flight_plan`: check today's notified or authorized flight plans; added in step 2 | Local (`ask-radar.ts`) | `data/api/flight-plans.json`. The Jamsil drone show has **no application on file** |
+| (Worker) `searchDocs`: retrieve rulebook entries (RAG). Always run by the parent graph, rather than selected by the model | Local (`search-docs.ts`) | `data/docs/rulebook.md` |
+| `look_weather`: check weather at the location | **MCP server** (`mcp-servers/weather`) | **The LLM generates synthetic weather for the location and situation** on the server. In mock mode or on failure, a rule table supplies the result |
 
-### 보고 4종 (`labs/agent/main.ts` 의 REPORTS)
+### Four Sample Reports (`REPORTS` in `labs/agent/main.ts`)
 
-| # | 보고 | 보는 포인트 |
+| # | Report | What to Observe |
 |---|---|---|
-| 1 | 서울 상공 정체불명 둥근 비행체, 무응답 | "서울" 로 레이더를 보면 남산 물체 + 광화문 헬기 두 건 → 확대해서 가려낸다 → Jev 출격 권고 → 사람이 결정. **두 번 돌리면 두 번째엔 기억으로 판단(Jev 생략)** |
-| 2 | 한강 위 거대한 오리 풍선, 김포 쪽으로 | 규정집에 "풍선은 감시" 가 있다 |
-| 3 | 잠실 상공 드론 수십 대 | 비행 계획(`look_flight_plan`)에 드론 쇼 신청이 없다 → 규정집 "허가 없는 드론 떼는 감시" |
-| 4 | 옆 부대 훈련기, 예정 코스 정상 | 별일 아님 |
+| 1 | An unidentified round flying object above Seoul, with no radio response | A radar search for Seoul finds an object near Namsan and a helicopter near Gwanghwamun. Close-up inspection distinguishes them; Jev recommends scrambling, and a human decides. **On the second run, memory supplies the decision and Jev is skipped** |
+| 2 | A giant duck-shaped balloon over the Han River, heading toward Gimpo | The rulebook says to monitor balloons |
+| 3 | Dozens of drones above Jamsil | `look_flight_plan` finds no drone-show application. The rulebook says to monitor unauthorized drone swarms |
+| 4 | A neighboring unit's training aircraft, following its scheduled route | A routine situation |
 
 ---
 
-## 3. 실습 순서 — 같이 하나씩 붙이기 (TODO 번호 = 단계 번호)
+## 3. Workshop Steps — Build One Capability at a Time
 
-강사와 함께 한 단계씩 붙이고, 매번 `pnpm agent` 로 다시 돌려 **담당자 화면에 새 줄이 생기는 것**을 확인합니다. 단계별 코드 · 확인 방법은 `docs/exercises.md`.
+TODO numbers correspond to step numbers. Complete each step with the instructor, rerun `pnpm agent`, and check that **a new line appears on the operator's screen**. See `docs/exercises.md` for step-by-step code and verification instructions.
 
-| 단계 | 같이 붙이는 것 | 파일 (TODO) | 화면에 생기는 것 | 개념 |
+| Step | What You Add | File (TODO) | Visible Result | Concept |
 |---|---|---|---|---|
-| 0 | (없음) 환경 · 구조 · 첫 실행 | — | 보고만 있고 근거가 빈 담당자 화면 | 전체 구조 |
-| 1 | 레이더 Subagent 데려오기 `addNode("askRadar", radarAgent)` | `main.ts` (1) | `[SUB] ┏━ askRadar` 띠, 레이더 · 확대 줄 | Subagent · Agent Loop |
-| 2 | Subagent 에게 새 도구 `look_flight_plan` — 설명 + 실행 | `ask-radar.ts` (2-1 · 2-2) | `[TOOL] look_flight_plan`, 비행 계획 줄 | Tool Calling — 설명이 선택을 정한다 |
-| 3 | 규정집 줄마다 점수 매기기 | `search-docs.ts` (3) | 관련 규정 줄 (`pnpm agent 2`) | RAG |
-| 4 | 날씨를 MCP 로 — 서버에 등록 + 목록 받기 · 실행 | `server.ts` (4-1) · `mcp.ts` (4-2) | 날씨 줄 (`pnpm mcp:weather` 켜고). 끄면 "날씨 없이 계속" | MCP |
-| 5 | 순차를 동시로 + 합류 | `main.ts` (5) | `--watch` 에서 searchDocs · askRadar 가 같이 시작 | Task Decomposition · 병렬 |
-| 6 | Jev 에게 묻기 `askJev(…, QUESTIONS)` | `main.ts` (6) | Jev 판정 줄 (확신도 · 위험도 · 정체불명) | 판정 모델 |
-| 7 | 사람의 답으로 이어가기 `Command({ resume })` | `main.ts` (7) | "사람이 결정". Ctrl+C → `pnpm agent --resume <번호>` | HITL · Checkpoint |
-| 8 | 기억 찾기 · 남기기 | `main.ts` (8-1 · 8-2) | 같은 보고 두 번째엔 "같은 사례 찾음 → Jev 생략" | Context · Memory |
+| 0 | Environment, structure, and the first run; no implementation yet | — | The operator screen contains the report but no evidence | Overall architecture |
+| 1 | Attach the radar Subagent with `addNode("askRadar", radarAgent)` | `main.ts` (1) | `[SUB] ┏━ askRadar` block, radar and close-up evidence | Subagents · Agent loops |
+| 2 | Add `look_flight_plan` to the Subagent: description and implementation | `ask-radar.ts` (2-1 · 2-2) | `[TOOL] look_flight_plan` and flight-plan evidence | Tool calling: descriptions guide selection |
+| 3 | Score each rulebook entry | `search-docs.ts` (3) | Relevant rules with `pnpm agent 2` | RAG |
+| 4 | Connect weather through MCP: register the server tool, list tools, and execute them | `server.ts` (4-1) · `mcp.ts` (4-2) | Weather evidence while `pnpm mcp:weather` is running; graceful continuation without weather when it is stopped | MCP |
+| 5 | Replace sequential execution with parallel execution and a join | `main.ts` (5) | `--watch` shows `searchDocs` and `askRadar` starting together | Task decomposition · Parallelism |
+| 6 | Call Jev with `askJev(…, QUESTIONS)` | `main.ts` (6) | Jev results: confidence, risk, and unidentified-object probability | Decision models |
+| 7 | Resume with a human response using `Command({ resume })` | `main.ts` (7) | Human decision prompt; interrupt with `Ctrl+C`, then use `pnpm agent --resume <run-id>` | HITL · Checkpoints |
+| 8 | Retrieve and retain memories | `main.ts` (8-1 · 8-2) | On the second identical report: matching case found, Jev skipped | Context · Memory |
 
-**따라잡기 — `pnpm step <지금 단계>`:** 강사가 "4단계 시작합니다" 하면 늦은 사람은 `pnpm step 4`. 1 ~ 3 은 풀린 상태, 4 부터 할 차례가 된다 (정답은 main 에서 가져온다).
+**Catch up with `pnpm step <current-step>`.** If the instructor starts step 4, run `pnpm step 4`. Steps 1–3 are filled in, leaving step 4 onward for you to complete. Solutions are taken from `main`.
 
-| 명령 | 상태 |
+| Command | Result |
 |---|---|
-| `pnpm step 1` | 1 ~ 8 전부 남음 (처음 상태) |
-| `pnpm step 4` | 1 ~ 3 풀림, 4 번부터 |
-| `pnpm step 8` | 1 ~ 7 풀림, 8 번만 남음 |
-| `pnpm step done` | 전부 풀림 (main 과 같음) |
+| `pnpm step 1` | All steps 1–8 remain unfinished; the initial exercise state |
+| `pnpm step 4` | Steps 1–3 completed; start at step 4 |
+| `pnpm step 8` | Steps 1–7 completed; only step 8 remains |
+| `pnpm step done` | All steps completed, matching `main` |
 
-빈칸이 든 파일만 덮어쓰며, 먼저 묻습니다.
+Only files containing exercise placeholders are overwritten, and the command asks first.
 
-완성 코드로 제공 (설명 · 시연): 도구 실행 루프와 MAX_STEPS 강제 중단(`ask-radar.ts` — 1일차 Loop 그대로, `pnpm agent:limit`), 모델이 늦을 때 사람에게 묻기(`LLM_MOCK_SLOW=1`), 모델 교체, Studio.
+The following are provided as complete implementations for explanation and demonstration: the tool execution loop and enforced `MAX_STEPS` limit (`ask-radar.ts`, reusing the Day 1 loop; try `pnpm agent:limit`), human intervention for slow models (`LLM_MOCK_SLOW=1`), switching models, and Studio integration.
 
 ---
 
-## 4. 자주 쓰는 명령
+## 4. Common Commands
 
 ```bash
-pnpm mcp:weather             # 날씨 MCP 서버 (http://localhost:3333/mcp)
-pnpm mcp:inspect             # MCP Inspector — 화면에서 Streamable HTTP + 위 주소를 넣고 look_weather 를 직접 눌러 본다
-pnpm memory:up               # Hindsight 기억 서버를 내 노트북에 띄운다 (uv 필요, 첫 실행 약 200MB) → .env MEMORY_MODE=hindsight
-pnpm memory:ui               # Hindsight 대시보드 http://localhost:18888 — retain 된 기억(사실·요약·링크)과 서버 작업을 눈으로 본다 (끄기: pnpm memory:ui:stop)
-pnpm memory:reset            # 기억 전부 지우고 처음부터 (현재 MEMORY_MODE 의 저장소 + checkpoints.sqlite). --all 이면 서버 bank 와 파일 둘 다
-pnpm agent --watch=full      # 들어간 값·나온 값을 자르지 않고 전부
-pnpm see:graph               # 그래프를 Mermaid 그림으로 (docs/graphs/)
-pnpm typecheck               # 타입 검사
-pnpm setup:check             # 환경 점검
+pnpm mcp:weather             # Weather MCP server at http://localhost:3333/mcp
+pnpm mcp:inspect             # MCP Inspector: select Streamable HTTP, enter the URL above, and invoke look_weather
+pnpm memory:up               # Start Hindsight locally; requires uv, approximately 200 MB on first run. Set MEMORY_MODE=hindsight in .env.
+pnpm memory:ui               # Hindsight dashboard at http://localhost:18888: inspect retained facts, summaries, links, and server operations. Stop with pnpm memory:ui:stop.
+pnpm memory:reset            # Reset memory for the current MEMORY_MODE and checkpoints.sqlite. Add --all to reset both the server bank and file storage.
+pnpm agent --watch=full      # Show complete inputs and outputs without truncation
+pnpm see:graph               # Generate Mermaid graphs under docs/graphs/
+pnpm typecheck               # Run type checking
+pnpm setup:check             # Check the environment
 ```
 
-### `pnpm agent` 옵션 전부
+### All `pnpm agent` Options
 
-`pnpm agent` 는 `labs/agent/main.ts` 를 실행합니다. 아래 표가 코드가 읽는 옵션의 전부입니다. 실행 방식은 `--live` → `--all` → `--resume` → 보고 인자 순으로 먼저 있는 것 하나만 적용됩니다.
+`pnpm agent` runs `labs/agent/main.ts`. The tables below cover all options read by the code. Execution mode uses the first applicable choice in this order: `--live` → `--all` → `--resume` → report argument.
 
-**어떤 보고를 돌릴지 (옵션 없이 붙이는 인자)**
+**Choose a report with a positional argument**
 
-| 쓰는 법 | 하는 일 |
+| Usage | Behavior |
 |---|---|
-| `pnpm agent` | 보고 1번 |
-| `pnpm agent 3` | 보고 3번 (1~4. 범위 밖이면 1번) |
-| `pnpm agent "한강에 오리 풍선이 떠요"` | 내가 쓴 문장을 보고로 |
+| `pnpm agent` | Run report 1 |
+| `pnpm agent 3` | Run report 3. Valid numbers are 1–4; out-of-range values fall back to report 1 |
+| `pnpm agent "A duck-shaped balloon is floating over the Han River"` | Use your own sentence as the report |
 
-**옵션 (`--` 로 시작)**
+**Options beginning with `--`**
 
-| 옵션 | 하는 일 | 언제 쓰나 |
+| Option | Behavior | When to Use It |
 |---|---|---|
-| `--watch` | 단계(노드)마다 들어간 값·나온 값을 요약해서 보여 준다. Subagent 안은 `askRadar › agent` 처럼 찍힌다 | 빈칸을 채운 뒤 칠판이 어떻게 바뀌는지 볼 때 |
-| `--watch=full` | 위와 같지만 자르지 않고 전부 | 값이 잘려서 안 보일 때 |
-| `--all` | 보고 4종을 차례로 돌리고 표 하나로 정리 | `JEV_MODE` 를 바꿔 두 번 돌려 비교할 때 |
-| `--answer <y\|w\|n>` | 담당자 질문에 답을 미리 정해 둔다. 묻지 않고 바로 그 답을 쓴다 (`y` 출격 · `w` 감시 · `n` 무시) | `--all` 로 4건을 멈춤 없이 돌릴 때 |
-| `--resume <실행번호>` | 담당자 확인 중 Ctrl+C 로 껐던 실행을 멈춘 곳부터 이어간다 (`checkpoints.sqlite`). 실행번호는 SETUP 줄에, 이어가는 명령은 질문 바로 위에 찍힌다 (7단계를 채운 뒤부터) | 단계 7 (Checkpoint · 재개) |
-| `--live` | 브라우저(http://localhost:3030)에 그래프를 띄우고 보고를 무작위로 계속 돌린다 (Ctrl+C 로 끝). `pnpm see:run` 이 이 옵션을 붙인 것 | 그래프가 도는 모습을 눈으로 볼 때 |
+| `--watch` | Show summarized inputs and outputs for each node. Nested nodes appear as `askRadar › agent` | Inspect state changes after completing an exercise |
+| `--watch=full` | Show the same information without truncation | Inspect values that are cut off in the summary |
+| `--all` | Run all four reports sequentially and summarize them in one table | Compare runs with different `JEV_MODE` settings |
+| `--answer <y\|w\|n>` | Supply the operator's answer in advance, without prompting: `y` for scramble, `w` for monitor, `n` for ignore | Run all four reports with `--all` without pausing |
+| `--resume <run-id>` | Resume a run interrupted with `Ctrl+C` during operator review, using `checkpoints.sqlite`. The run ID appears on the SETUP line, and the resume command appears immediately above the prompt after step 7 is implemented | Step 7: checkpoints and resuming execution |
+| `--live` | Display the graph at http://localhost:3030 and continuously run randomly selected reports. Stop with `Ctrl+C`. `pnpm see:run` enables this option | Watch the graph execute in a browser |
 
-옵션은 섞어 쓸 수 있습니다. 예: `pnpm agent 2 --watch`, `pnpm agent --all --answer w`, `pnpm agent --resume loop-1-1234567890 --watch`.
+Options can be combined. Examples: `pnpm agent 2 --watch`, `pnpm agent --all --answer w`, and `pnpm agent --resume loop-1-1234567890 --watch`.
 
-**같이 쓰는 환경 변수 (명령 앞에 붙이거나 `.env` 에)**
+**Related environment variables — prefix a command or set them in `.env`**
 
-| 변수 | 기본값 | 하는 일 |
+| Variable | Default | Purpose |
 |---|---|---|
-| `LLM_MODE` · `JEV_MODE` · `MEMORY_MODE` | `.env` | 모델 · Jev · 기억을 어떤 걸로 돌릴지 (5장) |
-| `MAX_STEPS` | `8` | Subagent 안 agent ⇄ tools 루프 최대 횟수. `pnpm agent:limit` 이 `1` 로 놓고 돌리는 것 |
-| `RUN_TIMEOUT_SEC` | `180` | 실행 전체가 이 초를 넘으면 끊는다 |
-| `LLM_TIMEOUT_SEC` | `60` | 모델 호출 한 번의 제한 시간. 넘으면 Subagent 가 담당자에게 retry / skip / stop 을 묻는다 |
-| `LLM_MOCK_SLOW` | 없음 | `1` 이면 mock 모델이 매번 늦게, `once` 면 첫 호출만 늦게 → "모델이 늦을 때 사람에게 묻기" 시연 |
-| `LIVE_PORT` | `3030` | `--live` 가 여는 포트 |
-| `NO_COLOR` | 없음 | 값을 아무거나 주면 터미널 색을 끈다 |
+| `LLM_MODE` · `JEV_MODE` · `MEMORY_MODE` | From `.env` | Select the LLM, decision model, and memory backend (Section 5) |
+| `MAX_STEPS` | `8` | Maximum iterations of the Subagent's agent ⇄ tools loop. `pnpm agent:limit` sets this to `1` |
+| `RUN_TIMEOUT_SEC` | `180` | Stop execution when the total runtime exceeds this many seconds |
+| `LLM_TIMEOUT_SEC` | `60` | Timeout for a single model call. When exceeded, the Subagent asks the operator to retry, skip, or stop |
+| `LLM_MOCK_SLOW` | Unset | `1` delays every mock-model call; `once` delays only the first. Demonstrates human intervention when a model is slow |
+| `LIVE_PORT` | `3030` | Port used by `--live` |
+| `NO_COLOR` | Unset | Set to any value to disable terminal colors |
 
-Claude Code 에 같은 MCP 서버 꽂기: `claude mcp add --transport http weather http://localhost:3333/mcp`
+Connect the same MCP server to Claude Code: `claude mcp add --transport http weather http://localhost:3333/mcp`
 
-기억 실험: `.hindsight/control-room.json` 을 지우고 보고 1 을 돌리면 "같은 사례 없음 → Jev 에게 묻는다", 한 번 더 돌리면 "기억 판단 … Jev 생략" 으로 Jev 없이 판단합니다. 첫 번째에 출격을 **반려(n)** 하면 두 번째엔 "감시" 로 떠오릅니다 — 사람의 결정이 기억을 고칩니다. `pnpm see:run` 에서는 remember 노드 아래 기억 카드(그때 보고 · 일치도 · 그때 확신)로 보입니다. Hindsight 모드의 그래프는 `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` (localhost:9999) 에서 그림으로 봅니다.
+Memory experiment: delete `.hindsight/control-room.json` and run report 1. The first run finds no matching case and asks Jev; the next uses the remembered decision and skips Jev. If you **reject the scramble with `n`** on the first run, the second recalls a monitor recommendation: the human response updates memory. In `pnpm see:run`, a memory card below the `remember` node shows the previous report, match score, and confidence. To visualize the graph in Hindsight mode, run `npx @vectorize-io/hindsight-control-plane --api-url http://localhost:8888` and open localhost:9999.
 
 ---
 
-## 5. 모델·판정기·기억 바꾸기 (.env 세 줄)
+## 5. Switching Models, Decision Backends, and Memory
 
-| 설정 | 기본 (키 없이) | 강사 제공 | 폐쇄망으로 옮길 때 |
+Configure these three settings in `.env`.
+
+| Setting | Default, Without API Keys | Instructor-Provided Setup | Moving to an Isolated Network |
 |---|---|---|---|
-| `LLM_MODE` | `mock` (정해진 답) | `cloud` — OpenRouter + 조별 키 | `relay` — vLLM 등 OpenAI 호환 주소 |
-| `JEV_MODE` | `local` (규칙 판정기) | `openrouter` — Jev (OpenRouter Decisions API, 같은 조별 키를 `OPENROUTER_API_KEY` 에) | `src/lib/jev.ts` 의 `localJudge` 자리에 자체 모델 |
-| `MEMORY_MODE` | `file` (`.hindsight/*.json`) · `off` (기억 없음) | `hindsight` — `pnpm memory:up` 또는 강사 서버 주소 | 자체 호스팅 Hindsight |
+| `LLM_MODE` | `mock`: predefined responses | `cloud`: OpenRouter with a group API key | `relay`: an OpenAI-compatible endpoint, such as vLLM |
+| `JEV_MODE` | `local`: rule-based decision logic | `openrouter`: Jev through the OpenRouter Decisions API, using the same group key as `OPENROUTER_API_KEY` | Replace `localJudge` in `src/lib/jev.ts` with your own model |
+| `MEMORY_MODE` | `file`: `.hindsight/*.json`; or `off`: no memory | `hindsight`: run `pnpm memory:up` or use the instructor's server URL | Self-hosted Hindsight |
 
-모델 비교: `LLM_MODE=ollama` + `LLM_BASE_URL=http://localhost:11434/v1` + `LLM_MODEL=qwen3:8b` 로 바꾸면 같은 보고를 노트북 모델로 돌려 봅니다.
+To compare against a model running on your laptop, set `LLM_MODE=ollama`, `LLM_BASE_URL=http://localhost:11434/v1`, and `LLM_MODEL=qwen3:8b`, then rerun the same report.
 
-실행 기록은 `traces/*.jsonl` 에 남습니다 (Langfuse 특강에서 확장). `.env` 에 `LANGSMITH_TRACING=true` 와 `LANGSMITH_API_KEY` 를 넣으면 같은 실행이 smith.langchain.com 에도 트리(노드 → LLM 호출 · Jev · MCP · 기억)로 올라갑니다. 코드 수정 없이 켜고 끕니다.
+Execution traces are saved to `traces/*.jsonl`, with further coverage in the Langfuse session. Set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` in `.env` to also send the run to smith.langchain.com as a tree of nodes, LLM calls, Jev calls, MCP activity, and memory operations. No code changes are needed to enable or disable tracing.
 
 ---
 
-## 6. 저장소 구조
+## 6. Repository Structure
 
 ```
 airforce-agentic-ai/
-├─ src/lib/                 공용 모듈 — 폐쇄망으로 옮길 때 바꾸는 곳이 전부 여기
-│  ├─ llm.ts                 LLM (OpenRouter(cloud) / 자체 중계(relay) / Ollama / mock)
-│  ├─ jev.ts                 Jev 판정 모델 (TypeSafe SDK / OpenRouter / 로컬 규칙 판정기)
-│  ├─ memory.ts              장기 기억 (Hindsight 서버 / 파일) — createBank · retain · recall · reflect
-│  ├─ trace.ts               실행 기록 (traces/*.jsonl)
-│  ├─ show.ts                --watch 출력
-│  └─ live.ts · live.html    브라우저 실시간 보기 (pnpm see:run)
+├─ src/lib/                 Shared modules; integration changes for isolated networks live here
+│  ├─ llm.ts                 LLM: OpenRouter (cloud) / custom relay / Ollama / mock
+│  ├─ jev.ts                 Jev decision model: TypeSafe SDK / OpenRouter / local rules
+│  ├─ memory.ts              Long-term memory: Hindsight server / files; createBank · retain · recall · reflect
+│  ├─ trace.ts               Execution traces (traces/*.jsonl)
+│  ├─ show.ts                --watch output
+│  └─ live.ts · live.html    Live browser view (pnpm see:run)
 ├─ labs/agent/
-│  ├─ main.ts                부모 그래프 — 보고 → [searchDocs ‖ askRadar] → remember → judge → approve → writeReport (빈칸 1 · 5 · 6 · 7 · 8)
-│  ├─ ask-radar.ts           레이더 Subagent — agent ⇄ tools 루프, 늦으면 askHuman, MAX_STEPS 면 stop, 도구 look_flight_plan (빈칸 2)
-│  ├─ state.ts               부모 칠판(State). Subagent 는 여기에 자기 칸(대화)을 더해 쓴다 — 겹치는 칸만 부모로 돌아온다
-│  ├─ search-docs.ts         규정집 찾아보기 + Worker 노드 (빈칸 3)
-│  ├─ write-report.ts        사람의 결정 뒤 LLM 브리핑 보고서 → reports/ 에만 저장 (완성 코드)
-│  └─ mcp.ts                 MCP 서버 접속 → 도구 목록 → 실행 (빈칸 4-2)
-├─ mcp-servers/weather/server.ts   날씨 MCP 서버, Streamable HTTP (빈칸 4-1)
-├─ data/                     교육용 합성 자료
-│  ├─ api/                    레이더 화면(radar-screen.json)
-│  └─ docs/rulebook.md        관제 규정 10줄
-├─ .devcontainer/            Codespaces 레시피 — Node 22 상자 + setup.sh(설치 · .env · 점검 자동)
-├─ docs/graphs/              그래프 그림 (pnpm see:graph)
-├─ docs/plan.md · day2-handson.md   구현 계획 · 2일차 핵심 내용
-├─ docs/slides/day2.html     2일차 강의 슬라이드 (45장, 브라우저로 열기. ← → 이동, 화면 왼쪽/오른쪽 클릭, O 전체보기) — pnpm slides 로 재생성 (python3)
-├─ docs/slides/day2.pdf      같은 슬라이드 PDF (장마다 한 페이지) — pnpm slides:pdf 로 재생성 (Chrome 필요)
-├─ docs/slides-plan.md       슬라이드 장 단위 계획
-├─ checkpoints.sqlite        실행 저장 (LangGraph SqliteSaver, --resume 용. git 에 안 올라감)
-├─ .hindsight/               file 모드 기억 (git 에 안 올라감)
-├─ traces/                   실행 기록
-├─ langgraph.json            LangGraph Studio 설정 (pnpm see:studio)
-└─ tools/                    doctor(환경 점검) · make-handson(빈칸 만들기) · step(따라잡기) · blanks(빈칸 변환 공용) · draw-graph(그림) · memory-up(Hindsight 띄우기) · make-slides(강의 슬라이드)
+│  ├─ main.ts                Parent graph: report → [searchDocs ‖ askRadar] → remember → judge → approve → writeReport (steps 1 · 5 · 6 · 7 · 8)
+│  ├─ ask-radar.ts           Radar Subagent: agent ⇄ tools loop, askHuman on timeout, stop at MAX_STEPS, look_flight_plan tool (step 2)
+│  ├─ state.ts               Parent state; the Subagent adds its conversation state, returning only shared fields to the parent
+│  ├─ search-docs.ts         Rulebook retrieval and Worker node (step 3)
+│  ├─ write-report.ts        LLM briefing after the human decision; writes only under reports/ (complete implementation)
+│  └─ mcp.ts                 Connect to MCP server → list tools → execute (step 4-2)
+├─ mcp-servers/weather/server.ts   Weather MCP server using Streamable HTTP (step 4-1)
+├─ data/                     Synthetic training data
+│  ├─ api/                    Radar scene (radar-screen.json)
+│  └─ docs/rulebook.md        Ten control-room rules
+├─ .devcontainer/            Codespaces configuration: Node 22 container and setup.sh for dependencies, .env, and checks
+├─ docs/graphs/              Workflow diagrams (pnpm see:graph)
+├─ docs/plan.md · day2-handson.md   Implementation plan and Day 2 core material
+├─ docs/slides/day2.html     Day 2 slides (45 slides). Open in a browser; use ←/→ or click left/right to navigate, O for overview. Regenerate with pnpm slides (python3).
+├─ docs/slides/day2.pdf      The same slides as a PDF, one slide per page. Regenerate with pnpm slides:pdf (requires Chrome).
+├─ docs/slides-plan.md       Slide-by-slide plan
+├─ checkpoints.sqlite        Saved runs using LangGraph SqliteSaver for --resume (not tracked by git)
+├─ .hindsight/               File-mode memory (not tracked by git)
+├─ traces/                   Execution traces
+├─ langgraph.json            LangGraph Studio configuration (pnpm see:studio)
+└─ tools/                    doctor (environment checks) · make-handson (exercise generation) · step (catch-up) · blanks (shared placeholder conversion) · draw-graph · memory-up · make-slides
 ```
 
 ---
 
-## 7. 강사용 — 두 브랜치 관리
+## 7. Instructor Guide — Maintaining the Two Branches
 
-모든 작업은 `main` 에서 하고, `hands-on` 은 스크립트로 만듭니다.
+Make all changes on `main`, then generate `hands-on` with the script.
 
 ```bash
 git checkout main
-# … 코드 수정 …
+# … Make code changes …
 git commit -am "fix: …" && git push
 
 git checkout hands-on
-git checkout main -- .                # main 파일을 그대로 가져온 뒤
-node tools/make-handson.mjs           # 표시된 정답 구간을 빈칸으로
+git checkout main -- .                # Copy the files from main
+node tools/make-handson.mjs           # Replace marked solution sections with exercise placeholders
 git commit -am "handson: regenerate from main" && git push
 ```
 
-`main` 에서 파일을 지우거나 옮겼다면 `hands-on` 에서도 같은 파일을 `git rm` 해 주세요 (`git checkout main -- .` 은 삭제를 옮기지 않습니다).
-빈칸 목록 확인: `pnpm instructor:make-handson --check`. 표시 규칙은 `tools/make-handson.mjs` 상단 주석 참고.
+If you delete or move files on `main`, use `git rm` for the corresponding files on `hands-on` as well. `git checkout main -- .` does not propagate deletions.
+
+Check the exercise placeholder list with `pnpm instructor:make-handson --check`. See the comments at the top of `tools/make-handson.mjs` for the marker conventions.
 
 ---
 
-## 8. 참고 링크
+## 8. References
 
 - LangGraph.js — https://langchain-ai.github.io/langgraphjs/
 - LangSmith · Studio — https://docs.smith.langchain.com
 - MCP TypeScript SDK — https://github.com/modelcontextprotocol/typescript-sdk
 - Jev / TypeSafe — https://typesafe.ai
-- Hindsight (Node 클라이언트 · 로컬 데몬) — https://hindsight.vectorize.io/sdks/nodejs · https://hindsight.vectorize.io/sdks/hindsight-all-npm
+- Hindsight (Node client and local daemon) — https://hindsight.vectorize.io/sdks/nodejs · https://hindsight.vectorize.io/sdks/hindsight-all-npm
 - Langfuse — https://langfuse.com/docs
